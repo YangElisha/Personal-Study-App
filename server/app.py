@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import mimetypes
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -15,6 +16,11 @@ from . import db, snapshots
 from .settings import REPO_ROOT, Settings
 
 log = logging.getLogger("drill")
+
+# Windows' registry often maps .woff2 to application/octet-stream (or nothing); fonts are
+# vendored in app/vendor/fonts, so give them their proper types.
+mimetypes.add_type("font/woff2", ".woff2")
+mimetypes.add_type("font/woff", ".woff")
 
 ALLOWED_HOSTS = {"localhost", "127.0.0.1"}
 
@@ -85,8 +91,10 @@ def create_app(settings: Settings, app_dir: Path | None = None,
                 if origin.strip().lower().rstrip("/") not in own:
                     return _err(403, "forbidden_origin", f"Origin {origin!r} may not write here")
         resp = await call_next(request)
-        if not request.url.path.startswith("/api/"):
-            resp.headers["Cache-Control"] = "no-cache"
+        if request.url.path.startswith("/api/"):
+            resp.headers["Cache-Control"] = "no-store"      # data: never from a cache
+        else:
+            resp.headers["Cache-Control"] = "no-cache"      # app files: revalidate
         return resp
 
     def conn():
@@ -116,7 +124,10 @@ def create_app(settings: Settings, app_dir: Path | None = None,
         finally:
             c.close()
         if row is None:
-            return _err(404, "not_found", "No value stored under this key", key=key)
+            # 204, not 404: a missing key is a normal answer ("nothing stored yet", e.g. the
+            # progress of a deck never studied), and browsers log every 404 as a red
+            # "Failed to load resource" line. A stored JSON null is 200 "null".
+            return Response(status_code=204)
         return Response(content=row[0].encode("utf-8"),
                         media_type="application/json; charset=utf-8",
                         headers={"X-Updated-At": row[1]})
@@ -177,6 +188,12 @@ def create_app(settings: Settings, app_dir: Path | None = None,
             status_code=503)
 
     # ---- the app itself ---------------------------------------------------------------
+    if not (app_dir / "favicon.ico").is_file():
+        @app.get("/favicon.ico", include_in_schema=False)
+        def no_favicon():
+            # the app has no icon; answer "nothing" rather than 404, so the console stays clean
+            return Response(status_code=204)
+
     if (app_dir / "index.html").is_file():
         app.mount("/", StaticFiles(directory=str(app_dir), html=True), name="app")
     else:

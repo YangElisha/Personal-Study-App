@@ -64,7 +64,7 @@ def test_real_http_roundtrip(live, key):
     assert st == 200 and key in json.loads(txt)["keys"]
     st, _ = call("DELETE", f"{live}/api/store/{enc(key)}")
     assert st == 200
-    assert call("GET", f"{live}/api/store/{enc(key)}")[0] == 404
+    assert call("GET", f"{live}/api/store/{enc(key)}") == (204, "")
 
 
 def test_real_http_prefix_percent_is_literal(live):
@@ -75,7 +75,8 @@ def test_real_http_prefix_percent_is_literal(live):
 
 
 def test_real_http_missing_vs_null_and_ai(live):
-    assert call("GET", f"{live}/api/store/{enc('deck:x')}")[0] == 404
+    assert call("GET", f"{live}/api/store/{enc('deck:x')}") == (204, "")
+    assert call("GET", f"{live}/favicon.ico") == (204, "")
     call("PUT", f"{live}/api/store/{enc('deck:x')}", b"null")
     assert call("GET", f"{live}/api/store/{enc('deck:x')}") == (200, "null")
     st, txt = call("POST", f"{live}/api/ai", b"{}")

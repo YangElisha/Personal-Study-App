@@ -36,9 +36,9 @@ def test_put_get_roundtrip_special_keys(client, key):
     assert g.headers["x-updated-at"] == r.json()["updated_at"]
 
 
-def test_missing_is_404_and_stored_null_is_200(client):
+def test_missing_is_204_and_stored_null_is_200(client):
     r = client.get(url("deck:none"))
-    assert r.status_code == 404 and r.json()["error"] == "not_found"
+    assert r.status_code == 204 and r.content == b""
     assert client.put(url("deck:null"), content=b"null").status_code == 200
     g = client.get(url("deck:null"))
     assert g.status_code == 200 and g.text == "null"
@@ -84,9 +84,10 @@ def test_delete_keeps_history(client, settings):
     client.put(url("exam:d"), content=b'{"paper":[1,2]}')
     r = client.delete(url("exam:d"))
     assert r.status_code == 200 and r.json()["deleted"] is True
-    assert client.get(url("exam:d")).status_code == 404
+    assert client.get(url("exam:d")).status_code == 204
     assert history(settings, "exam:d") == ['{"paper":[1,2]}']
-    assert client.delete(url("exam:d")).status_code == 404
+    r = client.delete(url("exam:d"))                      # deleting a missing key: unchanged,
+    assert r.status_code == 404 and r.json()["error"] == "not_found"   # still 404
     assert history(settings, "exam:d") == ['{"paper":[1,2]}']
 
 
@@ -94,7 +95,7 @@ def test_delete_keeps_history(client, settings):
 def test_put_rejects_non_json(client, settings, body):
     r = client.put(url("deck:bad"), content=body)
     assert r.status_code == 400 and r.json()["error"] == "bad_json"
-    assert client.get(url("deck:bad")).status_code == 404
+    assert client.get(url("deck:bad")).status_code == 204
 
 
 def test_empty_key_rejected(client):
@@ -117,13 +118,42 @@ def test_placeholder_when_no_app(client):
 
 def test_serves_app_dir(make_client, tmp_path):
     app_dir = tmp_path / "app"
-    app_dir.mkdir()
+    (app_dir / "vendor" / "fonts").mkdir(parents=True)
     (app_dir / "index.html").write_text("<p>hello drill</p>", encoding="utf-8")
     (app_dir / "x.js").write_text("1", encoding="utf-8")
+    (app_dir / "vendor" / "fonts" / "f.woff2").write_bytes(b"wOF2fake")
     with make_client(app_dir=app_dir) as c:
-        assert "hello drill" in c.get("/").text
+        r = c.get("/")
+        assert "hello drill" in r.text and r.headers["cache-control"] == "no-cache"
         assert c.get("/x.js").text == "1"
+        f = c.get("/vendor/fonts/f.woff2")
+        assert f.status_code == 200 and f.headers["content-type"] == "font/woff2"
         assert c.get("/api/health").json()["ok"] is True       # API still wins over static
+        fav = c.get("/favicon.ico")                            # no icon in app/: 204
+        assert fav.status_code == 204 and fav.content == b""
+
+
+def test_favicon_204_without_app_and_served_when_present(make_client, tmp_path):
+    with make_client() as c:
+        r = c.get("/favicon.ico")
+        assert r.status_code == 204 and r.content == b""
+    app_dir = tmp_path / "app2"
+    app_dir.mkdir()
+    (app_dir / "index.html").write_text("x", encoding="utf-8")
+    (app_dir / "favicon.ico").write_bytes(b"ICO")
+    with make_client(app_dir=app_dir) as c:
+        r = c.get("/favicon.ico")
+        assert r.status_code == 200 and r.content == b"ICO"
+
+
+def test_api_responses_are_never_cached(client):
+    client.put(url("deck:c"), content=b"1")
+    for r in (client.get(url("deck:c")), client.get(url("deck:none")),
+              client.get("/api/store"), client.get("/api/health"),
+              client.put(url("deck:c"), content=b"2"), client.delete(url("deck:c")),
+              client.delete(url("deck:c")), client.post("/api/ai"),
+              client.put(url("deck:x"), content=b"{bad")):
+        assert r.headers["cache-control"] == "no-store", (r.request.method, r.request.url)
 
 
 def test_foreign_host_refused(client):
@@ -144,13 +174,13 @@ def test_state_changes_from_other_origins_refused(client, settings, origin):
     h = {"origin": origin}
     r = client.put(url("deck:o"), content=b"1", headers=h)
     assert r.status_code == 403 and r.json()["error"] == "forbidden_origin"
-    assert client.get(url("deck:o")).status_code == 404
+    assert client.get(url("deck:o")).status_code == 204
     r = client.delete(url("deck:keep"), headers=h)
     assert r.status_code == 403
     assert client.get(url("deck:keep")).text == '{"v":1}'
     r = client.post("/api/import", headers=h)
     assert r.status_code == 403
-    assert client.get(url("library")).status_code == 404       # nothing imported
+    assert client.get(url("library")).status_code == 204       # nothing imported
     assert client.post("/api/ai", headers=h).status_code == 403
     # reading is not blocked by the server (the browser's CORS rules stop foreign reads)
     assert client.get(url("deck:keep"), headers=h).status_code == 200
