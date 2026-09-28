@@ -53,9 +53,9 @@ Errors are JSON: `{"ok":false,"error":"<kind>","message":"..."}`.
 Body: the Anthropic Messages request the app already builds (`model` is ignored,
 `max_tokens`, `messages`, optional `system`). Content blocks: `text` and base64 `image`.
 
-**Which model.** An `image` block → Qwen. Otherwise, `CLAUDE_CLI=on` and a TCP connection to
-api.anthropic.com:443 within 2 s (result cached 15 s) → Claude via `claude -p`. Otherwise →
-Qwen. If `claude -p` fails for any reason, the request is retried once on Qwen. At most 2
+**Which model.** `CLAUDE_CLI=on` and a TCP connection to api.anthropic.com:443 within 2 s
+(result cached 15 s) → Claude via `claude -p`, for text **and** pictures (image blocks go in
+with `--input-format stream-json`). Otherwise (offline, or `CLAUDE_CLI=off`) → Qwen. If `claude -p` fails for any reason, the request is retried once on Qwen. At most 2
 `claude -p` runs at once; more wait.
 
 **200**, the same shape whichever model ran:

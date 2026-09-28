@@ -31,4 +31,12 @@ log = {"argv": sys.argv[1:], "cwd": os.getcwd(), "cwd_listing": os.listdir("."),
 with open(os.path.join(os.environ["FAKE_CLAUDE_LOG"], f"{start:.6f}-{uuid.uuid4().hex}.json"),
           "w", encoding="utf-8") as f:
     json.dump(log, f)
-sys.stdout.write(json.dumps(res))
+if "--input-format" in sys.argv:          # stream-json in and out, like the real program
+    msg = json.loads(prompt.splitlines()[0])["message"]
+    kinds = [b["type"] for b in msg["content"]]
+    text = " ".join(b["text"] for b in msg["content"] if b["type"] == "text")
+    res["result"] = "CLAUDE-SEES:" + ",".join(kinds) + ":" + text[-40:]
+    sys.stdout.write(json.dumps({"type": "system", "subtype": "init"}) + "\n" +
+                     json.dumps(res) + "\n")
+else:
+    sys.stdout.write(json.dumps(res))

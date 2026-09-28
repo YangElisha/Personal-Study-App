@@ -213,14 +213,36 @@ def test_offline_goes_to_qwen(ai_client, fake_claude, ollama):
     assert time.time() - t < 10
 
 
-def test_image_goes_to_qwen_even_online(ai_client, fake_claude, online, ollama):
+def test_image_goes_to_claude_when_online(ai_client, fake_claude, online, ollama):
     c = ai_client(claude="on", reach=online, claude_path=fake_claude.path)
+    d = ask(c, [{"type": "image", "source": {"type": "base64", "media_type": "image/png",
+                                              "data": PNG_1PX}},
+                {"type": "text", "text": "What is on this slide?"}]).json()
+    assert d["model_used"] == "claude" and ollama.requests == []
+    assert d["content"][0]["text"] == "CLAUDE-SEES:image,text:What is on this slide?"
+    call = fake_claude.calls()[0]
+    assert "--input-format" in call["argv"] and "stream-json" in call["argv"]
+    assert PNG_1PX in call["stdin"] and PNG_1PX not in " ".join(call["argv"])
+
+
+def test_image_goes_to_qwen_when_offline(ai_client, fake_claude, ollama):
+    c = ai_client(claude="on", claude_path=fake_claude.path)     # reach check fails = offline
     d = ask(c, [{"type": "image", "source": {"type": "base64", "media_type": "image/png",
                                               "data": PNG_1PX}},
                 {"type": "text", "text": "What is on this slide?"}]).json()
     assert d["model_used"] == "qwen" and fake_claude.calls() == []
     m = ollama.requests[-1]["messages"][-1]
     assert m["images"] == [PNG_1PX] and m["content"] == "What is on this slide?"
+
+
+def test_image_claude_failure_falls_back_to_qwen(ai_client, fake_claude, online, ollama):
+    fake_claude.mode("error")
+    c = ai_client(claude="on", reach=online, claude_path=fake_claude.path)
+    d = ask(c, [{"type": "image", "source": {"type": "base64", "media_type": "image/png",
+                                              "data": PNG_1PX}},
+                {"type": "text", "text": "What is on this slide?"}]).json()
+    assert d["model_used"] == "qwen" and d["fallback_from"] == "claude"
+    assert ollama.requests[-1]["messages"][-1]["images"] == [PNG_1PX]
 
 
 def test_claude_failure_retried_once_on_qwen(ai_client, fake_claude, online, ollama):

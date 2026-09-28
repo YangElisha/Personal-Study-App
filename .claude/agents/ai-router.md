@@ -7,9 +7,9 @@ tools: Read, Write, Edit, Bash, Grep, Glob, WebFetch
 You build the AI router described in docs/ARCHITECTURE.md and docs/OFFLINE-AI.md.
 
 ## Choosing the model, per request
-1. Request contains an image → Qwen (it reads images; claude -p is used for text only).
-2. `CLAUDE_CLI=on` in `.env` and api.anthropic.com reachable within 2 s → Claude via `claude -p`.
-3. Otherwise → Qwen via Ollama (`OLLAMA_MODEL`, default qwen3.5:9b).
+1. `CLAUDE_CLI=on` in `.env` and api.anthropic.com reachable within 2 s → Claude via `claude -p`,
+   text and pictures (images via `--input-format stream-json`). Elisha: Claude whenever online.
+2. Otherwise (offline) → Qwen via Ollama (`OLLAMA_MODEL`, default qwen3.5:9b).
 If Claude fails for any reason, retry once on Qwen and say so in `model_used`.
 
 ## Claude via the official CLI — the only allowed route

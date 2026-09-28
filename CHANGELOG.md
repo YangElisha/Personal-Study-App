@@ -5,6 +5,11 @@ Newest first. Every change gets an entry in the same commit.
 ## [Unreleased]
 
 ### Added
+- AI routing (Elisha, 2026-09-29): **Claude whenever online, Qwen only offline** — pictures
+  now go to Claude too when online (image blocks through the official `claude -p
+  --input-format stream-json`; real check: Module 2 slide 24's risk matrix transcribed
+  exactly in 5.8 s, `model_used:"claude"`). If Claude fails online (e.g. usage limit), the
+  request still falls back once to Qwen (her choice), and the badge says so.
 - Phase 5 close (2026-09-29): `OLLAMA_NUM_CTX=8192` (100% GPU on the 8 GB card; 16384 ran 12%
   on the CPU). `GET /api/ai/route` says which model would answer a text request and Qwen's
   context. Teacher chat: when Qwen will answer, the module text is sized to fit 8192 tokens

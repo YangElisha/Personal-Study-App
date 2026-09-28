@@ -155,6 +155,8 @@ Nothing is deleted from Claude.ai. The old cards stay as a second copy until Pha
 - [x] A prompt longer than 32,000 characters reaches `claude -p` whole (sent on stdin) — 2026-09-28, 40,000 chars, real `claude -p` echoed the start and end markers
 - [x] A prompt near the context limit reaches Qwen **whole**, or is refused loudly — 2026-09-28, 16,104 tokens whole (markers echoed); 16,512 and 18,671 refused with a 400 naming the count
 - [x] A picture slide (Module 2, slide 24) is read by Qwen — 2026-09-28, rendered as the app does (pdf.js, 1400 px JPEG), sent to the `CLAUDE_CLI=on` server: Qwen transcribed the whole risk matrix
+      *2026-09-29: routing changed (Elisha) — online, pictures now go to Claude (slide 24
+      transcribed exactly via `claude -p`); Qwen reads them offline, as checked above.*
 - [x] `ollama ps` shows 100% GPU during a long request — 2026-09-29: **5.5 GB, 100% GPU at
       num_ctx 8192** during a worst-case teacher-chat request (4,615-token prompt + reply).
       16384 had failed (12%/88% CPU/GPU on 2026-09-28, still after an orphaned runner was

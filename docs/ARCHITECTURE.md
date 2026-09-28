@@ -74,9 +74,11 @@ Plus `model_used: "claude" | "qwen"` for the badge (bottom-left of the app: "AI:
 Qwen and the reply carries `fallback_from:"claude"` and the reason).
 
 **Choosing the model:** Qwen is the default. If `CLAUDE_CLI=on` and a 2-second
-reachability check passes, text requests go to Claude instead. Decide per request, so
-losing Wi-Fi mid-session just switches over. Requests containing images always go to Qwen
-(it reads images natively; `claude -p` is used for text only).
+reachability check passes, every request goes to Claude instead — text and pictures
+(Elisha, 2026-09-29: Claude whenever online, Qwen only offline). Pictures reach `claude -p`
+as image blocks via `--input-format stream-json`. Decide per request, so losing Wi-Fi
+mid-session just switches over. If Claude fails online (e.g. usage limit), the request is
+retried once on Qwen and the badge says so.
 
 ### Calling Claude without an API key
 

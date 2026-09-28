@@ -1,11 +1,11 @@
 """The AI router behind POST /api/ai (Phase 5). See docs/ARCHITECTURE.md, docs/OFFLINE-AI.md.
 
-Per request:
-  1. any image block            -> Qwen (Ollama). claude -p is used for text only.
-  2. CLAUDE_CLI=on and api.anthropic.com reachable within 2 s -> Claude via `claude -p`.
-  3. otherwise                  -> Qwen.
-If Claude fails for any reason the request is retried once on Qwen; the reply then says
-model_used "qwen" with fallback_from "claude" and the reason.
+Per request (Elisha, 2026-09-29: Claude whenever online, Qwen only offline):
+  1. CLAUDE_CLI=on and api.anthropic.com reachable within 2 s -> Claude via `claude -p`,
+     text AND pictures (pictures go in as image blocks via --input-format stream-json).
+  2. otherwise (offline, or CLAUDE_CLI=off) -> Qwen.
+If Claude fails for any reason (e.g. usage limit) the request is retried once on Qwen; the
+reply then says model_used "qwen" with fallback_from "claude" and the reason.
 
 Claude is reached ONLY by running the official `claude` program: prompt on stdin, from an
 empty temporary folder, no tools, one turn, JSON output. Claude Code's login is never read
@@ -280,10 +280,12 @@ def call_ollama(cfg: AIConfig, msgs, system: str, max_tokens: int) -> dict:
 
 
 # ---- Claude via `claude -p` -------------------------------------------------------------
-def claude_command(cfg: AIConfig, system: str) -> list[str]:
+def claude_command(cfg: AIConfig, system: str, stream: bool = False) -> list[str]:
     exe = shutil.which(cfg.claude_cli_path) or cfg.claude_cli_path
-    cmd = [exe, "-p",                          # headless print mode; prompt comes on stdin
-           "--output-format", "json",          # one JSON result object
+    io = (["--input-format", "stream-json",    # a full message with image blocks on stdin
+           "--output-format", "stream-json", "--verbose"] if stream
+          else ["--output-format", "json"])    # one JSON result object
+    cmd = [exe, "-p", *io,                     # headless print mode; prompt comes on stdin
            "--max-turns", "1",                 # a single turn
            "--tools", "",                      # no tools at all
            "--no-session-persistence",         # nothing saved to resume
@@ -302,11 +304,29 @@ def child_env() -> dict:
     return env
 
 
-def call_claude(cfg: AIConfig, prompt: str, system: str) -> dict:
+def stream_input_for_claude(msgs) -> str:
+    """One stream-json user message for `claude -p --input-format stream-json`: the request's
+    image and text blocks, in order (earlier turns, if any, go first as labelled text)."""
+    blocks = []
+    for m in msgs[:-1]:
+        blocks.append({"type": "text", "text": ("User: " if m["role"] == "user" else
+                                                "Assistant: ") + _text_of(m["blocks"])})
+    for b in msgs[-1]["blocks"]:
+        if b.get("type") == "image":
+            s = b["source"]
+            blocks.append({"type": "image", "source": {"type": "base64",
+                           "media_type": s.get("media_type") or "image/jpeg", "data": s["data"]}})
+        elif b.get("type") == "text":
+            blocks.append({"type": "text", "text": b.get("text", "")})
+    return json.dumps({"type": "user", "message": {"role": "user", "content": blocks}}) + "\n"
+
+
+def call_claude(cfg: AIConfig, prompt: str, system: str, stream: bool = False) -> dict:
+    """prompt: plain text (stream=False) or one stream-json line (stream=True)."""
     workdir = tempfile.mkdtemp(prefix="drill-claude-")      # empty: no CLAUDE.md to load
     try:
         try:
-            p = subprocess.run(claude_command(cfg, system), input=prompt.encode("utf-8"),
+            p = subprocess.run(claude_command(cfg, system, stream), input=prompt.encode("utf-8"),
                                capture_output=True, cwd=workdir, env=child_env(),
                                timeout=cfg.claude_timeout,
                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
@@ -316,7 +336,13 @@ def call_claude(cfg: AIConfig, prompt: str, system: str) -> dict:
             raise ClaudeFailed(f"claude -p took longer than {cfg.claude_timeout:.0f}s") from None
         out = p.stdout.decode("utf-8", "replace").strip()
         try:
-            d = json.loads(out)
+            if stream:   # one JSON event per line; the answer is the "result" event
+                d = next((e for e in map(json.loads, filter(None, out.splitlines()))
+                          if isinstance(e, dict) and e.get("type") == "result"), None)
+                if d is None:
+                    raise ValueError("no result event")
+            else:
+                d = json.loads(out)
         except ValueError:
             err = p.stderr.decode("utf-8", "replace").strip()
             raise ClaudeFailed(f"claude -p exit {p.returncode}, no JSON: "
@@ -362,9 +388,12 @@ class Router:
         msgs, system, max_tokens = parse_request(body)
         _check_blocks(msgs)
         fallback = {}
-        if self.cfg.claude_cli and not has_image(msgs) and await self.claude_reachable():
+        if self.cfg.claude_cli and await self.claude_reachable():
             try:
                 async with self._claude_slots:
+                    if has_image(msgs):
+                        return await asyncio.to_thread(call_claude, self.cfg,
+                                                       stream_input_for_claude(msgs), system, True)
                     return await asyncio.to_thread(call_claude, self.cfg,
                                                    prompt_for_claude(msgs), system)
             except ClaudeFailed as e:
@@ -378,8 +407,6 @@ class Router:
                 why += f" Claude failed too: {fallback['fallback_reason']}"
             elif not self.cfg.claude_cli:
                 why += " Claude is switched off (CLAUDE_CLI=off)."
-            elif has_image(msgs):
-                why += " Pictures can only be read by Qwen."
             else:
                 why += " Claude is not reachable (offline?)."
             raise AIError(503, "ai_not_configured", why) from None
