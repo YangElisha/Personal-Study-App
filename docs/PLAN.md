@@ -126,10 +126,14 @@ Nothing is deleted from Claude.ai. The old cards stay as a second copy until Pha
 
 **Done when:**
 - [ ] With Wi-Fi **off**: the app opens, every imported deck is there, a study session
-      saves progress, and reopening the browser keeps it
+      saves progress, and reopening the browser keeps it — *2026-09-28: passed in headless
+      Edge with every host except localhost blocked (scratch copy of the DB): all requests
+      local, 0 failed; 18/18 decks; progress saved and kept after a browser restart.
+      **Open:** Elisha to repeat once by hand with real Wi-Fi off.*
 - [ ] Building a deck from `modules/MODULE3_S-ITCS318.pdf` with Wi-Fi off gives the same
-      23 terms (this path needs no AI)
-- [ ] Phase 2 tests still pass against `app/index.html`
+      23 terms (this path needs no AI) — ***Blocked:** the PDF is not in `DATA_DIR\modules\`
+      yet. pdf.js itself works offline (text extracted from a test PDF in a real worker).*
+- [x] Phase 2 tests still pass against `app/index.html` — *3/3 fixtures, exit 0*
 
 ---
 

@@ -5,6 +5,14 @@ Newest first. Every change gets an entry in the same commit.
 ## [Unreleased]
 
 ### Added
+- Phase 4: `app/index.html` = the legacy app with only the two seams swapped plus vendored
+  assets (diff vs legacy: 32 insertions, 46 deletions). `store.get/set/del` → `/api/store`
+  (server is the only store, "Saved on this PC"); `claudeRawCall` → `/api/ai`, same body, no
+  API key, no `navigator.onLine` check, `ai_not_configured` fails at once. pdf.js 3.11.174 in
+  `app/vendor/pdfjs/` (sha512 = cdnjs SRI), fonts in `app/vendor/fonts/` (OFL). No `http(s)://`
+  left in `app/index.html`. Checked in headless Edge with every host but localhost blocked, on
+  a scratch copy of the database: all requests local, 0 failed; 18/18 decks match; a study
+  session saved and survived a browser restart; pdf.js ran in a real worker; reader tests 3/3.
 - `tools/verify_import.py` (stdlib only, read-only: `drill.db` opened `mode=ro`, files `rb`):
   independent of `server/importer.py`. Per deck, expected (backup files, merged by id) vs found
   (drill.db) for concepts, questions, flashcards, study-guide entries, problem courses/problems,
@@ -112,6 +120,11 @@ Newest first. Every change gets an entry in the same commit.
   fixtures and golden files for IA Modules 2 and 3.
 
 ### Changed
+- Server (Phase 4 follow-up, clean browser console): `GET /api/store/{key}` for a missing key
+  answers **204 No Content** instead of 404 (a stored JSON `null` is still 200 `null`;
+  DELETE of a missing key is still 404); `GET /favicon.ico` answers 204 unless
+  `app/favicon.ico` exists; `.woff2` is served as `font/woff2`; every `/api/*` response has
+  `Cache-Control: no-store`. docs/API.md and the server tests updated.
 - No API key: Qwen3.5 9B via Ollama by default, Claude via the official `claude -p` when online.
 - Personal data moved out of the repo to `DATA_DIR` (OneDrive\DrillData) with automatic snapshots.
 - Legacy app updated: backup v2 includes settings and unfinished Test papers; restore
@@ -153,6 +166,12 @@ Newest first. Every change gets an entry in the same commit.
   - The same-named Module 1/2 decks stay separate and are marked "rename later".
 
 ### Found, not fixed
+- Legacy boot writes an empty library/default prefs if reading them fails but the next save
+  succeeds (recoverable from `kv_history`). Failed saves are silent.
+- The unused "Anthropic API key" card is still shown in Manage; offline/AI help texts still talk
+  about "this browser" and "your connection".
+- Deleting a key that was never stored (e.g. `prog:` of a never-studied deck) logs a 404 line
+  in the browser console; harmless.
 - The two fixtures are saved in different shapes: `module2-text.json` is
   `{page: {items, imgs}}`, `module3-text.json` is `{page: [items]}` with no picture
   count. The test accepts both and takes a missing count as 0, so for Module 3 it cannot
