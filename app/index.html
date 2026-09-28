@@ -3314,8 +3314,23 @@ async function slidesFromUpload(u, say){
       try{
         const OPS = (window.pdfjsLib && window.pdfjsLib.OPS) || {};
         const ops = await pg.getOperatorList();
-        imgs = ops.fnArray.filter(f => f === OPS.paintImageXObject || f === OPS.paintInlineImageXObject ||
-                                       f === OPS.paintJpegXObject).length;
+        // a picture covering (nearly) the whole page is a slide background (Canva), not a
+        // picture: follow the drawing transform and skip images of >= 90% of the page's area
+        const v = pg.view || [0,0,0,0], pageArea = Math.abs((v[2]-v[0])*(v[3]-v[1]));
+        const mul = (A, B) => [A[0]*B[0]+A[2]*B[1], A[1]*B[0]+A[3]*B[1], A[0]*B[2]+A[2]*B[3],
+                               A[1]*B[2]+A[3]*B[3], A[0]*B[4]+A[2]*B[5]+A[4], A[1]*B[4]+A[3]*B[5]+A[5]];
+        let m = [1,0,0,1,0,0]; const stack = [];
+        ops.fnArray.forEach((f, i) => {
+          const a = ops.argsArray ? ops.argsArray[i] : null;
+          if(f === OPS.save || f === OPS.paintFormXObjectBegin) stack.push(m);
+          if(f === OPS.restore || f === OPS.paintFormXObjectEnd) m = stack.pop() || m;
+          if(f === OPS.transform && a) m = mul(m, a);
+          if(f === OPS.paintFormXObjectBegin && a && a[0]) m = mul(m, a[0]);
+          if(f === OPS.paintImageXObject || f === OPS.paintInlineImageXObject || f === OPS.paintJpegXObject){
+            const background = pageArea > 0 && Math.abs(m[0]*m[3] - m[1]*m[2]) >= 0.9 * pageArea;
+            if(!background) imgs++;
+          }
+        });
       }catch(e){}
       if(lines.map(l => l.text).join(" ").length < 12) textless.push(n);
       else pages.push({num:n, lines, imgs});

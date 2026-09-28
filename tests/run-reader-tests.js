@@ -3,8 +3,11 @@
 /*
  * Slide-reader regression test.
  *
- *   node tests/run-reader-tests.js                       (reads legacy/drill-study-app.html)
- *   node tests/run-reader-tests.js --html app/index.html  (Phase 4 and later)
+ *   node tests/run-reader-tests.js                                  (reads app/index.html)
+ *   node tests/run-reader-tests.js --html legacy/drill-study-app.html  (any other HTML file)
+ *
+ * The default is the app as it ships (app/index.html). legacy/ is the frozen reference; it
+ * still counts full-slide background images as pictures, so it fails the Module 3 fixture.
  *
  * The reader is read out of the HTML file at runtime (see lib/extract-reader.js) and run on
  * the saved pdf.js text layers in tests/fixtures/, in the app's own order:
@@ -28,7 +31,7 @@ const crypto = require("crypto");
 const {extractReader} = require("./lib/extract-reader");
 
 const ROOT = path.resolve(__dirname, "..");
-const DEFAULT_HTML = path.join(ROOT, "legacy", "drill-study-app.html");
+const DEFAULT_HTML = path.join(ROOT, "app", "index.html");
 const MODULES = [
   {label: "Module 2", fixture: "module2-text.json", golden: "module2.expected.json"},
   {label: "Module 3", fixture: "module3-text.json", golden: "module3.expected.json"},
@@ -36,8 +39,9 @@ const MODULES = [
 ];
 const TERM_FIELDS = ["name", "topic", "items", "steps", "pages"];
 
-// the pdf.js operator codes slidesFromUpload counts as pictures (values as in pdf.js 3.x)
-const OPS = {paintJpegXObject: 82, paintImageXObject: 85, paintInlineImageXObject: 86};
+// the pdf.js operator codes slidesFromUpload reads (values as in pdf.js 3.x)
+const OPS = {save: 10, restore: 11, transform: 12, paintFormXObjectBegin: 74, paintFormXObjectEnd: 75,
+             paintJpegXObject: 82, paintImageXObject: 85, paintInlineImageXObject: 86};
 
 function parseArgs(argv){
   let html = DEFAULT_HTML;
@@ -49,13 +53,19 @@ function parseArgs(argv){
   return {html};
 }
 
-/* A saved page comes in one of two shapes:
-     {items:[{str,transform}], imgs}   (module2-text.json — with the picture count)
-     [{str,transform}, ...]            (module3-text.json — text items only; no picture count)
-   Without a picture count, imgs is taken as 0. */
+/* A saved page comes in one of these shapes:
+     {items:[{str,transform}], imgs, view, images}   (modules 2 and 3, captured from the PDFs:
+        imgs = number of image paint operations, view = page box [x0,y0,x1,y1],
+        images = the drawing transform [a,b,c,d,e,f] in force at each image paint)
+     {items:[{str,transform}], imgs}                 (synthetic: pictures without size)
+     [{str,transform}, ...]                          (text only; imgs taken as 0) */
 function pageOf(raw, n){
   if(Array.isArray(raw)) return {items: raw, imgs: 0};
-  if(raw && Array.isArray(raw.items)) return {items: raw.items, imgs: raw.imgs || 0};
+  if(raw && Array.isArray(raw.items)){
+    if(raw.images && raw.images.length !== raw.imgs)
+      throw new Error("page " + n + " of the fixture: imgs is " + raw.imgs + " but " + raw.images.length + " image transforms are saved");
+    return {items: raw.items, imgs: raw.imgs || 0, view: raw.view, images: raw.images};
+  }
   throw new Error("page " + n + " of the fixture is neither {items, imgs} nor an items array");
 }
 
@@ -72,7 +82,19 @@ function fakeUpload(name, fixture){
         const pg = pageOf(fixture[String(n)], n);
         return {
           getTextContent: async () => ({items: pg.items}),
-          getOperatorList: async () => ({fnArray: new Array(pg.imgs || 0).fill(OPS.paintImageXObject)}),
+          view: pg.view,
+          getOperatorList: async () => {
+            // each saved image is replayed as save, transform, paint, restore, so the app's
+            // own transform tracking decides whether it covers the whole page
+            if(!pg.images){
+              const n = pg.imgs || 0;
+              return {fnArray: new Array(n).fill(OPS.paintImageXObject), argsArray: new Array(n).fill(null)};
+            }
+            const fnArray = [], argsArray = [];
+            pg.images.forEach(m => { fnArray.push(OPS.save, OPS.transform, OPS.paintImageXObject, OPS.restore);
+                                     argsArray.push(null, m, null, null); });
+            return {fnArray, argsArray};
+          },
         };
       },
     },

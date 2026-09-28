@@ -119,7 +119,27 @@ Newest first. Every change gets an entry in the same commit.
   six subagents in .claude/agents/, legacy app frozen in legacy/, reader regression
   fixtures and golden files for IA Modules 2 and 3.
 
+### Fixed
+- Reader (app/index.html `slidesFromUpload`): a full-slide background image no longer counts
+  as a picture. Why: re-capturing Module 3 from the real PDF showed every page has exactly one
+  image, a Canva background (118% of the page area), so the title-only dividers p6 "Purpose of
+  Security Control" and p12 "Types of Security Controls" were classed as picture slides and
+  sent to the AI, and terms 2–10 got the wrong topic. The picture count now follows the
+  drawing transform in the operator list and skips images covering >= 90% of the page
+  (`pg.view`). Module 2's real pictures cover 12–28%, so slide 24 is still a picture slide.
+  This was the "Found, not fixed" item on the Module 3 fixture (Elisha's advance decision,
+  2026-09-28). Golden files unchanged.
+- Fixtures `module2-text.json` and `module3-text.json` re-captured from the module PDFs
+  (Elisha's approval) with pdf.js 3.11.174: text items byte-identical to before; each page is
+  now `{items, imgs, view, images}` (imgs = image paint operations, view = page box,
+  images = the transform at each image paint). The test replays those transforms so the
+  background rule is exercised. Module 3 is no longer a bare items array.
+
 ### Changed
+- Reader test: default target is now `app/index.html` (`--html <file>` for any other).
+  `legacy/drill-study-app.html` stays the frozen reference; it still counts Canva
+  backgrounds as pictures and so fails the Module 3 fixture (imageSlides [6,12], topics) —
+  expected, and proof the test catches that bug.
 - Server (Phase 4 follow-up, clean browser console): `GET /api/store/{key}` for a missing key
   answers **204 No Content** instead of 404 (a stored JSON `null` is still 200 `null`;
   DELETE of a missing key is still 404); `GET /favicon.ico` answers 204 unless
@@ -176,11 +196,3 @@ Newest first. Every change gets an entry in the same commit.
   about "this browser" and "your connection".
 - Deleting a key that was never stored (e.g. `prog:` of a never-studied deck) logs a 404 line
   in the browser console; harmless.
-- The two fixtures are saved in different shapes: `module2-text.json` is
-  `{page: {items, imgs}}`, `module3-text.json` is `{page: [items]}` with no picture
-  count. The test accepts both and takes a missing count as 0, so for Module 3 it cannot
-  tell a title-over-a-picture slide from a divider. Fixtures left unchanged (Elisha,
-  2026-09-28). **When Module 3's fixture is re-captured from the PDF:** check whether its
-  title-only divider slides start being classed as picture slides because of Canva
-  full-slide background images. If they do, the reader needs a fix to tell full-slide
-  backgrounds from real pictures.

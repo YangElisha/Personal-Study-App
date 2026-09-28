@@ -1,12 +1,15 @@
 # Reader test fixtures
 
-Saved pdf.js text layers (`getTextContent` items, plus the page's picture count), one entry
-per page. Each has a matching golden file in `tests/golden/`.
+Saved pdf.js text layers (`getTextContent` items, plus the page's pictures), one entry
+per page. Modules 2 and 3 (re-captured 2026-09-28 with pdf.js 3.11.174, text unchanged) are
+`{items, imgs, view, images}`: `imgs` = image paint operations, `view` = page box,
+`images` = the transform [a,b,c,d,e,f] at each image paint, so the test can tell a
+full-slide background (Module 3's Canva pages) from a real picture. Each has a matching golden file in `tests/golden/`.
 
 | Fixture | What it is |
 |---|---|
 | `module2-text.json` | Real text layer of IA Module 2 |
-| `module3-text.json` | Real text layer of IA Module 3 (no picture counts saved) |
+| `module3-text.json` | Real text layer of IA Module 3 (every page has one full-slide background image) |
 | `synthetic-activity-text.json` | **SYNTHETIC — hand-built, not a real module.** Invented text only (no course content, no personal data). |
 
 ## synthetic-activity-text.json
