@@ -130,9 +130,11 @@ Nothing is deleted from Claude.ai. The old cards stay as a second copy until Pha
       Edge with every host except localhost blocked (scratch copy of the DB): all requests
       local, 0 failed; 18/18 decks; progress saved and kept after a browser restart.
       **Open:** Elisha to repeat once by hand with real Wi-Fi off.*
-- [ ] Building a deck from `modules/MODULE3_S-ITCS318.pdf` with Wi-Fi off gives the same
-      23 terms (this path needs no AI) — ***Blocked:** the PDF is not in `DATA_DIR\modules\`
-      yet. pdf.js itself works offline (text extracted from a test PDF in a real worker).*
+- [x] Building a deck from `modules/MODULE3_S-ITCS318.pdf` with Wi-Fi off gives the same
+      23 terms (this path needs no AI) — *2026-09-28, headless Edge, every host but localhost
+      blocked, scratch DB: 23/23 terms, names/topics/pages/items identical to the golden file,
+      0 self-check flags, 0 AI requests. First run failed (Canva backgrounds made dividers
+      p6/p12 "picture" slides); fixed in e71bf34.*
 - [x] Phase 2 tests still pass against `app/index.html` — *3/3 fixtures, exit 0*
 
 ---
