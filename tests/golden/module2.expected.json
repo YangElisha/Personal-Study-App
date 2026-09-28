@@ -1,0 +1,263 @@
+{
+  "source": "MODULE2_S-ITCS318.pdf",
+  "note": "Text-layer reading only. Picture slides are read by AI and are not part of this golden file.",
+  "pages": 37,
+  "contentSlides": 30,
+  "imageSlides": [
+    24
+  ],
+  "skippedSlides": [
+    2,
+    34,
+    35,
+    36,
+    37
+  ],
+  "terms": [
+    {
+      "name": "Cyber Threat",
+      "topic": "Cyber Threat",
+      "pages": [
+        3
+      ]
+    },
+    {
+      "name": "Malware",
+      "topic": "Malware",
+      "items": [
+        "Worms",
+        "Ransomware",
+        "Trojan"
+      ],
+      "pages": [
+        4
+      ]
+    },
+    {
+      "name": "Worms",
+      "topic": "Malware",
+      "pages": [
+        5
+      ]
+    },
+    {
+      "name": "Ransomware",
+      "topic": "Malware",
+      "pages": [
+        6
+      ]
+    },
+    {
+      "name": "Trojan",
+      "topic": "Malware",
+      "pages": [
+        7
+      ]
+    },
+    {
+      "name": "Phishing",
+      "topic": "Cyber Threat",
+      "pages": [
+        8
+      ]
+    },
+    {
+      "name": "Denial of Service (DOS/DDOS)",
+      "topic": "Cyber Threat",
+      "pages": [
+        9
+      ]
+    },
+    {
+      "name": "Insider Threats",
+      "topic": "Cyber Threat",
+      "pages": [
+        10
+      ]
+    },
+    {
+      "name": "Advanced Persistent Threats",
+      "topic": "Cyber Threat",
+      "pages": [
+        11
+      ]
+    },
+    {
+      "name": "Vulnerabilities",
+      "topic": "Vulnerabilities",
+      "items": [
+        "Weak Authentication",
+        "Poor Access Control",
+        "Outdated or Unpatched Software",
+        "Poor Input Validation",
+        "Security Misconfiguration",
+        "Lack of Encryption",
+        "Excessive User Permissions",
+        "Lack of Backups"
+      ],
+      "pages": [
+        12
+      ]
+    },
+    {
+      "name": "Weak Authentication",
+      "topic": "Vulnerabilities",
+      "pages": [
+        13
+      ]
+    },
+    {
+      "name": "Poor Access Control",
+      "topic": "Vulnerabilities",
+      "pages": [
+        14
+      ]
+    },
+    {
+      "name": "Outdated or Unpatched Software",
+      "topic": "Vulnerabilities",
+      "pages": [
+        15
+      ]
+    },
+    {
+      "name": "Poor Input Validation",
+      "topic": "Vulnerabilities",
+      "pages": [
+        16
+      ]
+    },
+    {
+      "name": "Security Misconfiguration",
+      "topic": "Vulnerabilities",
+      "pages": [
+        17
+      ]
+    },
+    {
+      "name": "Lack of Encryption",
+      "topic": "Vulnerabilities",
+      "pages": [
+        18
+      ]
+    },
+    {
+      "name": "Excessive User Permissions",
+      "topic": "Vulnerabilities",
+      "pages": [
+        19
+      ]
+    },
+    {
+      "name": "Lack of Backups",
+      "topic": "Vulnerabilities",
+      "pages": [
+        20
+      ]
+    },
+    {
+      "name": "Security Risk",
+      "topic": "Security Risk",
+      "pages": [
+        21
+      ]
+    },
+    {
+      "name": "Likelihood",
+      "topic": "Likelihood and Impact",
+      "items": [
+        "Low — The event is unlikely to happen.",
+        "Medium — The event is possible and could happen under certain",
+        "High — The event is relatively likely to happen."
+      ],
+      "pages": [
+        22
+      ]
+    },
+    {
+      "name": "Impact",
+      "topic": "Likelihood and Impact",
+      "items": [
+        "Low — The incident causes minor inconvenience or limited damage.",
+        "Medium — The incident causes noticeable disruption or moderate",
+        "High — The incident causes serious data exposure, major disruption,"
+      ],
+      "pages": [
+        23
+      ]
+    },
+    {
+      "name": "Basic Risk Assessment Process",
+      "topic": "Basic Risk Assessment Process",
+      "steps": [
+        "Understand the System",
+        "Identify Assets",
+        "Identify Threats",
+        "Identify Vulnerabilities",
+        "Determine Likelihood",
+        "Determine Impact",
+        "Determine Risk Level",
+        "Prioritize Risks"
+      ],
+      "pages": [
+        25
+      ]
+    },
+    {
+      "name": "Understand the System",
+      "topic": "Basic Risk Assessment Process",
+      "pages": [
+        26
+      ]
+    },
+    {
+      "name": "Identify Assets",
+      "topic": "Basic Risk Assessment Process",
+      "pages": [
+        27
+      ]
+    },
+    {
+      "name": "Identify Threats",
+      "topic": "Basic Risk Assessment Process",
+      "pages": [
+        28
+      ]
+    },
+    {
+      "name": "Identify Vulnerabilities",
+      "topic": "Basic Risk Assessment Process",
+      "pages": [
+        29
+      ]
+    },
+    {
+      "name": "Determine Likelihood",
+      "topic": "Basic Risk Assessment Process",
+      "pages": [
+        30
+      ]
+    },
+    {
+      "name": "Determine Impact",
+      "topic": "Basic Risk Assessment Process",
+      "pages": [
+        31
+      ]
+    },
+    {
+      "name": "Determine Risk Level",
+      "topic": "Basic Risk Assessment Process",
+      "pages": [
+        32
+      ]
+    },
+    {
+      "name": "Prioritize Risks",
+      "topic": "Basic Risk Assessment Process",
+      "pages": [
+        33
+      ]
+    }
+  ]
+}

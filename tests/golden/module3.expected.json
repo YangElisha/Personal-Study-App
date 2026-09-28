@@ -1,0 +1,205 @@
+{
+  "source": "MODULE3_S-ITCS318.pdf",
+  "note": "Text-layer reading only. Picture slides are read by AI and are not part of this golden file.",
+  "pages": 33,
+  "contentSlides": 24,
+  "imageSlides": [],
+  "skippedSlides": [
+    2,
+    3,
+    30,
+    31,
+    32,
+    33
+  ],
+  "terms": [
+    {
+      "name": "Security Control",
+      "topic": "Security Control",
+      "pages": [
+        4,
+        5
+      ]
+    },
+    {
+      "name": "Preventive Controls",
+      "topic": "Purpose of Security Control",
+      "pages": [
+        7
+      ]
+    },
+    {
+      "name": "Detective Controls",
+      "topic": "Purpose of Security Control",
+      "pages": [
+        8
+      ]
+    },
+    {
+      "name": "Corrective Controls",
+      "topic": "Purpose of Security Control",
+      "pages": [
+        9
+      ]
+    },
+    {
+      "name": "Deterrent Controls",
+      "topic": "Purpose of Security Control",
+      "pages": [
+        10
+      ]
+    },
+    {
+      "name": "Compensating Controls",
+      "topic": "Purpose of Security Control",
+      "pages": [
+        11
+      ]
+    },
+    {
+      "name": "Administrative Controls",
+      "topic": "Types of Security Controls",
+      "pages": [
+        13
+      ]
+    },
+    {
+      "name": "Technical Controls",
+      "topic": "Types of Security Controls",
+      "pages": [
+        14
+      ]
+    },
+    {
+      "name": "Physical Controls",
+      "topic": "Types of Security Controls",
+      "pages": [
+        15
+      ]
+    },
+    {
+      "name": "Defense in Depth",
+      "topic": "Types of Security Controls",
+      "pages": [
+        16
+      ]
+    },
+    {
+      "name": "Identity and Access Management (IAM)",
+      "topic": "Identity and Access Management",
+      "items": [
+        "Identity Management",
+        "Access Management"
+      ],
+      "pages": [
+        17
+      ]
+    },
+    {
+      "name": "Identity Management",
+      "topic": "Identity Management",
+      "items": [
+        "Account Provisioning",
+        "Account Modification",
+        "Access Review"
+      ],
+      "pages": [
+        18
+      ]
+    },
+    {
+      "name": "Account Provisioning",
+      "topic": "Identity Management",
+      "pages": [
+        19
+      ]
+    },
+    {
+      "name": "Account Modification",
+      "topic": "Identity Management",
+      "pages": [
+        20
+      ]
+    },
+    {
+      "name": "Access Review",
+      "topic": "Identity Management",
+      "pages": [
+        21
+      ]
+    },
+    {
+      "name": "Access Management",
+      "topic": "Access Management",
+      "items": [
+        "Access Control",
+        "Role-Based Access Control (RBAC)",
+        "Least Privelege",
+        "Priviledged Access",
+        "Credential Management",
+        "Session Management"
+      ],
+      "pages": [
+        22
+      ]
+    },
+    {
+      "name": "Access Control",
+      "topic": "Access Management",
+      "pages": [
+        23
+      ]
+    },
+    {
+      "name": "Role-Based Access Control (RBAC)",
+      "topic": "Access Management",
+      "pages": [
+        24
+      ]
+    },
+    {
+      "name": "Least Privelege",
+      "topic": "Access Management",
+      "pages": [
+        25
+      ]
+    },
+    {
+      "name": "Priviledged Access",
+      "topic": "Access Management",
+      "pages": [
+        26
+      ]
+    },
+    {
+      "name": "Credential Management",
+      "topic": "Access Management",
+      "pages": [
+        27
+      ]
+    },
+    {
+      "name": "Session Management",
+      "topic": "Access Management",
+      "pages": [
+        28
+      ]
+    },
+    {
+      "name": "Identity and Access Management — Key Questions",
+      "topic": "Identity and Access Management",
+      "items": [
+        "Who is the user?",
+        "How can the system verify the user's identity?",
+        "What resources can the user access?",
+        "What actions can the user perform?",
+        "When should access be removed?",
+        "How can user activities be monitored?",
+        "What happens when a user's role changes?"
+      ],
+      "pages": [
+        29
+      ]
+    }
+  ]
+}

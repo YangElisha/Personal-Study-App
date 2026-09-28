@@ -1,0 +1,21 @@
+# Secrets and local settings
+.env
+
+# Personal data lives in DATA_DIR (OneDrive), never here. These lines are a safety net
+# in case anything is ever saved inside the project by mistake.
+*.pdf
+*.db
+*.db-*
+data/
+modules/
+backups/
+import/
+
+# Python / Node
+__pycache__/
+.venv/
+node_modules/
+
+# OS / editors
+.DS_Store
+Thumbs.db
