@@ -35,14 +35,23 @@ shows two "IA Module 3" decks with different counts.
 ## How duplicates are resolved
 
 The same deck in two cards is matched by its id. The **fuller copy** is the base, every
-concept only the other copy has is added, and the **further-along progress** is kept — the
-same rule Drill's own restore now uses (a restore can never shrink a deck).
+concept only the other copy has is added, and the **further-along progress** is kept.
 
 **"Further-along" for one concept's progress record** — compare the two records in order:
 
 1. **Higher box** wins.
 2. If the boxes are tied: **more right answers** wins.
-3. If still tied: the **most recently seen** wins.
+3. If still tied: the **later next-review date** (`due`) wins.
+
+**How this differs from Drill's own restore.** Drill's restore (`mergeDeck` and
+`applyBackup` in the legacy app) merges deck *content* the same way: the copy with more
+concepts is the base, concepts only the other copy has (matched by id or name) and
+flashcards only the other copy has (matched by id) are added, and coverage, source text
+and the other extras are filled in only where missing, so a restore can never shrink a
+deck. It does **not** compare progress concept by concept. It keeps one side's progress
+record for the whole deck: the backup's, if its total of questions answered (`asked`) is
+at least as high as the app's, otherwise the app's. The import here chooses per concept,
+using the rule above.
 
 Two different decks with the same name are both kept and flagged in INVENTORY.md for you
 to decide.

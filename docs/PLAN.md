@@ -64,9 +64,18 @@ Nothing is deleted from Claude.ai. The old cards stay as a second copy until Pha
    with `tests/golden/`.
 
 **Done when:**
-- [ ] `npm test` (or the chosen command) passes: Module 2 → 30 terms, Module 3 → 23 terms,
-      names, topics, steps and items identical to the golden files
-- [ ] Deliberately breaking one line of the reader makes the test fail (proves the net works)
+- [x] `npm test` (or the chosen command) passes: Module 2 → 30 terms, Module 3 → 23 terms,
+      names, topics, steps and items identical to the golden files — *2026-09-28: both
+      modules PASS, pages identical too, self-check flags 0 on both; exit code 0. The terms
+      compared are those left after the app's activity-slide step (`slidesFromUpload` →
+      `setAsideActivities` → `auditSlides`, as `resolveSlides` runs them); 0 slides set
+      aside on both modules.*
+- [x] Deliberately breaking one line of the reader makes the test fail (proves the net works)
+      — *2026-09-28: in scratch copies of the HTML, (a) `toLines` changed to drop text
+      fragments of 3 characters or fewer, and (b) `setAsideActivities` changed to set aside
+      every content slide; each makes both modules FAIL, exit code 1. Legacy file untouched.
+      Not covered: neither fixture has an activity slide, so a break that stops activity
+      slides being set aside still passes.*
 
 ---
 

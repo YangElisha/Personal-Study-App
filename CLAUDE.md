@@ -77,5 +77,5 @@ before it is committed.
 ## Commands (fill in as they are created)
 
 - Start the app: `TBD in Phase 3`
-- Run reader tests: `TBD in Phase 2`
+- Run reader tests: `npm test` (legacy app) · `npm test -- --html app/index.html` (ported app)
 - Verify an import: `TBD in Phase 3`

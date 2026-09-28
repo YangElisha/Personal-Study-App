@@ -1,0 +1,13 @@
+{
+  "name": "drill-local",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Drill study app, running offline on this PC",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node tests/run-reader-tests.js"
+  }
+}
