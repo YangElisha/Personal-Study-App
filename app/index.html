@@ -6793,7 +6793,7 @@ function openBackup(mode){
     ? "Paste a backup below, or choose the file you saved earlier."
     : "Everything you have made, as text. Copy it somewhere safe — a note, an email to yourself, a file.";
   $("bk-hint").textContent = restore
-    ? "Nothing here is deleted. Decks you already have keep whichever progress is further along."
+    ? "Decks and concepts are only added, never removed. For a deck you already have, its progress is taken as a whole from whichever copy has answered more questions (the backup's if equal)."
     : "“Save as a file” works when this app is running on your own PC. Inside Claude, use Copy instead — downloads are blocked here.";
   $("bk-copy").classList.toggle("hide", restore);
   $("bk-download").classList.toggle("hide", restore);
@@ -6872,7 +6872,8 @@ function downloadBackup(){
 }
 /* Restoring MERGES rather than replaces, so you can move a backup between the
    copy running in Claude and the copy on your PC without losing whatever was
-   only in one of them. Progress is kept from whichever side is further along. */
+   only in one of them. Progress is taken per deck from whichever side has answered more
+   questions (PROG.asked; the backup wins a tie). */
 function importAll(){ $("bk-text").value = ""; $("bk-text").placeholder = "Paste your backup text here"; openBackup("restore"); }
 
 async function applyBackup(raw){
@@ -6885,7 +6886,7 @@ async function applyBackup(raw){
     const incoming = data.library.decks.length;
     closeBackup();
     if(!await confirmDlg("Restore " + incoming + " deck" + (incoming === 1 ? "" : "s") + "?",
-        "They will be merged with what is already here. Nothing you already have is deleted, and where both sides have the same deck, the further-along progress is kept.", "Merge")) return;
+        "They will be merged with what is already here. Decks and concepts are only added, never removed. Where both sides have the same deck, its progress is taken as a whole from whichever side has answered more questions (the backup's if equal).", "Merge")) return;
 
     let added = 0, updated = 0, skipped = 0;
     const failed = [];

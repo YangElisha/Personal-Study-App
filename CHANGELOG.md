@@ -165,6 +165,10 @@ Newest first. Every change gets an entry in the same commit.
   - NLP Modules 2 and 3 are to be rebuilt from their PDFs after Phase 4.
   - The same-named Module 1/2 decks stay separate and are marked "rename later".
 
+- app/index.html: restore dialog, backup note and comment now say what restore really does:
+  deck content is only added to, and progress is taken per deck from whichever side has
+  answered more questions (Elisha, 2026-09-28; outside the two seams by her decision).
+
 ### Found, not fixed
 - Legacy boot writes an empty library/default prefs if reading them fails but the next save
   succeeds (recoverable from `kv_history`). Failed saves are silent.
