@@ -15,6 +15,8 @@ Newest first. Every change gets an entry in the same commit.
 - Legacy app updated: backup v2 includes settings and unfinished Test papers; restore
   merges deck content and can never shrink a deck.
 - Added docs/SETUP-GUIDE.md (step by step).
+- Added .gitattributes (`* -text`): Git no longer converts line endings, so the frozen
+  legacy app and test fixtures stay byte-for-byte identical on every checkout.
 
 ### Found, not fixed
 - (nothing yet)
