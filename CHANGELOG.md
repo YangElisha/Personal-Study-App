@@ -5,6 +5,28 @@ Newest first. Every change gets an entry in the same commit.
 ## [Unreleased]
 
 ### Added
+- Phase 5: the AI router, `server/ai.py`, behind `POST /api/ai` (the 503 stub is gone; 503
+  `ai_not_configured` now means "no model available at all"). Images → Qwen; text →
+  `claude -p` when `CLAUDE_CLI=on` and api.anthropic.com:443 answers within 2 s; otherwise
+  Qwen; a failed Claude call is retried once on Qwen (`fallback_from:"claude"`). Always
+  Anthropic's shape plus `model_used`; `done_reason:"length"` / Claude `max_tokens` →
+  `stop_reason:"max_tokens"`. `claude -p` (flags checked on 2.1.258): prompt on stdin, empty
+  temp folder, `--tools ""`, `--max-turns 1`, JSON, no session saved, API-key variables
+  removed from its environment, at most 2 at once. Ollama: `num_ctx` from `.env`,
+  `think:false`, `truncate:false` + `shift:false` so an oversize prompt is refused with its
+  exact token count (400 `invalid_request_error`), never cut. Contract in `docs/API.md`.
+  New optional settings: `OLLAMA_TIMEOUT`, `CLAUDE_MODEL`, `CLAUDE_TIMEOUT`,
+  `CLAUDE_REACH_HOST`; the AI settings can be overridden by process environment variables.
+- `app/index.html`: model badge (bottom-left, "AI: Claude" / "AI: Qwen" / "AI: Qwen (Claude
+  failed)"): one call in `claudeRawCall`'s success path plus a `modelBadge` function (16
+  added lines, nothing else changed). Reader tests 3/3.
+- Tests: `tests/server/test_ai.py` (21, fake Ollama + fake `claude` program
+  `tests/server/fake_claude.py`); every server test now points the router at a closed port
+  with `CLAUDE_CLI=off` (conftest), so no test reaches the real models.
+- Real checks 2026-09-28 (scratch DATA_DIR): Qwen and `claude -p` answer through the server;
+  40,000-character prompt reached `claude -p` whole; Qwen near-limit prompt whole, over-limit
+  refused; Module 2 slide 24 transcribed by Qwen; `ollama ps` **not** 100% GPU at 16384
+  (12%/88%), 100% at 8192 — see OFFLINE-AI.md.
 - Phase 4: `app/index.html` = the legacy app with only the two seams swapped plus vendored
   assets (diff vs legacy: 32 insertions, 46 deletions). `store.get/set/del` → `/api/store`
   (server is the only store, "Saved on this PC"); `claudeRawCall` → `/api/ai`, same body, no

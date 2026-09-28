@@ -79,5 +79,6 @@ def test_real_http_missing_vs_null_and_ai(live):
     assert call("GET", f"{live}/favicon.ico") == (204, "")
     call("PUT", f"{live}/api/store/{enc('deck:x')}", b"null")
     assert call("GET", f"{live}/api/store/{enc('deck:x')}") == (200, "null")
-    st, txt = call("POST", f"{live}/api/ai", b"{}")
+    st, txt = call("POST", f"{live}/api/ai",
+                   b'{"max_tokens":16,"messages":[{"role":"user","content":"hi"}]}')
     assert st == 503 and json.loads(txt)["error"]["type"] == "ai_not_configured"

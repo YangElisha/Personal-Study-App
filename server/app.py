@@ -12,7 +12,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import db, snapshots
+from . import ai, db, snapshots
 from .settings import REPO_ROOT, Settings
 
 log = logging.getLogger("drill")
@@ -41,7 +41,8 @@ def _err(status: int, kind: str, message: str, **extra) -> JSONResponse:
 
 
 def create_app(settings: Settings, app_dir: Path | None = None,
-               daily_check_seconds: float = 600.0) -> FastAPI:
+               daily_check_seconds: float = 600.0,
+               ai_config: "ai.AIConfig | None" = None) -> FastAPI:
     app_dir = REPO_ROOT / "app" if app_dir is None else app_dir
 
     async def daily_snapshots():
@@ -178,14 +179,20 @@ def create_app(settings: Settings, app_dir: Path | None = None,
                 "skipped": rep.skipped, "snapshot": rep.snapshot.name if rep.snapshot else None,
                 "report": rep.lines}
 
-    # ---- AI (Phase 5) ---------------------------------------------------------------
+    # ---- AI (Phase 5): Qwen by default, `claude -p` when online. See server/ai.py --------
+    router = ai.Router(ai_config if ai_config is not None else ai.load_ai_config())
+    app.state.ai_router = router
+
     @app.post("/api/ai")
-    def ai_stub():
-        return JSONResponse(
-            {"type": "error", "error": {
-                "type": "ai_not_configured",
-                "message": "The AI router is not built yet (Phase 5). No model is connected."}},
-            status_code=503)
+    async def ai_route(request: Request):
+        try:
+            body = json.loads((await request.body()).decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            body = None
+        try:
+            return await router.handle(body)
+        except ai.AIError as e:
+            return JSONResponse(e.body(), status_code=e.status)
 
     # ---- the app itself ---------------------------------------------------------------
     if not (app_dir / "favicon.ico").is_file():

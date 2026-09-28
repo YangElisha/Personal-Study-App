@@ -2029,6 +2029,7 @@ async function claudeRawCall(content, maxTokens){
     if(d && d.error) throw new Error(trimNice(errMsg || "API error (" + (errType || r.status) + ")", 160));
     if(!d || !Array.isArray(d.content)) throw new Error("Unexpected reply from the API");
     lastStop = d.stop_reason || null;
+    modelBadge(d);
     return {text: d.content.filter(b => b.type === "text").map(b => b.text).join(""),
             stop: d.stop_reason || null};
   }
@@ -2037,6 +2038,21 @@ async function claudeRawCall(content, maxTokens){
     : lastErr.startsWith("Server error")
       ? lastErr + ". This is usually an oversized upload — try one file at a time, or a smaller image."
       : "Could not reach the API (" + lastErr + "). Check your connection and try again.");
+}
+/* LOCAL PORT: a small badge showing which model answered the last AI request. */
+function modelBadge(d){
+  if(!d.model_used) return;
+  let b = document.getElementById("modelBadge");
+  if(!b){
+    b = document.createElement("div"); b.id = "modelBadge";
+    b.style.cssText = "position:fixed;left:10px;bottom:10px;z-index:50;padding:3px 9px;" +
+      "border-radius:999px;font:500 11px var(--mono);background:var(--surface);" +
+      "color:var(--ink-2);border:1px solid var(--rule);pointer-events:none;opacity:.9";
+    document.body.appendChild(b);
+  }
+  b.textContent = "AI: " + (d.model_used === "claude" ? "Claude" : "Qwen") +
+                  (d.fallback_from ? " (Claude failed)" : "");
+  b.title = d.fallback_reason || "";
 }
 function parseJSON(t){
   t = t.replace(/```json|```/g,"").trim();

@@ -35,6 +35,17 @@ failure that cost an exam. The AI router sends `options.num_ctx` on every reques
 If a prompt is bigger than the context, the router must refuse it loudly, never let Ollama
 truncate it. Drill's own chunking then takes smaller bites.
 
+How (Phase 5): instead of estimating, the router sends `truncate:false` (and `shift:false`),
+so Ollama itself counts the prompt's tokens exactly and refuses one that doesn't fit; the app
+shows "Prompt is too long for Qwen: N tokens, limit 16384 (OLLAMA_NUM_CTX)…". Checked with
+the real model on 2026-09-28: a 16,104-token prompt arrived whole (markers at both ends
+echoed); 16,512- and 18,671-token prompts were refused. Without `truncate:false`, a 13,929-
+token prompt at num_ctx 2048 was silently cut to 1,026 tokens — the failure this prevents.
+
+Measured on this laptop, 2026-09-28 (flash attention on, KV cache q8_0, ~7 GB of the 8 GB
+free when the model loaded): num_ctx **8192 → 100% GPU**; **12288 and 16384 → 12%/88%
+CPU/GPU** (33 of 34 layers on the GPU). So 16384 does not fully fit today.
+
 ## Checks
 
 ```

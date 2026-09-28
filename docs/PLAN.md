@@ -149,13 +149,13 @@ Nothing is deleted from Claude.ai. The old cards stay as a second copy until Pha
 - A small badge in the app shows which model answered.
 
 **Done when:**
-- [ ] Online: teacher chat and essay marking answer via Claude (`claude -p`)
-- [ ] Wi-Fi off: the same features answer via Qwen, with no change in the app
-- [ ] `CLAUDE_CLI=off`: everything answers via Qwen
-- [ ] A prompt longer than 32,000 characters reaches `claude -p` whole (sent on stdin)
-- [ ] A prompt near the context limit reaches Qwen **whole**, or is refused loudly
-- [ ] A picture slide (Module 2, slide 24) is read by Qwen
-- [ ] `ollama ps` shows 100% GPU during a long request
+- [ ] Online: teacher chat and essay marking answer via Claude (`claude -p`) — 2026-09-28: a text request through `/api/ai` answered by real `claude -p` (`model_used:"claude"`); not yet run from the app's own teacher chat / essay marking
+- [ ] Wi-Fi off: the same features answer via Qwen, with no change in the app — 2026-09-28: only simulated (reachability check pointed at an unreachable address → Qwen); needs a real Wi-Fi-off run in the app
+- [x] `CLAUDE_CLI=off`: everything answers via Qwen — 2026-09-28, real server, `/api/ai` → `model_used:"qwen"`
+- [x] A prompt longer than 32,000 characters reaches `claude -p` whole (sent on stdin) — 2026-09-28, 40,000 chars, real `claude -p` echoed the start and end markers
+- [x] A prompt near the context limit reaches Qwen **whole**, or is refused loudly — 2026-09-28, 16,104 tokens whole (markers echoed); 16,512 and 18,671 refused with a 400 naming the count
+- [x] A picture slide (Module 2, slide 24) is read by Qwen — 2026-09-28, rendered as the app does (pdf.js, 1400 px JPEG), sent to the `CLAUDE_CLI=on` server: Qwen transcribed the whole risk matrix
+- [ ] `ollama ps` shows 100% GPU during a long request — 2026-09-28: **failed** at num_ctx 16384 (12%/88% CPU/GPU, also at 12288); 8192 gave 100% GPU. See OFFLINE-AI.md
 
 ---
 

@@ -103,8 +103,10 @@ def test_empty_key_rejected(client):
     assert client.get("/api/store/").status_code == 400
 
 
-def test_ai_stub(client):
-    r = client.post("/api/ai", json={"messages": []})
+def test_ai_no_model_available(client):
+    # conftest: Ollama on a closed port, CLAUDE_CLI=off -> no model at all
+    r = client.post("/api/ai", json={"max_tokens": 16,
+                                     "messages": [{"role": "user", "content": "hi"}]})
     assert r.status_code == 503
     body = r.json()
     assert body["type"] == "error" and body["error"]["type"] == "ai_not_configured"

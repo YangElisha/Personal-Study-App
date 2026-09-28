@@ -16,6 +16,16 @@ from server.settings import REPO_ROOT, Settings, read_env_file  # noqa: E402
 REAL_DATA_DIR = read_env_file(REPO_ROOT / ".env").get("DATA_DIR", "")
 
 
+@pytest.fixture(autouse=True)
+def no_real_ai(monkeypatch):
+    """No test may reach the real Ollama or the real `claude`: by default the AI router sees a
+    closed port for Ollama and CLAUDE_CLI=off. tests/server/test_ai.py sets its own fakes."""
+    monkeypatch.setenv("OLLAMA_URL", "http://127.0.0.1:9")
+    monkeypatch.setenv("CLAUDE_CLI", "off")
+    monkeypatch.setenv("CLAUDE_CLI_PATH", "drill-no-such-claude-program")
+    monkeypatch.setenv("CLAUDE_REACH_HOST", "127.0.0.1:9")
+
+
 @pytest.fixture
 def data_dir(tmp_path, monkeypatch) -> Path:
     d = tmp_path / "DrillData"

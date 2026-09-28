@@ -69,7 +69,9 @@ cut-off detection (`stop_reason: "max_tokens"`) keeps working:
 | image block (base64) | `images: [base64]` | — |
 | PDF document block | not supported | app already renders pages to images first |
 
-Plus `model_used: "claude" | "qwen"` for the badge.
+Plus `model_used: "claude" | "qwen"` for the badge (bottom-left of the app: "AI: Claude",
+"AI: Qwen", or "AI: Qwen (Claude failed)" — when Claude fails the request is retried once on
+Qwen and the reply carries `fallback_from:"claude"` and the reason).
 
 **Choosing the model:** Qwen is the default. If `CLAUDE_CLI=on` and a 2-second
 reachability check passes, text requests go to Claude instead. Decide per request, so
@@ -116,7 +118,8 @@ Code in `server/`:
 | File | Job |
 |---|---|
 | `settings.py` | Reads `.env` (a process environment variable of the same name overrides it). Refuses to start if `DATA_DIR` is inside the repo, missing, or relative. |
-| `app.py` | The FastAPI app: store API, `/api/import`, `/api/ai` stub, static `app/`. |
+| `app.py` | The FastAPI app: store API, `/api/import`, `/api/ai`, static `app/`. |
+| `ai.py` | The AI router (Phase 5): routing, `claude -p`, Ollama, Anthropic response shape. Contract in `docs/API.md`. |
 | `db.py` | Schema and the one write path (history before every overwrite/delete). |
 | `snapshots.py` | Snapshots with SQLite's backup API, pruning. |
 | `importer.py` | `python -m server.importer` — see DATA-MIGRATION.md. |
