@@ -48,7 +48,7 @@ AI_KEYS = ("OLLAMA_URL", "OLLAMA_MODEL", "OLLAMA_NUM_CTX", "OLLAMA_TIMEOUT", "CL
 AI_DEFAULTS = {
     "OLLAMA_URL": "http://localhost:11434",
     "OLLAMA_MODEL": "qwen3.5:9b",
-    "OLLAMA_NUM_CTX": "16384",
+    "OLLAMA_NUM_CTX": "8192",
     "OLLAMA_TIMEOUT": "900",          # seconds; an 8000-token transcription takes minutes
     "CLAUDE_CLI": "off",
     "CLAUDE_CLI_PATH": "claude",
@@ -351,6 +351,12 @@ class Router:
             ok = False
         self._reach = (now, ok)
         return ok
+
+    async def route_for_text(self) -> dict:
+        """Which model would answer a text-only request right now, and Qwen's context size,
+        so the app can size a prompt for Qwen (GET /api/ai/route)."""
+        claude = self.cfg.claude_cli and await self.claude_reachable()
+        return {"model": "claude" if claude else "qwen", "num_ctx": self.cfg.num_ctx}
 
     async def handle(self, body: Any) -> dict:
         msgs, system, max_tokens = parse_request(body)

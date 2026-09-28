@@ -5,6 +5,12 @@ Newest first. Every change gets an entry in the same commit.
 ## [Unreleased]
 
 ### Added
+- Phase 5 close (2026-09-29): `OLLAMA_NUM_CTX=8192` (100% GPU on the 8 GB card; 16384 ran 12%
+  on the CPU). `GET /api/ai/route` says which model would answer a text request and Qwen's
+  context. Teacher chat: when Qwen will answer, the module text is sized to fit 8192 tokens
+  (and the oldest messages dropped if needed); Claude keeps 22,000 characters and 8 messages.
+  Real check on the largest deck: before, 7,825-token prompt, reply cut off; after, 4,615
+  tokens, reply complete, `ollama ps` 100% GPU.
 - Phase 5: the AI router, `server/ai.py`, behind `POST /api/ai` (the 503 stub is gone; 503
   `ai_not_configured` now means "no model available at all"). Images → Qwen; text →
   `claude -p` when `CLAUDE_CLI=on` and api.anthropic.com:443 answers within 2 s; otherwise

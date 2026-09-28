@@ -334,3 +334,19 @@ def test_malformed_body(ai_client):
     c = ai_client()
     assert c.post("/api/ai", content=b"not json").status_code == 400
     assert c.post("/api/ai", json={"messages": []}).status_code == 400
+
+
+# ---- GET /api/ai/route: lets the app size a prompt for Qwen -------------------------------
+def test_route_says_qwen_with_its_context_when_claude_off(ai_client, online):
+    d = ai_client(claude="off", reach=online, num_ctx=8192).get("/api/ai/route").json()
+    assert d == {"model": "qwen", "num_ctx": 8192}
+
+
+def test_route_says_qwen_when_offline(ai_client, fake_claude):
+    d = ai_client(claude="on", claude_path=fake_claude.path, num_ctx=8192).get("/api/ai/route").json()
+    assert d["model"] == "qwen"
+
+
+def test_route_says_claude_when_online(ai_client, fake_claude, online):
+    d = ai_client(claude="on", reach=online, claude_path=fake_claude.path).get("/api/ai/route").json()
+    assert d["model"] == "claude" and fake_claude.calls() == []

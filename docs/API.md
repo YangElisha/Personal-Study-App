@@ -44,6 +44,7 @@ Errors are JSON: `{"ok":false,"error":"<kind>","message":"..."}`.
 | `GET /api/health` | `{"ok":true,"app":"drill","schema":1}` |
 | `POST /api/import` | Runs the importer inside the server, but **only ever adds keys**. 200 `{"ok":true,"kv_writes":n,"history_rows":n,"added_keys":[...],"undecided":[...],"skipped":[...],"snapshot":name\|null,"report":[lines]}` when it only added (or nothing was to do). **409** `{"ok":false,"error":"confirmation_required","message":...,"plan":[lines]}` when an existing key would change: nothing is written; stop the server and run `python -m server.importer`, which shows the plan and asks for `yes`. 409 `import_stopped` for any other stop (nothing written). Reload the app after an import. |
 | `POST /api/ai` | The AI router (Phase 5, `server/ai.py`). See "AI" below. |
+| `GET /api/ai/route` | Which model would answer a text request now, and Qwen's context: `{"model":"qwen"|"claude","num_ctx":8192}`. Used by the teacher chat to size its prompt for Qwen. |
 | `GET /` and other paths | Files from `app/` (Phase 4), with `Cache-Control: no-cache`; `.woff2` fonts as `font/woff2`. If `app/index.html` does not exist when the server starts, `/` shows a placeholder page. |
 | `GET /favicon.ico` | **204** (no body) unless `app/favicon.ico` exists, so the browser's automatic icon request doesn't log a 404. |
 

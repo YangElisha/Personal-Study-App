@@ -155,7 +155,21 @@ Nothing is deleted from Claude.ai. The old cards stay as a second copy until Pha
 - [x] A prompt longer than 32,000 characters reaches `claude -p` whole (sent on stdin) — 2026-09-28, 40,000 chars, real `claude -p` echoed the start and end markers
 - [x] A prompt near the context limit reaches Qwen **whole**, or is refused loudly — 2026-09-28, 16,104 tokens whole (markers echoed); 16,512 and 18,671 refused with a 400 naming the count
 - [x] A picture slide (Module 2, slide 24) is read by Qwen — 2026-09-28, rendered as the app does (pdf.js, 1400 px JPEG), sent to the `CLAUDE_CLI=on` server: Qwen transcribed the whole risk matrix
-- [ ] `ollama ps` shows 100% GPU during a long request — 2026-09-28: **failed** at num_ctx 16384 (12%/88% CPU/GPU, also at 12288); 8192 gave 100% GPU. See OFFLINE-AI.md
+- [x] `ollama ps` shows 100% GPU during a long request — 2026-09-29: **5.5 GB, 100% GPU at
+      num_ctx 8192** during a worst-case teacher-chat request (4,615-token prompt + reply).
+      16384 had failed (12%/88% CPU/GPU on 2026-09-28, still after an orphaned runner was
+      stopped).
+
+**Why `OLLAMA_NUM_CTX=8192` (Elisha, 2026-09-29):** it is the largest context that keeps the
+whole Qwen model on the 8 GB RTX 5060 (100% GPU); 12288 and 16384 put ~12% on the CPU. Longer
+prompts go to Claude when online, or are refused loudly offline — never cut.
+
+**Teacher chat at 8192:** module text (up to 22,000 characters) + the last 8 messages + a
+900-token reply did not fit. Measured with the real model on NLP Module 4 (the largest deck):
+the old prompt took 7,825 of 8,192 tokens and the reply was cut off (`max_tokens`). Now, only
+when Qwen will answer (`GET /api/ai/route`), the chat shrinks the module text and, if needed,
+drops the oldest messages: the same case became 4,615 tokens and the reply ended normally.
+Claude still gets 22,000 characters and 8 messages.
 
 ---
 

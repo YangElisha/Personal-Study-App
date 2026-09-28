@@ -5477,7 +5477,7 @@ window.addEventListener("unhandledrejection", e => {
    ASK THE TEACHER — a tutor that already knows the module
    ============================================================ */
 let CHAT = {open:false, msgs:[], focus:null};
-function chatContext(){
+function chatContext(budget){
   if(!DECK) return "";
   if(DECK.kind === "skill"){
     const u = COURSE && COURSE.unit;
@@ -5499,7 +5499,7 @@ function chatContext(){
     if(focus && c.id === focus.id) hit += 100;
     return {c, hit};
   }).sort((a,b) => b.hit - a.hit);
-  const BUDGET = 22000;
+  const BUDGET = budget || 22000;
   const full = [], namesOnly = [];
   let used = 0;
   scored.forEach(({c}) => {
@@ -5550,6 +5550,10 @@ function openChat(focusId){
   chatShow(); chatQuick();
   setTimeout(() => $("chat-input").focus(), 80);
 }
+async function aiRoute(){
+  try{ const r = await fetch("/api/ai/route", {cache:"no-store"}); return r.ok ? await r.json() : null; }
+  catch(e){ return null; }
+}
 function closeChat(){ $("chatdrawer").classList.remove("on"); $("chatscrim").classList.remove("on"); }
 async function chatSend(){
   const text = $("chat-input").value.trim();
@@ -5561,12 +5565,24 @@ async function chatSend(){
   const wait = document.createElement("div"); wait.className = "msg ai thinking";
   wait.textContent = "thinking…"; log.appendChild(wait); log.scrollTop = log.scrollHeight;
   try{
-    const history = CHAT.msgs.slice(-8).map(m =>
+    /* LOCAL PORT: Qwen has OLLAMA_NUM_CTX tokens for prompt AND reply. When Qwen will
+       answer, shrink the module text (and, if needed, drop the oldest messages) so it fits:
+       900 reply + 400 spare tokens, ~3 characters per token (conservative), 700 characters
+       of fixed instructions. Claude keeps 22000 characters and 8 messages. */
+    let hist = CHAT.msgs.slice(-8), budget = 22000;
+    const route = await aiRoute();
+    if(route && route.model === "qwen" && route.num_ctx){
+      const room = (route.num_ctx - 900 - 400) * 3 - 700;
+      const size = h => h.reduce((n, m) => n + m.content.length + 10, 0);
+      while(hist.length > 1 && room - size(hist) < 3000) hist = hist.slice(1);
+      budget = Math.max(3000, Math.min(22000, room - size(hist)));
+    }
+    const history = hist.map(m =>
       (m.role === "user" ? "STUDENT: " : "YOU: ") + m.content).join("\n\n");
     const reply = await claude(
 `You are this student's tutor for one module. You are patient and encouraging, you explain the logic underneath rather than reciting definitions, and you reach for analogies and concrete examples. Never dry, never a wall of text: 3-6 sentences unless they ask for more. If they are confused, find a different angle rather than repeating yourself. The list below is their whole module. Before you ever say something is "not covered" or "not in this module", check that list properly — including sub-types, examples and the members of any list. If it is there, teach it from there. Only say it is outside their material when you have looked and it genuinely is not present, and even then answer the question anyway and say plainly that you are going beyond the deck. Never guess at what the module does or does not contain.
 
-${chatContext()}
+${chatContext(budget)}
 
 CONVERSATION SO FAR:
 ${history}

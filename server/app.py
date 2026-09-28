@@ -183,6 +183,10 @@ def create_app(settings: Settings, app_dir: Path | None = None,
     router = ai.Router(ai_config if ai_config is not None else ai.load_ai_config())
     app.state.ai_router = router
 
+    @app.get("/api/ai/route")
+    async def ai_which_model():
+        return await router.route_for_text()
+
     @app.post("/api/ai")
     async def ai_route(request: Request):
         try:
