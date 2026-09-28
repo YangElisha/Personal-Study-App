@@ -42,6 +42,9 @@ Newest first. Every change gets an entry in the same commit.
   progress for the whole deck, chosen by `asked`.
 - docs/PLAN.md and docs/DATA-MIGRATION.md: any `drill-backup-*.json` file name is accepted.
 - docs/PLAN.md: Phase 0 boxes ticked (verified 2026-09-28).
+- docs/DATA-MIGRATION.md: "further-along" completed (Elisha, 2026-09-28) — a concept
+  with a record in only one copy keeps that record; if next-review dates also tie, the
+  record from the fuller deck copy is kept.
 
 ### Migration
 - Phase 1 done: `DATA_DIR\import\INVENTORY.md` built from the backup `drill-backup-2026-09-28.json`

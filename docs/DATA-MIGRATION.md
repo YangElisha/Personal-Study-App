@@ -37,11 +37,13 @@ shows two "IA Module 3" decks with different counts.
 The same deck in two cards is matched by its id. The **fuller copy** is the base, every
 concept only the other copy has is added, and the **further-along progress** is kept.
 
-**"Further-along" for one concept's progress record** — compare the two records in order:
+**"Further-along" for one concept's progress record.** If only one copy has a record for
+the concept, that record is kept. If both do, compare them in order:
 
 1. **Higher box** wins.
 2. If the boxes are tied: **more right answers** wins.
 3. If still tied: the **later next-review date** (`due`) wins.
+4. If still tied: the record from the **fuller deck copy** (more concepts) is kept.
 
 **How this differs from Drill's own restore.** Drill's restore (`mergeDeck` and
 `applyBackup` in the legacy app) merges deck *content* the same way: the copy with more
