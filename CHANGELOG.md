@@ -5,6 +5,73 @@ Newest first. Every change gets an entry in the same commit.
 ## [Unreleased]
 
 ### Added
+- `tools/verify_import.py` (stdlib only, read-only: `drill.db` opened `mode=ro`, files `rb`):
+  independent of `server/importer.py`. Per deck, expected (backup files, merged by id) vs found
+  (drill.db) for concepts, questions, flashcards, study-guide entries, problem courses/problems,
+  progress records and folder, cross-checked against INVENTORY.md and its SHA-256s; deep and
+  byte-level comparison of every `deck:`/`prog:`/`library`/`prefs`/`exam:` value, with Elisha's
+  decisions recomputed as the only allowed differences; extra keys, `kv_history`, import notes
+  and applied decisions checked. Exit 1 on any mismatch. `--after-study` for Phase 7 (more is
+  allowed, nothing from the backups may be missing).
+- Phase 3: local server and database (`server/`, `start.bat`, `requirements*.txt`,
+  `pytest.ini`, `tests/server/`, `docs/API.md`).
+  - **Stack decision: Python 3.12 + FastAPI 0.141 + uvicorn 0.54 + built-in `sqlite3`**
+    (the default in ARCHITECTURE.md). Repo-local `.venv` (gitignored); runtime pins in
+    `requirements.txt`, test pins (pytest, httpx2 for Starlette's TestClient) in
+    `requirements-dev.txt`. Settings are read only from `.env`; a process environment
+    variable overrides a `.env` value (used by the tests for a scratch DATA_DIR).
+  - Server on 127.0.0.1:PORT only; serves `app/` (placeholder page until Phase 4). Store API
+    `GET/PUT/DELETE /api/store/{key}`, `GET /api/store?prefix=`; contract in `docs/API.md`,
+    mapped 1:1 to the legacy `store.get/set/del`. Values stored as the exact JSON text
+    sent; missing key = 404, stored `null` = 200 `null`. Every overwrite and delete copies
+    the old value to `kv_history`; an identical write is a no-op. WAL, one transaction per
+    write. `/api/ai` is a 503 stub (`ai_not_configured`) until Phase 5. Refuses to start if
+    `DATA_DIR` is inside the repo, missing or relative. Host/Origin checks so other
+    websites cannot write. One process owns DATA_DIR at a time (OS lock on
+    `DATA_DIR\drill-server.lock`).
+  - Snapshots with SQLite's backup API on every start and every 24 h while running:
+    `DATA_DIR\backups\drill-YYYYMMDD-HHMMSS.db`, newest `BACKUP_KEEP` kept; only that exact
+    pattern is pruned. Pre-import / pre-restore safety snapshots are never pruned.
+  - Restore CLI `python -m server.restore <snapshot>`: refuses while the server runs, shows
+    what changes, requires typing `yes`, snapshots the current DB first.
+  - Importer `python -m server.importer` / `POST /api/import`: reads every
+    `DATA_DIR\import\drill-backup-*.json` read-only (SHA-256 checked before and after),
+    snapshots first (only when it will write), merges oldest-exported first (Drill's `mergeDeck` and `norm` ported
+    exactly; per-concept further-along progress; library order, colours, names and folders
+    kept), then applies Elisha's decisions from `DATA_DIR\import-decisions.json` in a
+    second transaction, each once. Idempotent. Details: DATA-MIGRATION.md → "How the
+    import works".
+  - `start.bat` (double-click): creates `.venv` and installs requirements on first run
+    (and when `requirements.txt` changes), starts the server, opens the browser once it
+    answers.
+  - Tests (pytest) on synthetic data in temp folders, incl. a real-HTTP uvicorn test for
+    URL decoding (Starlette's TestClient decodes paths twice, so `%` keys are tested there).
+  - Review fixes (Phase 3 review, NOT READY → fixed):
+    - **Rule 2: the importer asks before changing existing data.** It now plans everything
+      in memory first (merge + not-yet-applied decisions) and lists keys to add, each
+      existing key that would change with what changes (concepts added/replaced,
+      flashcards, progress records replaced and by which tie-break, deck-level fields,
+      nCon/nQ, folders, library entries), and unchanged keys. Adding needs no
+      confirmation. Changing an existing key needs a typed `yes` in the CLI (`--yes` for
+      scripts); `POST /api/import` never changes one and answers 409
+      `confirmation_required` with the plan. A no-op run writes nothing and takes no
+      snapshot. A failing check or decision now writes nothing at all (previously the merge
+      was already committed). A guard stops any plan that would drop a folder, deck,
+      concept, flashcard or progress record.
+    - **Origin check:** `Origin: null` is no longer exempt; a PUT/DELETE/POST carrying any
+      Origin other than the server's own (`http://localhost:<port>` /
+      `http://127.0.0.1:<port>`) gets 403.
+    - Progress records without `box` are compared the way the app's `migrate()` reads
+      them (stored verbatim). merge_prog stops, writing nothing, if either side's progress,
+      `m` or a record is not an object, so the file's `m` can never be dropped.
+    - The merge keeps an existing deck's `name` (like the library entry), so a fuller file
+      copy cannot undo a rename inside `deck.name`.
+    - DATA-MIGRATION.md: the deck-level progress rule is described accurately (Drill gives
+      a tie to the backup; the import gives it to the database).
+    - Tests use invented names only.
+    - `start.bat`: if requirements changed but cannot be installed (offline), it warns and
+      starts with the existing `.venv`. CLAUDE.md/README: the first run needs internet
+      once.
 - Phase 2: slide-reader regression test. `npm test` reads the reader out of
   `legacy/drill-study-app.html` at runtime (never copied into the test), runs it on
   `tests/fixtures/` in the app's own order — `slidesFromUpload`, then the activity-slide
@@ -66,6 +133,17 @@ Newest first. Every change gets an entry in the same commit.
   record from the fuller deck copy is kept.
 
 ### Migration
+- Phase 3 import into `DATA_DIR\drill.db` (2026-09-28): 1 file
+  (`drill-backup-2026-09-28.json`, sha256 `e75f6c96…0ba9`, unchanged after import).
+  29 keys written as in the file (18 `deck:`, 9 `prog:`, `prefs`, `library`), then
+  Elisha's decisions: `muaicdxx9pud` renamed "IA Module 3 (old build)" and moved to a new
+  "Archive" folder (`f-archive`, last); CLO3/TLO7–9 confirmed absent from `mui02dwojkee`;
+  progress carry-over compared all 6 shared concepts and `mui02dwojkee`'s record won each
+  (every `muaicdxx9pud` record is box 0, right 0), so `prog:mui02dwojkee` is unchanged;
+  "rebuild from PDF after Phase 4" (2 decks) and "rename later" (5 decks) recorded in
+  `import_notes`. Totals read back: 18 decks, 506 concepts, 1,859 questions, 506
+  flashcards, 19 guide entries, 4 problem courses, 217 progress records (= INVENTORY.md).
+  Second run: 0 kv writes, 0 history rows.
 - Phase 1 done: `DATA_DIR\import\INVENTORY.md` built from the backup `drill-backup-2026-09-28.json`
   (18 decks, 506 concepts, 1,859 questions, 506 flashcards, 217 progress records). Nothing
   was imported. Elisha's import decisions are recorded in INVENTORY.md:

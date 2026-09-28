@@ -44,6 +44,15 @@ CREATE TABLE kv_history (             -- every overwrite is kept: nothing is eve
 Keeping the app's own key-value shape means no data has to be *translated* — which is
 where migrations usually lose things. `kv_history` means a bad write can always be undone.
 
+As built (Phase 3, `server/db.py`): `kv` and `kv_history` exactly as above, plus an index on
+`kv_history(key)`. Every overwrite **and every delete** copies the old value into
+`kv_history` first; writing text identical to what is stored is a no-op (no history row,
+`updated_at` kept). WAL mode, one transaction per write. Three small bookkeeping tables
+belong to the importer, not to the app: `import_files` (SHA-256 of each backup file
+imported), `import_notes` (Elisha's notes such as "rename later") and
+`import_decisions_applied` (which one-off import decisions have run). The request/response
+contract is in `docs/API.md`.
+
 ### 2. AI — `claudeRawCall(content, maxTokens)`
 
 | Today | Local |
@@ -100,6 +109,35 @@ Python + FastAPI + the built-in `sqlite3` module — the same stack family as Sc
 one process, no external database to install. Node + Express is an acceptable alternative;
 decide in Phase 3 and record the choice in CHANGELOG.md.
 
+**Decided in Phase 3: Python 3.12 + FastAPI + uvicorn + built-in `sqlite3`**, in a
+repo-local `.venv` (gitignored), pinned in `requirements.txt` (tests: `requirements-dev.txt`).
+Code in `server/`:
+
+| File | Job |
+|---|---|
+| `settings.py` | Reads `.env` (a process environment variable of the same name overrides it). Refuses to start if `DATA_DIR` is inside the repo, missing, or relative. |
+| `app.py` | The FastAPI app: store API, `/api/import`, `/api/ai` stub, static `app/`. |
+| `db.py` | Schema and the one write path (history before every overwrite/delete). |
+| `snapshots.py` | Snapshots with SQLite's backup API, pruning. |
+| `importer.py` | `python -m server.importer` — see DATA-MIGRATION.md. |
+| `restore.py` | `python -m server.restore <snapshot>` |
+| `instance_lock.py` | One process owns `DATA_DIR` at a time. |
+| `__main__.py` | `python -m server [--open]`; `start.bat` runs it with `--open`. |
+
+**Snapshots.** On every start, and every 24 hours while running (checked every 10
+minutes), the database is copied with SQLite's backup API to
+`DATA_DIR\backups\drill-YYYYMMDD-HHMMSS.db` (local time; `-2`, `-3`… if two land in the
+same second). Each snapshot is a standalone file (no `-wal`), integrity-checked, and
+written under a temporary name first, so a snapshot file is always complete. Only files
+matching exactly that name pattern are pruned, newest `BACKUP_KEEP` kept. Safety snapshots
+taken before an import (`...-pre-import.db`) or a restore (`...-pre-restore.db`) do not
+match the pattern and are never pruned.
+
+**Restore.** `python -m server.restore` lists snapshots; `python -m server.restore <name>`
+refuses while the server runs, shows what would be replaced (key and deck differences),
+asks you to type `yes`, snapshots the current database as `...-pre-restore.db`, then copies
+the snapshot in with the backup API. Restoring the pre-restore file undoes a restore.
+
 ## Where the data lives
 
 Everything personal lives in `DATA_DIR` — by default `C:\Users\Elish\OneDrive\DrillData` —
@@ -109,6 +147,8 @@ outside the Git folder, so it can never be committed:
 DrillData\
   drill.db        the database
   backups\        automatic snapshots: on every start and once a day, newest 30 kept
+  import-decisions.json   Elisha's import decisions, read by the importer (Phase 3)
+  drill-server.lock       empty file the running server locks (one process at a time)
   import\         backup files exported from Drill (read only)
   modules\        your module PDFs
 ```

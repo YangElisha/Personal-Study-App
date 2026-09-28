@@ -1,0 +1,12 @@
+# Test-only dependencies (server tests: python -m pytest tests/server)
+-r requirements.txt
+pytest==9.1.1
+# Starlette's TestClient uses httpx2 (plain httpx is deprecated for it since Starlette 1.x)
+httpx2==2.13.1
+# --- pulled in by the two above ---
+httpcore2==2.13.1
+truststore==0.10.4
+iniconfig==2.3.0
+packaging==26.3
+pluggy==1.6.0
+Pygments==2.21.0

@@ -76,6 +76,13 @@ before it is committed.
 
 ## Commands (fill in as they are created)
 
-- Start the app: `TBD in Phase 3`
+- Start the app: double-click `start.bat`, or `.venv\Scripts\python -m server`
+  (first time only, needs internet once: `python -m venv .venv` then
+  `.venv\Scripts\python -m pip install -r requirements.txt`; after that everything runs offline)
+- Run server tests: `.venv\Scripts\python -m pytest` (needs `pip install -r requirements-dev.txt`; scratch DATA_DIR only)
+- Import backups: `.venv\Scripts\python -m server.importer` (server stopped; shows a plan and asks
+  for `yes` before changing any existing key; `--yes` for scripts)
+- Restore a snapshot: `.venv\Scripts\python -m server.restore` (lists) / `... restore <name>` (server stopped; asks for `yes`)
 - Run reader tests: `npm test` (legacy app) · `npm test -- --html app/index.html` (ported app)
-- Verify an import: `TBD in Phase 3`
+- Verify an import: `.venv\Scripts\python tools\verify_import.py` (read-only; exit 0 = every row matches) ·
+  Phase 7, after studying locally: `... tools\verify_import.py --after-study`

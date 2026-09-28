@@ -1,0 +1,187 @@
+"""The FastAPI application. Contract: docs/API.md."""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
+
+from . import db, snapshots
+from .settings import REPO_ROOT, Settings
+
+log = logging.getLogger("drill")
+
+ALLOWED_HOSTS = {"localhost", "127.0.0.1"}
+
+PLACEHOLDER = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Drill</title></head><body style="font-family:system-ui,sans-serif;max-width:40em;
+margin:4em auto;line-height:1.5"><h1>Drill server is running</h1>
+<p>The app itself (<code>app/index.html</code>) is added in Phase 4. Until then this page is
+all there is to see here. Your data is safe in the database.</p>
+<p><a href="/api/health">/api/health</a></p></body></html>"""
+
+
+def _reject_constant(name):
+    raise ValueError(f"{name} is not valid JSON")
+
+
+def _err(status: int, kind: str, message: str, **extra) -> JSONResponse:
+    return JSONResponse({"ok": False, "error": kind, "message": message, **extra}, status_code=status)
+
+
+def create_app(settings: Settings, app_dir: Path | None = None,
+               daily_check_seconds: float = 600.0) -> FastAPI:
+    app_dir = REPO_ROOT / "app" if app_dir is None else app_dir
+
+    async def daily_snapshots():
+        while True:
+            await asyncio.sleep(daily_check_seconds)
+            try:
+                if snapshots.daily_due(settings):
+                    p = await asyncio.to_thread(snapshots.take_snapshot, settings)
+                    log.info("daily snapshot %s", p)
+            except Exception:                       # never let the loop die
+                log.exception("daily snapshot failed")
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        db.init_db(settings.db_path)
+        p = snapshots.take_snapshot(settings)
+        log.info("snapshot on start: %s", p)
+        task = asyncio.create_task(daily_snapshots())
+        try:
+            yield
+        finally:
+            task.cancel()
+            try:
+                db.checkpoint(settings.db_path)
+            except Exception:
+                log.exception("checkpoint on shutdown failed")
+
+    app = FastAPI(title="Drill local server", lifespan=lifespan, docs_url=None,
+                  redoc_url=None, openapi_url=None)
+    app.state.settings = settings
+
+    @app.middleware("http")
+    async def guard(request: Request, call_next):
+        # DNS-rebinding guard: only answer requests addressed to this PC by name.
+        host_header = (request.headers.get("host") or "").strip().lower()
+        host, _, port = host_header.partition(":")
+        if host not in ALLOWED_HOSTS:
+            return _err(403, "forbidden_host", f"Host {host_header!r} is not allowed")
+        # Only the app's own page may change anything. A state-changing request that carries
+        # an Origin header (browsers always send one on cross-site requests, and "null" from
+        # sandboxed frames and file:// pages) must come from this server's own origin.
+        # Requests with no Origin (curl, the CLI tools, same-origin navigation) are allowed.
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            origin = request.headers.get("origin")
+            if origin is not None:
+                own = {f"http://{h}" + (f":{port}" if port else "") for h in ALLOWED_HOSTS}
+                if origin.strip().lower().rstrip("/") not in own:
+                    return _err(403, "forbidden_origin", f"Origin {origin!r} may not write here")
+        resp = await call_next(request)
+        if not request.url.path.startswith("/api/"):
+            resp.headers["Cache-Control"] = "no-cache"
+        return resp
+
+    def conn():
+        return db.connect(settings.db_path)
+
+    # ---- health ---------------------------------------------------------------------
+    @app.get("/api/health")
+    def health():
+        return {"ok": True, "app": "drill", "schema": db.SCHEMA_VERSION}
+
+    # ---- store ----------------------------------------------------------------------
+    @app.get("/api/store")
+    def store_list(prefix: str = ""):
+        c = conn()
+        try:
+            return {"keys": db.list_keys(c, prefix)}
+        finally:
+            c.close()
+
+    @app.get("/api/store/{key:path}")
+    def store_get(key: str):
+        if not key:
+            return _err(400, "bad_key", "Key must not be empty")
+        c = conn()
+        try:
+            row = db.get(c, key)
+        finally:
+            c.close()
+        if row is None:
+            return _err(404, "not_found", "No value stored under this key", key=key)
+        return Response(content=row[0].encode("utf-8"),
+                        media_type="application/json; charset=utf-8",
+                        headers={"X-Updated-At": row[1]})
+
+    @app.put("/api/store/{key:path}")
+    async def store_put(key: str, request: Request):
+        if not key:
+            return _err(400, "bad_key", "Key must not be empty")
+        raw = await request.body()
+        try:
+            text = raw.decode("utf-8")
+            json.loads(text, parse_constant=_reject_constant)
+        except (UnicodeDecodeError, ValueError) as e:
+            return _err(400, "bad_json", f"Body must be one JSON value in UTF-8 ({e})")
+        c = conn()
+        try:
+            status, ts = await asyncio.to_thread(db.put, c, key, text)
+        finally:
+            c.close()
+        return {"ok": True, "key": key, "status": status, "updated_at": ts}
+
+    @app.delete("/api/store/{key:path}")
+    def store_delete(key: str):
+        if not key:
+            return _err(400, "bad_key", "Key must not be empty")
+        c = conn()
+        try:
+            existed = db.delete(c, key)
+        finally:
+            c.close()
+        if not existed:
+            return _err(404, "not_found", "No value stored under this key", key=key)
+        return {"ok": True, "key": key, "deleted": True}
+
+    # ---- import ---------------------------------------------------------------------
+    @app.post("/api/import")
+    def do_import():
+        from .importer import ConfirmationRequired, ImportError_, run_import
+        try:
+            # confirm=None: new keys are added, but no existing key is ever changed from here
+            rep = run_import(settings, confirm=None)
+        except ConfirmationRequired as e:
+            return _err(409, "confirmation_required", str(e), plan=e.plan)
+        except ImportError_ as e:
+            return _err(409, "import_stopped", str(e))
+        return {"ok": True, "kv_writes": rep.kv_writes, "history_rows": rep.history_rows,
+                "added_keys": rep.added_keys, "undecided": rep.undecided,
+                "skipped": rep.skipped, "snapshot": rep.snapshot.name if rep.snapshot else None,
+                "report": rep.lines}
+
+    # ---- AI (Phase 5) ---------------------------------------------------------------
+    @app.post("/api/ai")
+    def ai_stub():
+        return JSONResponse(
+            {"type": "error", "error": {
+                "type": "ai_not_configured",
+                "message": "The AI router is not built yet (Phase 5). No model is connected."}},
+            status_code=503)
+
+    # ---- the app itself ---------------------------------------------------------------
+    if (app_dir / "index.html").is_file():
+        app.mount("/", StaticFiles(directory=str(app_dir), html=True), name="app")
+    else:
+        @app.get("/", response_class=HTMLResponse)
+        def placeholder():
+            return PLACEHOLDER
+
+    return app

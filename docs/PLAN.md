@@ -96,12 +96,23 @@ Nothing is deleted from Claude.ai. The old cards stay as a second copy until Pha
   - imports the backup files from `DATA_DIR\import\`
 
 **Done when:**
-- [ ] Import of every backup file succeeds
-- [ ] A verification script prints, per deck, *expected vs found* for concepts, questions,
-      flashcards and progress records — and every row matches
-- [ ] Importing the same file twice changes nothing (merge, never duplicate)
-- [ ] Where two cards had the same deck, no concept from either copy is missing
-- [ ] Restarting the server creates a snapshot in `DATA_DIR\backups\`, and restoring one works
+- [x] Import of every backup file succeeds — *2026-09-28: `drill-backup-2026-09-28.json`
+      into `DATA_DIR\drill.db`, exit 0; file SHA-256 unchanged; Elisha's decisions applied*
+- [x] A verification script prints, per deck, *expected vs found* for concepts, questions,
+      flashcards and progress records — and every row matches — *`tools/verify_import.py`
+      (independent of the importer): 18/18 decks, 506 concepts, 1,859 questions, 506
+      flashcards, 217 progress records; content byte-identical except the documented
+      decisions; exit 0*
+- [x] Importing the same file twice changes nothing (merge, never duplicate) — *second run:
+      0 kv writes, 0 history rows; kv/kv_history byte-identical on a scratch copy*
+- [x] Where two cards had the same deck, no concept from either copy is missing — *only one
+      card exported so far, so proven on two synthetic backups sharing a deck id (verifier
+      exit 0; removing a concept from either copy makes it exit 1). Re-run in Phase 7.*
+- [x] Restarting the server creates a snapshot in `DATA_DIR\backups\`, and restoring one works
+      — *two starts on the real DATA_DIR made two snapshots; restore tested on a scratch copy
+      only (change reverted, pre-restore snapshot kept)*
+
+**Phase 3 done 2026-09-28.**
 
 ---
 
