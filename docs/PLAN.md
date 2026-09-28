@@ -34,10 +34,17 @@ Full click-by-click instructions: `docs/SETUP-GUIDE.md`.
 4. Put the original module PDFs into `DATA_DIR\modules\` (Drill never stored them).
 
 **Done when:**
-- [ ] One backup file per card, each valid JSON
-- [ ] `migration-guardian` has produced `DATA_DIR\import\INVENTORY.md`: per file, the deck
-      names, concept counts, question counts and progress-record counts
-- [ ] You have looked at INVENTORY.md and confirmed every deck you care about is listed
+- [x] One backup file per card, each valid JSON — *2026-09-28: one v2 file from the newest
+      card (valid UTF-8 JSON). Older cards not checked: Elisha decided they are checked and
+      exported before they are retired in Phase 7.*
+- [x] `migration-guardian` has produced `DATA_DIR\import\INVENTORY.md`: per file, the deck
+      names, concept counts, question counts and progress-record counts — *18 decks, 506
+      concepts, 1,859 questions, 217 progress records; recount PASS*
+- [x] You have looked at INVENTORY.md and confirmed every deck you care about is listed —
+      *2026-09-28; her import decisions are recorded in INVENTORY.md → "Decisions"*
+
+**Phase 1 done 2026-09-28.** Step 4 (module PDFs into `DATA_DIR\modules\`) is still open;
+they are needed by Phase 4.
 
 Nothing is deleted from Claude.ai. The old cards stay as a second copy until Phase 7 passes.
 
