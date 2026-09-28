@@ -9,13 +9,16 @@ and passed. Tick the boxes as you go and commit after each phase.
 
 **Owner:** you + Claude Code
 
-- [ ] Git is installed: `git --version` prints a version
-- [ ] This kit is unzipped into the `Study App` folder
-- [ ] The folder is linked to `github.com/YangElisha/Personal-Study-App` and pushed
-- [ ] `.gitignore` is in place **before** the first commit
+- [x] Git is installed: `git --version` prints a version
+- [x] This kit is unzipped into the `Study App` folder
+- [x] The folder is linked to `github.com/YangElisha/Personal-Study-App` and pushed
+- [x] `.gitignore` is in place **before** the first commit
 
 **Done when:** the repo on GitHub shows `CLAUDE.md`, `docs/`, `.claude/agents/`,
 `legacy/`, `tests/` — and **no** PDFs, `.env` or database files.
+
+**Phase 0 done 2026-09-28** — checked: git 2.54, `.gitignore` in the first commit, `main`
+pushed to GitHub, no PDFs / `.env` / database files tracked.
 
 Full click-by-click instructions: `docs/SETUP-GUIDE.md`.
 
@@ -30,7 +33,8 @@ Full click-by-click instructions: `docs/SETUP-GUIDE.md`.
 2. Open **every** Drill card you have used — each card has its own storage, and your
    decks are spread across several of them.
 3. In each: **Manage → Download a backup → Copy**. Paste into Notepad, save as
-   `DATA_DIR\import\drill-backup-<nn>.json`. One file per card.
+   `DATA_DIR\import\drill-backup-<anything>.json` — any `drill-backup-*.json` name is
+   accepted (e.g. `drill-backup-01.json`, `drill-backup-2026-09-28.json`). One file per card.
 4. Put the original module PDFs into `DATA_DIR\modules\` (Drill never stored them).
 
 **Done when:**

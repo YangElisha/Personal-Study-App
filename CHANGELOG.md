@@ -17,6 +17,10 @@ Newest first. Every change gets an entry in the same commit.
 - Added docs/SETUP-GUIDE.md (step by step).
 - Added .gitattributes (`* -text`): Git no longer converts line endings, so the frozen
   legacy app and test fixtures stay byte-for-byte identical on every checkout.
+- docs/DATA-MIGRATION.md: defined "further-along" for one concept's progress record —
+  higher box wins; if tied, more right answers; if still tied, most recently seen.
+- docs/PLAN.md and docs/DATA-MIGRATION.md: any `drill-backup-*.json` file name is accepted.
+- docs/PLAN.md: Phase 0 boxes ticked (verified 2026-09-28).
 
 ### Migration
 - Phase 1 done: `DATA_DIR\import\INVENTORY.md` built from the backup `drill-backup-2026-09-28.json`

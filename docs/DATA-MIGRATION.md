@@ -26,8 +26,8 @@ shows two "IA Module 3" decks with different counts.
 
 1. For each Drill card, oldest to newest:
    - Manage → **Download a backup** → **Copy**
-   - Paste into Notepad and save as `DATA_DIR\import\drill-backup-<nn>.json`
-     (Save as type: **All files**, Encoding: **UTF-8**), one file per card
+   - Paste into Notepad and save as `DATA_DIR\import\drill-backup-<anything>.json`
+     (any `drill-backup-*.json` name; Save as type: **All files**, Encoding: **UTF-8**), one file per card
 2. Put the module PDFs into `DATA_DIR\modules\`.
 3. Ask `migration-guardian` to build `DATA_DIR\import\INVENTORY.md`.
 4. Check INVENTORY.md yourself. Anything missing → find the card that has it, repeat step 1.
@@ -37,6 +37,13 @@ shows two "IA Module 3" decks with different counts.
 The same deck in two cards is matched by its id. The **fuller copy** is the base, every
 concept only the other copy has is added, and the **further-along progress** is kept — the
 same rule Drill's own restore now uses (a restore can never shrink a deck).
+
+**"Further-along" for one concept's progress record** — compare the two records in order:
+
+1. **Higher box** wins.
+2. If the boxes are tied: **more right answers** wins.
+3. If still tied: the **most recently seen** wins.
+
 Two different decks with the same name are both kept and flagged in INVENTORY.md for you
 to decide.
 
