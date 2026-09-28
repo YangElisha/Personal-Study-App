@@ -19,8 +19,27 @@ Newest first. Every change gets an entry in the same commit.
   Result 2026-09-28: Module 2 → 30 terms, Module 3 → 23 terms, all identical, 0 set
   aside on both; a one-line break in `toLines` and a one-line break in
   `setAsideActivities` (set aside every content slide) each fail both modules (exit code 1).
-  Limit: neither fixture has an activity slide, so a break that stops `setAsideActivities`
-  setting aside real activities still passes; that needs a fixture with an activity slide.
+  Neither real module has an activity slide, so on its own this missed a break that stops
+  `setAsideActivities` setting activities aside. **Closed by a synthetic fixture:**
+  - New fixture + golden file (Elisha's approval, 2026-09-28):
+    `tests/fixtures/synthetic-activity-text.json` and
+    `tests/golden/synthetic-activity.expected.json`. **Why:** without an activity slide
+    in any fixture, nothing checked that activities are set aside. The fixture is
+    hand-built, in the same `{page: {items, imgs}}` shape, with invented text only (no
+    course content, no personal data; marked SYNTHETIC in `tests/fixtures/README.md` and in
+    the golden file's `note`). Its six pages are a cover, a divider and three one-term
+    content slides (Widget, Gadget, Sprocket), plus slide 5 "ACTIVITY 1" ("Submit your
+    answers before Friday."). The golden file was generated from the legacy reader
+    only after checking by hand that its output is the intended reading: 3 terms kept,
+    slide 5 and its term "Activity 1" set aside, 0 self-check flags.
+  - The test now also asserts which slides are set aside, exactly (page, title, reason,
+    terms, in order), against a new golden field, `setAside`. A golden file without it
+    expects none, so Modules 2 and 3 are held to 0 set aside. Their fixtures and golden
+    files are unchanged. `npm test` runs all three fixtures.
+  - Proof: with `if(!why) return;` → `return;` in `setAsideActivities` (activities kept),
+    the synthetic fixture FAILS (extra term "Activity 1", slide 5 not set aside), exit
+    code 1. Before this change the same break passed with exit code 0. The earlier breaks
+    still fail: `toLines` 1, set-aside-everything 1, resolveSlides reordered 2.
 - Starter kit: CLAUDE.md, docs/ (PLAN, ARCHITECTURE, DATA-MIGRATION, OFFLINE-AI),
   six subagents in .claude/agents/, legacy app frozen in legacy/, reader regression
   fixtures and golden files for IA Modules 2 and 3.

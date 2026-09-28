@@ -74,8 +74,14 @@ Nothing is deleted from Claude.ai. The old cards stay as a second copy until Pha
       — *2026-09-28: in scratch copies of the HTML, (a) `toLines` changed to drop text
       fragments of 3 characters or fewer, and (b) `setAsideActivities` changed to set aside
       every content slide; each makes both modules FAIL, exit code 1. Legacy file untouched.
-      Not covered: neither fixture has an activity slide, so a break that stops activity
-      slides being set aside still passes.*
+      Neither real module has an activity slide, so a break that stops activity slides
+      being set aside used to pass. Closed 2026-09-28 (Elisha's approval) by a third,
+      synthetic fixture (`tests/fixtures/synthetic-activity-text.json`, invented text; see
+      `tests/fixtures/README.md`). It has one activity slide, and its golden file pins both
+      the kept terms and the set-aside slide (`setAside`). Modules 2 and 3 are held to 0
+      set aside. With (c) `if(!why) return;` → `return;` in `setAsideActivities`, the
+      synthetic fixture FAILS, exit code 1. (a) and (b) still exit 1, and a reordered
+      `resolveSlides` exits 2.*
 
 ---
 

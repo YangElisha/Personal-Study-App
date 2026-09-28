@@ -1,0 +1,41 @@
+{
+  "source": "synthetic-activity (hand-built test fixture, not a real module)",
+  "note": "SYNTHETIC. Invented text, no course content. Exists because neither real module has an activity slide: slide 5 (\"Activity 1\") must be set aside by setAsideActivities, the other terms kept. Generated from the legacy reader 2026-09-28 after hand-checking, with Elisha's approval.",
+  "pages": 6,
+  "contentSlides": 4,
+  "imageSlides": [],
+  "skippedSlides": [],
+  "terms": [
+    {
+      "name": "Widget",
+      "topic": "Sample Machine Parts",
+      "pages": [
+        3
+      ]
+    },
+    {
+      "name": "Gadget",
+      "topic": "Sample Machine Parts",
+      "pages": [
+        4
+      ]
+    },
+    {
+      "name": "Sprocket",
+      "topic": "Sample Machine Parts",
+      "pages": [
+        6
+      ]
+    }
+  ],
+  "setAside": [
+    {
+      "page": 5,
+      "title": "Activity 1",
+      "reason": "titled “Activity 1” — looks like an activity rather than content",
+      "terms": [
+        "Activity 1"
+      ]
+    }
+  ]
+}

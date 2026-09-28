@@ -11,8 +11,13 @@
  *   slidesFromUpload -> setAsideActivities -> auditSlides
  * (the last two are the opening statements of the app's resolveSlides). The terms left
  * after activity slides are set aside — what the student actually gets — must equal
- * tests/golden/ exactly: term names, topics, items, steps and pages. The self-check must
+ * tests/golden/ exactly: term names, topics, items, steps and pages. The slides set aside
+ * as activities must equal the golden file's "setAside" list exactly (page, title, reason,
+ * terms, in order); a golden file without "setAside" expects none. The self-check must
  * flag no slides. No network, no npm packages.
+ *
+ * Fixtures: Modules 2 and 3 are real text layers. synthetic-activity-text.json is hand-built
+ * (invented text, see tests/fixtures/README.md) because neither module has an activity slide.
  *
  * Exit code: 0 = pass, 1 = the reader's output differs from golden, 2 = could not run.
  * A difference is a failure. Never "fix" it by editing the golden files; report it.
@@ -27,6 +32,7 @@ const DEFAULT_HTML = path.join(ROOT, "legacy", "drill-study-app.html");
 const MODULES = [
   {label: "Module 2", fixture: "module2-text.json", golden: "module2.expected.json"},
   {label: "Module 3", fixture: "module3-text.json", golden: "module3.expected.json"},
+  {label: "Synthetic activity slide", fixture: "synthetic-activity-text.json", golden: "synthetic-activity.expected.json"},
 ];
 const TERM_FIELDS = ["name", "topic", "items", "steps", "pages"];
 
@@ -113,6 +119,18 @@ function compare(label, golden, got){
     const i = expNames.findIndex((n, k) => n !== gotNames[k]);
     diffs.push("term order differs at position " + (i + 1) + ": expected " + show(expNames[i]) + ", got " + show(gotNames[i]));
   }
+
+  // the slides set aside as activities, exactly; no "setAside" in golden means none
+  const expAside = golden.setAside || [];
+  const asideKey = s => JSON.stringify([s.page, s.title, s.reason, s.terms]);
+  const expKeys = expAside.map(asideKey), gotKeys = got.setAside.map(asideKey);
+  let asideDiff = false;
+  expAside.forEach((s, i) => { if(!gotKeys.includes(expKeys[i])){ asideDiff = true;
+    diffs.push("slide " + s.page + " (" + show(s.title) + ") not set aside as expected: " + show(s.reason) + " — terms " + show(s.terms)); } });
+  got.setAside.forEach((s, i) => { if(!expKeys.includes(gotKeys[i])){ asideDiff = true;
+    diffs.push("slide " + s.page + " (" + show(s.title) + ") set aside, not in golden: " + show(s.reason) + " — terms " + show(s.terms)); } });
+  if(!asideDiff && !same(expKeys, gotKeys))
+    diffs.push("set-aside list differs (order or repeats): expected pages " + show(expAside.map(s => s.page)) + ", got " + show(got.setAside.map(s => s.page)));
 
   got.flags.forEach(f => diffs.push("self-check flagged slide " + f.page + " (" + show(f.title) + "): " + f.why.join("; ")));
   return diffs;
@@ -210,20 +228,19 @@ async function main(){
       console.log("FAIL " + mod.label + " (" + mod.fixture + " vs " + mod.golden + "): " + summary);
       diffs.forEach(d => console.log("     - " + d));
     } else {
-      console.log("PASS " + mod.label + ": " + summary + "; names, topics, items, steps, pages identical");
+      console.log("PASS " + mod.label + ": " + summary + "; names, topics, items, steps, pages and set-aside identical");
     }
-    // golden has no set-aside field: the golden term list is the assertion (a set-aside
-    // slide always takes its terms with it). These lines say where missing terms went.
+    // what was set aside (asserted against golden "setAside" above; listed here for reading)
     got.setAside.forEach(s => console.log("     set aside: slide " + s.page + " (" + show(s.title) + "): " +
       s.reason + " — terms " + show(s.terms)));
   }
   console.log("");
   if(failed){
-    console.log(failed + " of " + MODULES.length + " modules FAILED. Do not update tests/golden/ to make this pass;");
+    console.log(failed + " of " + MODULES.length + " fixtures FAILED. Do not update tests/golden/ to make this pass;");
     console.log("report the difference and let Elisha decide whether the new reading is better.");
     process.exit(1);
   }
-  console.log("All " + MODULES.length + " modules passed.");
+  console.log("All " + MODULES.length + " fixtures passed.");
 }
 
 main().catch(e => { console.error(e && e.stack || e); process.exit(2); });
