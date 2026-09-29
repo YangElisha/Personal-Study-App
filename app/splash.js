@@ -29,13 +29,13 @@
     '<div class="ms-stage">' +
       '<div class="ms-head">' +
         '<p class="ms-title" aria-label="MonoSpace">MONOSPACE</p>' +
-        '<p class="ms-sub">Spatial study &amp; concept horizons</p>' +
+        '<p class="ms-sub">Study smarter. Remember longer.</p>' +
       '</div>' +
       '<div class="ms-pill" role="status" aria-live="polite">' +
         '<span class="ms-dot" aria-hidden="true"></span><span class="ms-msg"></span>' +
       '</div>' +
     '</div>';
-  root.querySelector(".ms-sub").textContent = "SPATIAL STUDY & CONCEPT HORIZONS";
+  root.querySelector(".ms-sub").textContent = "STUDY SMARTER. REMEMBER LONGER.";
   var msg = root.querySelector(".ms-msg");
   msg.textContent = "Loading your decks…";
   html.classList.add("ms-splashing");

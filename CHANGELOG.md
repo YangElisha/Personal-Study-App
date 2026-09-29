@@ -4,6 +4,8 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+- Loading screen tagline: "Study smarter. Remember longer." (was "Spatial study & concept horizons").
+
 ### Added — build queue (2026-09-29)
 - "Build the deck" now adds the module to a **build queue** and clears the form (the subject stays
   chosen), so the next module can be set up while one builds. Jobs run one at a time; each has
