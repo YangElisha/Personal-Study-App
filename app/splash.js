@@ -14,7 +14,7 @@
   "use strict";
   if (window.MonoSplash) return;
 
-  var MIN_MS = 1200, MAX_MS = 8000, OUT_MS = 600;
+  var MIN_MS = 10000, MAX_MS = 15000, OUT_MS = 600;   // shown ~10 s; a click or any key skips it
   var T0 = performance.now();
   var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
   var still = !!(mq && mq.matches);
@@ -302,6 +302,11 @@
     root.addEventListener("transitionend", function (e) { if (e.target === root) teardown(); });
     setTimeout(teardown, OUT_MS + 150);                     // in case transitionend never fires
   }
+  function skip() {
+    root.removeEventListener("click", skip);
+    document.removeEventListener("keydown", skip, true);
+    hide();
+  }
   function done() {
     if (doneAt || hiding) return;
     doneAt = performance.now();
@@ -318,6 +323,8 @@
   document.addEventListener("visibilitychange", onVis);
   if (mq) { if (mq.addEventListener) mq.addEventListener("change", onMotion); else if (mq.addListener) mq.addListener(onMotion); }
   safety = setTimeout(hide, MAX_MS);
+  root.addEventListener("click", skip);
+  document.addEventListener("keydown", skip, true);
   resize();
   if (!still) { frame(T0); start(); }
 })();
