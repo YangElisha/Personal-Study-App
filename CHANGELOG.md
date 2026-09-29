@@ -4,6 +4,8 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+- Loading screen now stays about 10 s (was at least 1.2 s); a click or any key skips it.
+
 ### Changed — native app window (2026-09-29)
 - MonoSpace.exe now opens its own native window (pywebview + Microsoft WebView2) instead of an
   Edge app window, so the taskbar and title bar show MonoSpace and its orb icon (Edge showed its
