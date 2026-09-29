@@ -49,7 +49,7 @@ As built (Phase 3, `server/db.py`): `kv` and `kv_history` exactly as above, plus
 `kv_history` first; writing text identical to what is stored is a no-op (no history row,
 `updated_at` kept). WAL mode, one transaction per write. Three small bookkeeping tables
 belong to the importer, not to the app: `import_files` (SHA-256 of each backup file
-imported), `import_notes` (Elisha's notes such as "rename later") and
+imported), `import_notes` (notes such as "rename later") and
 `import_decisions_applied` (which one-off import decisions have run). The request/response
 contract is in `docs/API.md`.
 
@@ -75,7 +75,7 @@ Qwen and the reply carries `fallback_from:"claude"` and the reason).
 
 **Choosing the model:** Qwen is the default. If `CLAUDE_CLI=on` and a 2-second
 reachability check passes, every request goes to Claude instead — text and pictures
-(Elisha, 2026-09-29: Claude whenever online, Qwen only offline). Pictures reach `claude -p`
+(2026-09-29: Claude whenever online, Qwen only offline). Pictures reach `claude -p`
 as image blocks via `--input-format stream-json`. Decide per request, so losing Wi-Fi
 mid-session just switches over. If Claude fails online (e.g. usage limit), the request is
 retried once on Qwen and the badge says so.
@@ -92,7 +92,7 @@ The server runs the official `claude` program in headless mode for each request:
 - output in JSON, translated into the shape the app expects
 - confirm the exact flags with `claude --help` — they change between versions
 
-This draws from Elisha's Claude subscription, the same limits as using Claude Code
+This draws from your own Claude subscription, the same limits as using Claude Code
 interactively (per Anthropic's Help Center as of September 2026 — this rule has changed
 several times, so if it stops working, set `CLAUDE_CLI=off` and everything runs on Qwen).
 Never extract Claude Code's login token for direct use — that is what gets accounts suspended.
@@ -146,19 +146,19 @@ the snapshot in with the backup API. Restoring the pre-restore file undoes a res
 
 ## Where the data lives
 
-Everything personal lives in `DATA_DIR` — by default `C:\Users\Elish\OneDrive\DrillData` —
+Everything personal lives in `DATA_DIR` — for example `C:\Users\<you>\MonoSpaceData` —
 outside the Git folder, so it can never be committed:
 
 ```
-DrillData\
+MonoSpaceData\
   drill.db        the database
   backups\        automatic snapshots: on every start and once a day, newest 30 kept
-  import-decisions.json   Elisha's import decisions, read by the importer (Phase 3)
+  import-decisions.json   your import decisions (optional), read by the importer (Phase 3)
   drill-server.lock       empty file the running server locks (one process at a time)
   import\         backup files exported from Drill (read only)
   modules\        your module PDFs
 ```
 
-OneDrive keeps a cloud copy of all of it. **Don't run the app on two PCs at once**, or OneDrive
+If DATA_DIR is in a synced folder (e.g. OneDrive), **don't run the app on two PCs at once**, or the sync service
 can create a conflicting copy of the database. The app's own **Download a backup** still
 works at any time and gives a single portable file.

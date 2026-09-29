@@ -14,7 +14,7 @@ full-slide background (Module 3's Canva pages) from a real picture. Each has a m
 
 ## synthetic-activity-text.json
 
-Added 2026-09-28 (Elisha's approval) because neither real module has an activity slide, so
+Added 2026-09-28 (approved) because neither real module has an activity slide, so
 nothing checked that `setAsideActivities` actually sets activity slides aside.
 
 Six pages, same shape as `module2-text.json` (`{page: {items: [{str, transform}], imgs}}`):

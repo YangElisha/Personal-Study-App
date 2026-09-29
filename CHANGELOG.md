@@ -28,6 +28,10 @@ Newest first. Every change gets an entry in the same commit.
 - README rewritten as an install guide; MIT LICENSE added.
 
 ### Added
+- `tools/export_public.py`: makes the clean public copy (no history; leaves out CLAUDE.md, .claude/,
+  PLAN/DATA-MIGRATION/SETUP-GUIDE, legacy/, the real course fixtures, CHANGELOG/MODULES), then
+  scans it for personal markers, course material and secrets. The reader test skips fixtures
+  that aren't present. Comments and test names made generic (no personal names or paths).
 - Phase 9 (app, marked "LOCAL PORT (Phase 9)"): with AUTH_MODE=google, an account chip (initials,
   email on hover, no image) opens "Account & security": signed in as / since / ends, active
   sessions with per-session Sign out and "Sign out all other devices", the last 20 sign-in events,

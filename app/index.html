@@ -766,7 +766,7 @@ textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var
 ::-webkit-scrollbar-track{background:transparent}
 @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
 
-/* ---- LOCAL PORT (polish, Elisha 2026-09-29): desktop readability & layout fixes ---- */
+/* ---- LOCAL PORT (polish, 2026-09-29): desktop readability & layout fixes ---- */
 .studypage{padding-top:76px}                                  /* study bar no longer hides the card top */
 @media(min-width:901px){.studybar{left:var(--nav)}}           /* ...nor the sidebar */
 .page{padding-bottom:120px}                                   /* "Ask the teacher" never covers page ends */
@@ -781,7 +781,7 @@ textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var
 textarea{font-family:inherit}                                 /* one font in text boxes */
 .face small{text-transform:none;letter-spacing:.02em;font-family:inherit}
 
-/* ---- MonoSpace (Elisha 2026-09-29): premium reskin. Colours still come from Theme / PRESETS;
+/* ---- MonoSpace (2026-09-29): premium reskin. Colours still come from Theme / PRESETS;
         the extra variables (--bg-grad, --glass, --sheen, --hl) are derived in Theme.apply. ---- */
 :root{--display:"Inter","IBM Plex Sans",system-ui,sans-serif;--body:"Inter","IBM Plex Sans",system-ui,sans-serif;
       --r:14px;--rs:10px;--ease:cubic-bezier(.2,.7,.3,1);--t:.18s}
@@ -1869,7 +1869,7 @@ const STORE_LABEL = {
   server:"Saved on this PC"
 }[STORE_MODE];
 const STORE_DETAIL = {
-  server:"Your decks and progress are stored in the MonoSpace database on this PC (your DrillData folder), kept by the MonoSpace server running here. They survive closing the browser and restarting your PC, and need no internet. Every change keeps the previous version, and the server snapshots the database each time it starts and once a day. Download a backup regularly."
+  server:"Your decks and progress are stored in the MonoSpace database on this PC (your DATA_DIR folder), kept by the MonoSpace server running here. They survive closing the browser and restarting your PC, and need no internet. Every change keeps the previous version, and the server snapshots the database each time it starts and once a day. Download a backup regularly."
 }[STORE_MODE];
 const storeUrl = k => "/api/store/" + encodeURIComponent(k);
 const store = {
@@ -2250,7 +2250,7 @@ async function boot(){
     LIB = {folders:[{id:"f-main", name:"My subjects"}], decks:[]};
     await store.set("library", LIB);
   }
-  /* MonoSpace one-time switch (Elisha 2026-09-29): own colours are kept as the preset
+  /* MonoSpace one-time switch (2026-09-29): own colours are kept as the preset
      "Classic (my colours)", the MonoSpace look is switched on, and prefs are written once with
      msTheme:1 so this never runs again. Not reached when prefs failed to load (guard above). */
   const msSwitch = !!prefs && !prefs.msTheme;

@@ -1,6 +1,6 @@
 """The AI router behind POST /api/ai (Phase 5). See docs/ARCHITECTURE.md, docs/OFFLINE-AI.md.
 
-Per request (Elisha, 2026-09-29: Claude whenever online, Qwen only offline):
+Per request (2026-09-29: Claude whenever online, Qwen only offline):
   1. CLAUDE_CLI=on and api.anthropic.com reachable within 2 s -> Claude via `claude -p`,
      text AND pictures (pictures go in as image blocks via --input-format stream-json).
   2. otherwise (offline, or CLAUDE_CLI=off) -> Qwen.
@@ -10,7 +10,7 @@ reply then says model_used "qwen" with fallback_from "claude" and the reason.
 Claude is reached ONLY by running the official `claude` program: prompt on stdin, from an
 empty temporary folder, no tools, one turn, JSON output. Claude Code's login is never read
 here, and ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN are removed from the child's environment
-so it always uses Elisha's own Claude Code sign-in.
+so it always uses the user's own Claude Code sign-in.
 
 Qwen: options.num_ctx from OLLAMA_NUM_CTX on every request, think:false (Qwen3.5 is a
 thinking model; the app wants the plain answer), truncate:false and shift:false so Ollama

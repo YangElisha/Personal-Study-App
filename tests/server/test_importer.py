@@ -301,7 +301,7 @@ def test_existing_deck_name_is_never_changed_by_a_fuller_file_copy(settings, mak
     write_backup(settings.import_dir, "drill-backup-1.json",
                  backup(FOLDERS, [(d1, "f-a")], exported="2026-09-01T00:00:00.000Z"))
     imp(settings)
-    # Elisha renames the deck in the app: library entry and deck.name
+    # The user renames the deck in the app: library entry and deck.name
     with make_client() as c:
         lib = J(settings, "library")
         lib["decks"][0]["name"] = "My Rename"

@@ -6,7 +6,7 @@
 What it does, in order (docs/DATA-MIGRATION.md, "How the import works"):
   1. reads every drill-backup-*.json read-only and records its SHA-256;
   2. PLANS, writing nothing: merges the files (oldest `exported` first) into what the
-     database holds, then applies Elisha's not-yet-applied decisions
+     database holds, then applies the user's not-yet-applied decisions
      (DATA_DIR\\import-decisions.json), all in memory, and lists every key that would be
      added or changed, with what changes;
   3. if nothing would be written, stops there: no snapshot, no write;
@@ -248,7 +248,7 @@ def read_backup(path: Path) -> BackupFile:
     if unknown:
         raise ImportError_(f"{path.name}: unknown top-level keys {unknown}. There is no place "
                            "to keep them without reshaping the data, so nothing was written. "
-                           "Ask Elisha / extend the importer.")
+                           "Check the file / extend the importer.")
     return BackupFile(path=path, sha256=sha, size=len(raw), data=data,
                       exported=str(data.get("exported") or ""), v=data.get("v"))
 
@@ -406,7 +406,7 @@ def check_assertions(state: State, decisions: list) -> None:
         found = [c.get("name") for c in deck.get("concepts") or [] if norm(c.get("name")) in names]
         if found:
             raise ImportError_(f"decision {d['id']}: {found} would be in deck {d['deck']}, which "
-                               "Elisha said must not happen. Nothing was written.")
+                               "the decisions file says must not happen. Nothing was written.")
 
 
 # ---- decisions (planned in memory) --------------------------------------------------------

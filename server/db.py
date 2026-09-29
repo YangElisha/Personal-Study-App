@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS import_files (
   sha256 TEXT PRIMARY KEY, name TEXT NOT NULL, size INTEGER NOT NULL,
   exported TEXT, first_imported_at TEXT NOT NULL
 );
--- notes from Elisha's import decisions that are not app data ("rename later", ...)
+-- notes from the user's import decisions that are not app data ("rename later", ...)
 CREATE TABLE IF NOT EXISTS import_notes (
   deck_id TEXT NOT NULL, note TEXT NOT NULL, source TEXT, created_at TEXT NOT NULL,
   UNIQUE(deck_id, note)
@@ -93,7 +93,7 @@ def transaction(conn: sqlite3.Connection):
             raise
         else:
             conn.execute("COMMIT")
-    # keep drill.db itself current, so OneDrive's copy of the main file is up to date
+    # keep drill.db itself current, so a synced copy (e.g. OneDrive) of the main file is up to date
     try:
         conn.execute("PRAGMA wal_checkpoint(PASSIVE)")
     except sqlite3.Error:

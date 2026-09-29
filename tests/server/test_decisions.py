@@ -1,4 +1,4 @@
-"""Elisha's import decisions, on a synthetic mini-backup shaped like the real case."""
+"""The user's import decisions, on a synthetic mini-backup shaped like the real case."""
 from __future__ import annotations
 
 import json

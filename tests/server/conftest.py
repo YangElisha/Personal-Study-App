@@ -28,7 +28,7 @@ def no_real_ai(monkeypatch):
 
 @pytest.fixture
 def data_dir(tmp_path, monkeypatch) -> Path:
-    d = tmp_path / "DrillData"
+    d = tmp_path / "MonoSpaceData"
     (d / "import").mkdir(parents=True)
     # anything that calls load_settings() (the CLIs) sees the scratch folder
     monkeypatch.setenv("DATA_DIR", str(d))

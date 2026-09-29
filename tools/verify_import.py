@@ -15,7 +15,7 @@ Usage (from the repo folder):
     .venv\\Scripts\\python tools\\verify_import.py --after-study     # Phase 7
 
 Default mode ("exact", right after an import): the database must hold exactly what the
-backup files hold, merged by deck id as DATA-MIGRATION.md describes, with Elisha's decisions
+backup files hold, merged by deck id as DATA-MIGRATION.md describes, with the user's decisions
 (DATA_DIR\\import-decisions.json) applied, and nothing else.
 
 --after-study (Phase 7, after studying locally): every deck, concept, question, flashcard,
@@ -319,7 +319,7 @@ def build_expected(files) -> Expected:
 
 
 def apply_decisions(ex: Expected, decisions, out) -> list:
-    """Apply Elisha's decisions to a copy of the expected state. Returns checks to run on the
+    """Apply the user's decisions to a copy of the expected state. Returns checks to run on the
     database later: [(kind, decision)]."""
     later = []
     for d in decisions:

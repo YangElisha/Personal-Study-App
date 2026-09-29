@@ -36,7 +36,7 @@ def put_deck(client, deck_id, name, concepts, coverage_pages=None):
     assert client.put(f"/api/store/deck:{deck_id}", content=json.dumps(deck)).status_code == 200
 
 
-def upload(client, data: bytes, name="MODULE2_S-ITCS318.pdf", **kw):
+def upload(client, data: bytes, name="MODULE2_EXAMPLE.pdf", **kw):
     return client.post("/api/modules", params={"name": name}, content=data,
                        headers={"Content-Type": "application/pdf", **kw.pop("headers", {})}, **kw)
 
@@ -70,15 +70,15 @@ def first_version(client, data=None):
 def test_new_upload_is_stored_and_recorded(client, settings, tmp_path):
     data, up, dk = first_version(client)
     assert up["known"] is False and up["sha256"] == sha(data) and up["previous"] is None
-    assert up["stored_name"] == "MODULE2_S-ITCS318.pdf"
-    assert (mods_dir(settings) / "MODULE2_S-ITCS318.pdf").read_bytes() == data
+    assert up["stored_name"] == "MODULE2_EXAMPLE.pdf"
+    assert (mods_dir(settings) / "MODULE2_EXAMPLE.pdf").read_bytes() == data
     assert dk["first_upload"] is True and dk["terms"] == 3 and dk["pages"] == 40
     assert dk["added"] == ["Risk", "Threat", "Asset"] and dk["status"] == "recorded"
     lst = client.get("/api/modules").json()["modules"]
     assert len(lst) == 1 and lst[0]["deck_id"] == "d1" and lst[0]["deck_name"] == "IA Module 2"
     assert lst[0]["terms"] == 3 and lst[0]["deck_exists"] is True
     # no temp files left behind
-    assert sorted(p.name for p in mods_dir(settings).iterdir()) == ["MODULE2_S-ITCS318.pdf"]
+    assert sorted(p.name for p in mods_dir(settings).iterdir()) == ["MODULE2_EXAMPLE.pdf"]
 
 
 def test_same_pdf_again_is_known_no_changes(client, settings):
@@ -89,7 +89,7 @@ def test_same_pdf_again_is_known_no_changes(client, settings):
     assert r.status_code == 200 and j["known"] is True
     assert j["deck_id"] == "d1" and j["deck_name"] == "IA Module 2" and j["deck_exists"] is True
     assert kv_full(settings) == before                          # no deck, no kv write
-    assert sorted(p.name for p in mods_dir(settings).iterdir()) == ["MODULE2_S-ITCS318.pdf"]
+    assert sorted(p.name for p in mods_dir(settings).iterdir()) == ["MODULE2_EXAMPLE.pdf"]
     assert len(client.get("/api/modules").json()["modules"]) == 1
     assert events(settings)[-1] == (sha(data), "reupload")
     assert "identical file, no changes" in (settings.data_dir / "MODULES.md").read_text("utf-8")
@@ -106,17 +106,17 @@ def test_name_clash_gets_suffix_and_identical_file_reused(client, settings):
     d = mods_dir(settings)
     d.mkdir(exist_ok=True)
     other = pdf("someone else's file")
-    (d / "MODULE2_S-ITCS318.pdf").write_bytes(other)
+    (d / "MODULE2_EXAMPLE.pdf").write_bytes(other)
     data = pdf("v1")
     j = upload(client, data).json()
-    assert j["stored_name"] == f"MODULE2_S-ITCS318-{sha(data)[:8]}.pdf"
-    assert (d / "MODULE2_S-ITCS318.pdf").read_bytes() == other          # not overwritten
+    assert j["stored_name"] == f"MODULE2_EXAMPLE-{sha(data)[:8]}.pdf"
+    assert (d / "MODULE2_EXAMPLE.pdf").read_bytes() == other          # not overwritten
     assert (d / j["stored_name"]).read_bytes() == data
     # an identical file already in place (e.g. copied by hand) is reused, not duplicated
     same = pdf("module3")
-    (d / "MODULE3_S-ITCS318.pdf").write_bytes(same)
-    j3 = upload(client, same, name="MODULE3_S-ITCS318.pdf").json()
-    assert j3["stored_name"] == "MODULE3_S-ITCS318.pdf"
+    (d / "MODULE3_EXAMPLE.pdf").write_bytes(same)
+    j3 = upload(client, same, name="MODULE3_EXAMPLE.pdf").json()
+    assert j3["stored_name"] == "MODULE3_EXAMPLE.pdf"
     assert len(list(d.glob("MODULE3*"))) == 1
 
 
@@ -206,7 +206,7 @@ def test_modules_md_generated_in_both_places(client, settings, tmp_path):
     repo_md = (tmp_path / "repo-MODULES.md").read_text("utf-8")
     assert repo_md == (settings.data_dir / "MODULES.md").read_text("utf-8")
     assert repo_md.startswith("# MODULES")
-    assert "| MODULE2_S-ITCS318.pdf | IA Module 2 | 3 | 40 |" in repo_md
+    assert "| MODULE2_EXAMPLE.pdf | IA Module 2 | 3 | 40 |" in repo_md
     assert "first upload" in repo_md and sha(pdf("v1")) in repo_md
     assert "Chance of loss" not in repo_md                     # no study content, names only
 
@@ -224,21 +224,21 @@ def test_register_cli(client, settings, tmp_path, capsys):
     d = mods_dir(settings)
     d.mkdir(exist_ok=True)
     data = pdf("backfill", pages=7)
-    (d / "MODULE2_S-ITCS318.pdf").write_bytes(data)
+    (d / "MODULE2_EXAMPLE.pdf").write_bytes(data)
     md = [tmp_path / "cli-MODULES.md"]
-    out = modules.register(settings, d / "MODULE2_S-ITCS318.pdf", "m2", md_paths=md)
+    out = modules.register(settings, d / "MODULE2_EXAMPLE.pdf", "m2", md_paths=md)
     assert out["sha256"] == sha(data) and out["terms"] == 3 and out["pages"] == 40
     assert out["first_upload"] is True
     assert "IA Module 2" in md[0].read_text("utf-8")
-    assert sorted(p.name for p in d.iterdir()) == ["MODULE2_S-ITCS318.pdf"]   # used in place
+    assert sorted(p.name for p in d.iterdir()) == ["MODULE2_EXAMPLE.pdf"]   # used in place
     # through main(): same file again is a no-op; a different deck is refused
     import server.modules as m
     orig = m.default_md_paths
     m.default_md_paths = lambda s: md
     try:
-        assert m.main(["register", str(d / "MODULE2_S-ITCS318.pdf"), "--deck", "m2"]) == 0
+        assert m.main(["register", str(d / "MODULE2_EXAMPLE.pdf"), "--deck", "m2"]) == 0
         assert "unchanged" in capsys.readouterr().out
-        assert m.main(["register", str(d / "MODULE2_S-ITCS318.pdf"), "--deck", "other"]) == 1
+        assert m.main(["register", str(d / "MODULE2_EXAMPLE.pdf"), "--deck", "other"]) == 1
         # a PDF outside modules\ is copied in; missing deck refused before any write
         ext = tmp_path / "Module3.pdf"
         ext.write_bytes(pdf("m3", pages=5))

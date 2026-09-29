@@ -1,4 +1,4 @@
-# OFFLINE AI — Ollama + Qwen on Elisha's laptop
+# OFFLINE AI — Ollama + Qwen on your PC
 
 ## Your hardware → your model
 
@@ -45,7 +45,7 @@ token prompt at num_ctx 2048 was silently cut to 1,026 tokens — the failure th
 Measured on this laptop, 2026-09-28 (flash attention on, KV cache q8_0, ~7 GB of the 8 GB
 free when the model loaded): num_ctx **8192 → 100% GPU**; **12288 and 16384 → 12%/88%
 CPU/GPU** (33 of 34 layers on the GPU). So 16384 does not fully fit today.
-**Set to 8192 (Elisha, 2026-09-29)**; confirmed 5.5 GB, 100% GPU during a long request.
+**Set to 8192 (2026-09-29)**; confirmed 5.5 GB, 100% GPU during a long request.
 
 The teacher chat asks the server which model will answer (`GET /api/ai/route` →
 `{model, num_ctx}`). For Qwen it sizes the module text to fit num_ctx (reply 900 + 400 spare
