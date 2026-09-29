@@ -1,9 +1,9 @@
 {
-  "name": "drill-local",
+  "name": "monospace",
   "version": "0.0.0",
   "private": true,
-  "description": "Drill study app, running offline on this PC",
-  "license": "UNLICENSED",
+  "description": "MonoSpace study app, running offline on this PC",
+  "license": "MIT",
   "engines": {
     "node": ">=18"
   },

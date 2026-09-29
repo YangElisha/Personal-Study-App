@@ -32,7 +32,7 @@ class InstanceLock:
         except OSError:
             fh.close()
             raise AlreadyRunning(
-                f"Another Drill process (probably the server) is using {self.path.parent}. "
+                f"Another MonoSpace process (probably the server) is using {self.path.parent}. "
                 "Stop it first (close its window or press Ctrl+C).") from None
         self._fh = fh
         return self

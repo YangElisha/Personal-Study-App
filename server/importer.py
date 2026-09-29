@@ -885,9 +885,6 @@ def main(argv=None) -> int:
                                  description="Import DATA_DIR\\import\\drill-backup-*.json")
     ap.add_argument("--yes", action="store_true",
                     help="do not ask before changing existing data (for scripts)")
-    ap.add_argument("--user", metavar="EMAIL",
-                    help="import into this account's own database (Phase 9); "
-                         "default: DATA_DIR itself, as before")
     ap.add_argument("--no-decisions", action="store_true",
                     help="merge the files only; do not apply import-decisions.json")
     args = ap.parse_args(argv)
@@ -908,19 +905,16 @@ def main(argv=None) -> int:
             answer = ""
         return answer.strip() == "yes"
 
-    from .accounts import AccountError, settings_for_email
     try:
-        settings = settings_for_email(load_settings(), args.user)
+        settings = load_settings()
         print(f"DATA_DIR = {settings.data_dir}")
-        if not settings.is_main_data:
-            print(f"Account {args.user}: {settings.root}")
         with InstanceLock(settings.lock_file, "importer"):
             rep = run_import(settings, confirm=ask,
                              apply_decisions_step=not args.no_decisions)
     except ImportCancelled as e:
         print(f"IMPORT CANCELLED: {e}")
         return 1
-    except (SettingsError, AlreadyRunning, ImportError_, AccountError) as e:
+    except (SettingsError, AlreadyRunning, ImportError_) as e:
         print(f"IMPORT STOPPED: {e}")
         return 2
     print("\n".join(rep.lines[printed:]))

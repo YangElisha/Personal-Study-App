@@ -115,7 +115,7 @@ def test_ai_no_model_available(client):
 
 def test_placeholder_when_no_app(client):
     r = client.get("/")
-    assert r.status_code == 200 and "Drill server is running" in r.text
+    assert r.status_code == 200 and "MonoSpace server is running" in r.text
 
 
 def test_serves_app_dir(make_client, tmp_path):

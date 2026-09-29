@@ -24,11 +24,6 @@ def no_real_ai(monkeypatch):
     monkeypatch.setenv("CLAUDE_CLI", "off")
     monkeypatch.setenv("CLAUDE_CLI_PATH", "drill-no-such-claude-program")
     monkeypatch.setenv("CLAUDE_REACH_HOST", "127.0.0.1:9")
-    # Phase 9: the CLIs under test see sign-in off unless a test turns it on, whatever the
-    # real .env says; never the real Google client values.
-    monkeypatch.setenv("AUTH_MODE", "off")
-    monkeypatch.setenv("GOOGLE_CLIENT_ID", "test-client.apps.googleusercontent.com")
-    monkeypatch.setenv("GOOGLE_CLIENT_SECRET", "test-secret-not-real")
 
 
 @pytest.fixture
@@ -53,17 +48,13 @@ def make_client(settings, tmp_path):
     from fastapi.testclient import TestClient
     from server.app import create_app
 
-    def make(app_dir=None, client_ip="127.0.0.1", base_url="http://127.0.0.1:8765",
-             app_settings=None, **kw):
+    def make(app_dir=None, client_ip="127.0.0.1", base_url="http://127.0.0.1:8765", **kw):
         # MODULES.md goes to the scratch folder, never the repo's copy
         kw.setdefault("modules_md_paths", [tmp_path / "repo-MODULES.md",
                                            settings.data_dir / "MODULES.md"])
-        kw.setdefault("detect_tailscale", False)     # never run the real tailscale CLI
-        app = create_app(app_settings or settings, app_dir=app_dir or (tmp_path / "no-app"), **kw)
-        # the client address is simulated: the server only answers loopback when phone
-        # access is off, and Tailscale (or LAN) addresses only when it is on
-        return TestClient(app, base_url=base_url, client=(client_ip, 50000),
-                          follow_redirects=False)
+        app = create_app(settings, app_dir=app_dir or (tmp_path / "no-app"), **kw)
+        # the client address is simulated: the server answers loopback clients only
+        return TestClient(app, base_url=base_url, client=(client_ip, 50000))
     return make
 
 

@@ -1,12 +1,7 @@
 # API — the local server's contract
 
-Server: `http://localhost:8765` (PORT from `.env`), bound to 127.0.0.1 only, unless
-`PHONE_ACCESS=on` (see "Phone access" below). Code: `server/`.
+Server: `http://localhost:8765` (PORT from `.env`), bound to 127.0.0.1 only. Code: `server/`.
 Tests: `tests/server/`.
-
-With `AUTH_MODE=google` (Phase 9) every request below needs a signed-in session, and the
-store, modules, import and snapshots use **the signed-in account's own database**. See
-"Sign-in" at the end. With `AUTH_MODE=off` (the default) everything works exactly as before.
 
 ## Store — the storage seam
 
@@ -33,9 +28,8 @@ today. (204, not 404: a missing key is a normal answer, for example the progress
 never studied, and browsers log every 404 as a red "Failed to load resource" line.)
 Deleting a missing key still answers 404.
 
-**Caching.** Every `/api/*` and `/auth/*` response carries `Cache-Control: no-store`; app
-files carry `no-cache` (the browser revalidates them). Security headers on every response:
-see "Security headers" under "Sign-in".
+**Caching.** Every `/api/*` response carries `Cache-Control: no-store`; app files carry
+`no-cache` (the browser revalidates them).
 
 **Values** are stored as the exact text the client sent. Writing text identical to what is
 stored is a no-op: `status:"unchanged"`, no history row, `updated_at` unchanged. Any other
@@ -188,227 +182,26 @@ recorded.
 
 ## Safety guards
 
-Checked in this order, for every request, before anything else happens:
-
-1. **Client address.** `PHONE_ACCESS=off`: only loopback (`127.0.0.1`, `::1`). `on`: also
-   Tailscale (`100.64.0.0/10`, `fd7a:115c:a1e0::/48`), and with `PHONE_ALLOW_LAN=on` the
-   private ranges (`10/8`, `172.16/12`, `192.168/16`, `fe80::/10`, `fc00::/7`). Anyone else:
-   **403** `forbidden_client`. The address is the socket's peer (uvicorn runs with
-   `proxy_headers=False`, so `X-Forwarded-For` cannot fake it).
-2. **Host.** The `Host` header must be `localhost`, `127.0.0.1` or `[::1]`; with phone access
-   on, also this PC's Tailscale IPs and MagicDNS names (full and short, detected with the
-   `tailscale` CLI at start and re-checked at most every 30 s when an unknown Host arrives),
-   the PC's own private IPs when `PHONE_ALLOW_LAN=on`, and the names in `PHONE_HOSTS`.
-   Anything else: **403** `forbidden_host`. This blocks DNS-rebinding tricks from websites.
-3. **Origin.** A `PUT`, `DELETE` or `POST` that carries an `Origin` header gets **403**
-   `forbidden_origin` unless it is the server's own origin, built from the Host the request
-   was addressed to: `http://<that host>:<that port>`. The local names are interchangeable
-   (a page on `localhost:8765` may write to `127.0.0.1:8765`, as before); a Tailscale name
-   only accepts its own origin. That includes `Origin: null` (sandboxed frames, `file://`
-   pages) and an empty Origin, so no other web page open in the browser can change Drill's
-   data. Requests without an Origin header (curl, scripts) are allowed; they cannot come
-   from another website, because browsers always send Origin on cross-site writes.
-4. **Session.** `AUTH_MODE=off`: the PIN, for non-loopback clients only (see "Phone access").
-   `AUTH_MODE=google`: a valid session for **every** client, this PC included (see "Sign-in").
+- Requests must be addressed to `localhost` or `127.0.0.1` (the `Host` header). This blocks
+  DNS-rebinding tricks from websites.
+- A `PUT`, `DELETE` or `POST` that carries an `Origin` header gets 403 unless that origin is
+  the server's own (`http://localhost:<port>` or `http://127.0.0.1:<port>`, the port the
+  request was sent to). That includes `Origin: null` (sandboxed frames, `file://` pages)
+  and an empty Origin, so no other web page open in the browser can change Drill's data.
+  Requests without an Origin header (curl, scripts) are allowed; they cannot come from
+  another website, because browsers always send Origin on cross-site writes.
 - One process owns `DATA_DIR` at a time (an OS lock on `DATA_DIR\drill-server.lock`, released
   automatically when the process ends). A second server, the import CLI and the restore
   CLI all refuse while the server runs.
 
-## Phone access (Phase 8, `server/phone.py`, `server/pin.py`)
+## Security (kept from Phase 9)
 
-**Warning:** never put `tailscale serve` or any other proxy/forwarder on this PC in front of Drill.
-The PC itself is trusted without a PIN, so forwarded phone requests would arrive as "this PC"
-and skip the PIN.
-
-The phone uses the app running on the PC over Tailscale. Settings in `.env`:
-
-| Setting | Default | Meaning |
-|---|---|---|
-| `PHONE_ACCESS` | `off` | `off`: bind 127.0.0.1, this PC only (as before). `on`: bind 0.0.0.0; the guards above admit loopback + Tailscale only. |
-| `PHONE_ALLOW_LAN` | `off` | `on`: also admit the home network's private addresses (still with the PIN). |
-| `PHONE_HOSTS` | empty | Extra Host names to accept, comma-separated. |
-
-With `PHONE_ACCESS=on`, `python -m server` (and so `start.bat`) prints the URL(s) to open on
-the phone, whether Tailscale is installed/connected, and whether a PIN is set.
-
-**PIN.** Loopback clients (this PC) never need one. Every other client needs a session:
-
-| Request (non-loopback, no valid session) | Answer |
-|---|---|
-| no PIN set yet, any page | **403** HTML page "Set a PIN on the PC first" |
-| no PIN set yet, `/api/*` or any non-GET | **401** `{"ok":false,"error":"pin_not_set",...}` |
-| `GET /` | **200** the sign-in page (inline HTML/CSS, no external files, works offline) |
-| `GET` any other page | **303** to `/` |
-| `/api/*` or any non-GET | **401** `{"ok":false,"error":"pin_required",...}` |
-| `POST /api/phone/login`, body `pin=<digits>` (form) or `{"pin":"..."}` | right PIN: **303** to `/` + cookie. Wrong: **401** sign-in page "Wrong PIN." 5th wrong in a row from one IP, or any attempt while locked: **429**, locked 15 minutes (logged to the console and to `auth_events`). A correct PIN resets the count. Lockouts are in memory: a server restart clears them. |
-| `POST /api/phone/logout` | revokes this session, clears the cookie, **303** to `/` |
-
-The cookie `drill_session` is a random 256-bit token, `HttpOnly; SameSite=Strict; Path=/;
-Max-Age=2592000` (30 days, not sliding). Not `Secure`: the connection is plain HTTP inside
-Tailscale's encrypted tunnel. Only its SHA-256 is stored.
-
-**Storage.** `DATA_DIR\phone-access.db` (not the repo, not `drill.db`, so a snapshot restore
-can never bring back an old PIN or revoked sessions): `pin` (salted scrypt, n=2^14 r=8 p=1;
-a new PIN adds a row, the newest wins), `sessions` (token hash, created/expires, client IP,
-user agent, `revoked_at`; revoking marks, never deletes), `auth_events`.
-
-**CLI** (works while the server runs):
-
-- `python -m server.pin set` — asks twice, 6+ digits. Setting or changing it signs every
-  phone out.
-- `python -m server.pin revoke-all` — sign every phone out now.
-- `python -m server.pin status` — PIN set or not, signed-in phones.
-
-**Firewall.** `tools\phone-firewall.ps1` (run once as administrator) adds one inbound
-Windows Firewall rule "Drill phone access (Tailscale)": TCP `PORT` from `100.64.0.0/10` and
-`fd7a:115c:a1e0::/48` only. `-Remove` removes it. It also lists any inbound block rules
-for Python (Windows block rules win over allow rules) without changing them. With
-`PHONE_ALLOW_LAN=on` the home network is not covered by this rule.
-
-## Sign-in (Phase 9, `server/google_auth.py`, `server/accounts.py`)
-
-`AUTH_MODE=off` (default): no sign-in; everything above works exactly as before, on
-`DATA_DIR\drill.db`. `AUTH_MODE=google`: everyone signs in with an **approved** Google
-account, and each account has its own database. The server refuses to start with
-`AUTH_MODE=google` unless `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are in `.env` (they
-are never logged or shown).
-
-### Whose data
-
-| Account | drill.db, backups, modules, import |
-|---|---|
-| the one allowed with `--existing-data` (Elisha) | `DATA_DIR` itself: the existing `drill.db`, `backups\`, `modules\`, used in place. Nothing is copied, moved or changed. The repo's `MODULES.md` stays hers. |
-| every other approved account | `DATA_DIR\users\<id>\` (created with an empty `drill.db` when the account is allowed or first used; its own `MODULES.md` there, never the repo's) |
-
-The store, `/api/modules`, `/api/import` and snapshots (on start and daily, one set per
-database, each in its own `backups\`) use the signed-in account's folder. The AI endpoints
-keep no per-account state (the server has no AI budget or usage record). `DATA_DIR\accounts.db`
-holds the allow-list, sessions and sign-in events; it is separate from every `drill.db`, so
-restoring a snapshot can never bring back a revoked session.
-
-### Without a session (`AUTH_MODE=google`)
-
-Every route needs a session, **this PC (loopback) included**: app files, `/api/*` (health,
-store, ai, ai/route, modules, import, auth), `/favicon.ico`.
-
-| Request | Answer |
-|---|---|
-| `/api/*`, or any non-GET | **401** `{"ok":false,"error":"auth_required","message":"Sign in first","sign_in":"google"}` (`"sign_in":"pin"` from a phone) |
-| `GET /` | **200** the sign-in page (server-made inline HTML, no external files, works offline). If the browser sent an expired or revoked cookie it says "Your sign-in has ended" and clears the cookie. |
-| `GET` any other path | **303** to `/` |
-| `GET /auth/signin?error=<code>` | the sign-in page with that message (codes below; unknown codes show none) |
-
-**Frontend contract (app/index.html):** when any `/api/*` answer is **401** with
-`error:"auth_required"`, stop and load `/` (`location.href = "/"`); the server then shows the
-sign-in page. Never treat a 401 as "nothing stored" (today's `store.get` already treats it as a
-read failure, `readFailed = true`, and `store.set` returns false).
-
-### The flow (OpenID Connect, authorization code + PKCE, standard library only)
-
-1. The sign-in page's button is a plain link to `GET /auth/google/start`. It answers **302** to
-   `https://accounts.google.com/o/oauth2/v2/auth` with `response_type=code`,
-   `scope=openid email`, `state`, `nonce`, `code_challenge` (S256), `prompt=select_account`, and
-   `redirect_uri=http://<localhost or 127.0.0.1>:PORT/auth/google/callback` (the host the page
-   was opened on). It sets the cookie `drill_oauth` (random; `HttpOnly; SameSite=Lax;
-   Path=/auth/google/; Max-Age=600`), which ties this sign-in to this browser. The state, nonce
-   and PKCE verifier stay on the server (memory, 10 minutes, one use).
-   - Opened on another host name (e.g. `[::1]` or a Tailscale name): **400** page "Open Drill
-     at http://localhost:PORT/" (Google only accepts the two registered addresses).
-   - Google unreachable (3-second check): **503** page with the `offline` message.
-2. Google shows its account chooser, password and **2-Step Verification** (the one-time code
-   is typed on Google's page; Drill never sees it), then sends the browser to
-   `GET /auth/google/callback?code=...&state=...`.
-3. The callback checks the state (known, unused, under 10 minutes, same browser), exchanges the
-   code at `https://oauth2.googleapis.com/token` (TLS, certificate verified; sends the PKCE
-   verifier and the client secret), and checks the id_token claims: `iss`
-   (`https://accounts.google.com`), `aud` = our client id (and `azp` if there are several
-   audiences), `exp`/`iat` with 60 s skew, `nonce`, `email_verified: true`. The signature is
-   not checked separately: the token came straight from Google's token endpoint over verified
-   TLS (OpenID Connect Core 3.1.3.7). Then the email must be on the allow-list
-   (case-insensitive), and Google's account id (`sub`) must match the one recorded at that
-   email's first sign-in.
-4. Success: **200**, a tiny "Signed in" page that continues to `/` with a meta refresh, plus
-   the session cookie. (A 303 does not work with `SameSite=Strict`: the redirect still belongs
-   to the navigation that came from Google's site, so the browser does not send the Strict
-   cookie with it. Tested in Edge 154 with a stand-in Google on another site that shows an
-   account chooser: Strict + 303 lands back on the sign-in page; Strict + this page, and
-   Lax + 303, both open the app. Strict is kept.)
-
-Refusals show the sign-in page with a message code: `not_approved` (403), `account_mismatch`
-(403), `retry` (400: unknown, used or expired state, or another browser's), `cancelled` (400),
-`failed` (400: any token or claim problem), `offline` (503), `rate_limited` (429); also
-`expired`, `signed_out`, `wrong_host`. Each refusal is logged (console and `sign_in_events`,
-with the reason) and counts toward the rate limit, except `offline` and `cancelled`.
-
-**Rate limits** (per client IP, in memory; a restart clears them): at most 20 callback
-requests per 10 minutes; 10 failed sign-ins lock `/auth/google/*` for 15 minutes (429). A
-successful sign-in clears the count.
-
-### Session
-
-Cookie `drill_session`: a random 256-bit token, `HttpOnly; SameSite=Strict; Path=/;
-Max-Age=604800`. Not `Secure` (plain http on localhost). Only its SHA-256 is stored. Valid for
-exactly **7 days from sign-in** (absolute: using it never extends it). It is checked locally on
-every request, so it works **offline**; signing in again needs the internet. A sign-out,
-disallowing the account, or `revoke-all` takes effect on the very next request.
-`localhost` and `127.0.0.1` are separate sites to the browser, so each has its own session.
-
-### Account & security API (for the account page)
-
-All need a session and answer `Cache-Control: no-store`. POSTs must come from the app's own
-page (the Origin check above). With `AUTH_MODE=off`, `/api/auth/me` answers
-`{"ok":true,"auth_mode":"off","user":null,"session":null}` and the others **404**
-`{"ok":false,"error":"auth_off",...}`.
-
-| Request | Answer |
-|---|---|
-| `GET /api/auth/me` | `{"ok":true,"auth_mode":"google","user":{"id","email","existing_data":bool},"session":<session>}` |
-| `GET /api/auth/sessions` | `{"ok":true,"sessions":[<session>...]}`: this account's active sessions, newest first |
-| `GET /api/auth/events?limit=50` | `{"ok":true,"events":[{"at","event":"signed_in"\|"refused"\|"signed_out","method":"google"\|"pin"\|"cli","email","reason","client_ip","user_agent","device"}...]}`, newest first (limit 1 to 500): this account's events, including refused attempts that named its email |
-| `POST /api/auth/signout` | sign out this device: `{"ok":true,"revoked":1,"signed_out_here":true}` and the cookie is cleared. Then load `/`. |
-| `POST /api/auth/signout-others` | `{"ok":true,"revoked":n,"signed_out_here":false}` |
-| `POST /api/auth/signout-all` | every session of this account, this one included: `{"ok":true,"revoked":n,"signed_out_here":true}`, cookie cleared |
-| `POST /api/auth/sessions/{id}/revoke` | one session of this account: `{"ok":true,"revoked":1,"signed_out_here":<was it this one>}`; **404** `session_not_found` if `id` is not an active session of this account |
-
-`<session>` = `{"id","method":"google"|"pin","device":"Edge on Windows","user_agent","client_ip","created_at","last_seen_at","expires_at","current":bool}`.
-Times are ISO 8601 UTC (`2026-09-29T04:21:19Z`). `id` is not a credential. `last_seen_at` and
-`client_ip` are updated at most once a minute. Every sign-out is recorded as an event.
-
-### Phone (PIN) with sign-in on
-
-Google cannot redirect to a plain-http Tailscale name, so with `AUTH_MODE=google` the phone
-keeps the PIN, but the PIN now belongs to one account: `python -m server.pin set --email
-<email>` (required in this mode; the account must be approved). A PIN session acts as that
-account, lives in `accounts.db` (`method:"pin"`) and lasts **7 days** like every session.
-Until a bound PIN exists the phone sees "Set a PIN for your account on the PC first" (403).
-Changing the PIN or `pin revoke-all` signs out every PIN session. `/auth/*` from the phone
-redirects to `/`. This PC always needs a Google session, even with phone access on.
-
-### CLI (works while the server runs)
-
-- `python -m server.accounts allow <email> [--existing-data]`: approve an email.
-  `--existing-data`: this account uses `DATA_DIR` itself; one account only; an existing
-  account's data folder is never changed.
-- `python -m server.accounts disallow <email>`: refuse it and sign it out now (its data is kept).
-- `python -m server.accounts list`, `sessions [--email E]`, `revoke-all [--email E]`,
-  `events [--email E] [--limit N]`.
-- `--user <email>` on `python -m server.importer`, `python -m server.restore`,
-  `python -m server.modules register|list` and `tools\verify_import.py`: work on that account's
-  folder. Without it they use `DATA_DIR` itself, exactly as before.
-
-### Security headers (every response, both modes)
-
-`Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src
-'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; worker-src 'self' blob:;
-font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'
-https://accounts.google.com`, plus `X-Content-Type-Options: nosniff`,
-`Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`. Checked in headless Edge 154 with the
-real app: library, vendored fonts, pdf.js in its Web Worker (`readFile` + `renderPdfPage` on a
-PDF with embedded fonts), backup download: 0 CSP violations. For future app changes: no
-`fetch()` of `data:`/`blob:` URLs, no external hosts, no `eval`.
-
-### Google Cloud Console
-
-Authorized redirect URIs (both): `http://localhost:8765/auth/google/callback` and
-`http://127.0.0.1:8765/auth/google/callback` (your `PORT` if it is not 8765). The client ID
-and secret go in `.env` only.
+- The server binds 127.0.0.1 and answers loopback clients only (403 `forbidden_client`
+  otherwise); Host must be localhost, 127.0.0.1 or ::1; state-changing requests with an Origin
+  must come from the server's own origin.
+- Every response, errors included, carries: `Content-Security-Policy` (default-src 'self';
+  script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self';
+  img-src 'self' data: blob:; worker-src 'self' blob:; font-src 'self'; frame-ancestors 'none';
+  object-src 'none'; base-uri 'none'; form-action 'self'), `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`; `/api/*` is `Cache-Control: no-store`.
+- `tools/check_secrets.py` scans the repo and its git history for keys and secrets.

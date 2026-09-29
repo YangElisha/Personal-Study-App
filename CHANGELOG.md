@@ -4,6 +4,20 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Removed (Elisha, 2026-09-29: MonoSpace is local-only, free and open source, no sign-in)
+- Phase 9 (Google sign-in, accounts, one database per person) and Phase 8 (phone access over
+  Tailscale with a PIN). Deleted server/google_auth.py, accounts.py, phone.py, pin.py,
+  tools/phone-firewall.ps1 and their tests; no PHONE_*, AUTH_MODE, GOOGLE_* settings or --user
+  flags. The server binds 127.0.0.1, answers loopback only, checks Host and Origin, one DATA_DIR.
+  Kept: security headers on every response (CSP form-action now 'self'), tools/check_secrets.py.
+  Any accounts.db / phone-access.db / users\ left in a DATA_DIR are untouched and not read.
+
+### Changed
+- Renamed to **MonoSpace** (server side): start.bat, console messages, placeholder page,
+  MODULES.md header, the claude -p system prompt, log names, package.json. Unchanged for
+  compatibility: store keys, drill.db and its tables, drill-<ts>.db snapshots, DATA_DIR.
+- README rewritten as an install guide; MIT LICENSE added.
+
 ### Added
 - Phase 9 (app, marked "LOCAL PORT (Phase 9)"): with AUTH_MODE=google, an account chip (initials,
   email on hover, no image) opens "Account & security": signed in as / since / ends, active

@@ -1,10 +1,10 @@
 @echo off
-rem Drill: double-click to start the local server and open the app in the browser.
+rem MonoSpace: double-click to start the local server and open the app in the browser.
 rem The FIRST run needs internet once: it creates .venv and installs requirements.txt.
 rem After that everything runs offline. Close this window (or press Ctrl+C) to stop.
 setlocal
 cd /d "%~dp0"
-title Drill server
+title MonoSpace server
 
 if not exist ".venv\Scripts\python.exe" (
   echo First run: creating the Python environment in .venv ...
@@ -43,5 +43,5 @@ if errorlevel 1 (
 
 ".venv\Scripts\python.exe" -m server --open
 echo.
-echo Drill server stopped.
+echo MonoSpace server stopped.
 pause

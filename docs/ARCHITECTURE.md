@@ -128,10 +128,6 @@ Code in `server/`:
 | `importer.py` | `python -m server.importer` — see DATA-MIGRATION.md. |
 | `restore.py` | `python -m server.restore <snapshot>` |
 | `instance_lock.py` | One process owns `DATA_DIR` at a time. |
-| `phone.py` | Phone access (Phase 8): which clients and Host names are admitted, Tailscale detection, PIN hash, sessions, lockout, sign-in page. Contract in `docs/API.md`. |
-| `pin.py` | `python -m server.pin set [--email] / revoke-all / status` |
-| `google_auth.py` | Sign in with Google (Phase 9): OIDC code flow + PKCE, claim checks, rate limits, the sign-in page. Contract in `docs/API.md` "Sign-in". |
-| `accounts.py` | Approved accounts, sessions, sign-in events (`DATA_DIR\accounts.db`), which folder each account's data is in; `python -m server.accounts` |
 | `__main__.py` | `python -m server [--open]`; `start.bat` runs it with `--open`. |
 
 **Snapshots.** On every start, and every 24 hours while running (checked every 10
@@ -148,45 +144,6 @@ refuses while the server runs, shows what would be replaced (key and deck differ
 asks you to type `yes`, snapshots the current database as `...-pre-restore.db`, then copies
 the snapshot in with the backup API. Restoring the pre-restore file undoes a restore.
 
-## Phone access (Phase 8)
-
-```
-Phone (Tailscale app) --WireGuard tunnel--> PC 100.x.y.z:PORT --> same server, same drill.db
-```
-
-The phone does not get its own copy of anything: it opens the app served by the PC, so
-there is nothing to sync, and Qwen/Claude run on the PC as usual. `PHONE_ACCESS=off`
-(default) keeps the server on 127.0.0.1. `on` binds 0.0.0.0, and three layers keep
-everyone else out: the Windows Firewall rule (`tools\phone-firewall.ps1`, Tailscale
-addresses only), the server's client-address check (loopback + Tailscale, 403 otherwise),
-and a PIN for every device other than the PC (session cookie, 30 days, revocable from the
-PC). Host and Origin checks still apply, with this PC's Tailscale names added. The PC
-itself stays PIN-free. Nothing is exposed to the internet: Tailscale addresses are only
-reachable from devices signed in to Elisha's tailnet. Details: `docs/API.md`
-"Phone access".
-
-## Sign-in and one database per person (Phase 9)
-
-```
-Browser --"Sign in with Google"--> accounts.google.com (password, 2-Step Verification)
-   <-- code -- /auth/google/callback --(TLS)--> oauth2.googleapis.com/token --> id_token
-Server: claims OK + email approved --> session (7 days, checked locally, works offline)
-every request --> session --> that account's folder --> its own drill.db / modules / backups
-```
-
-`AUTH_MODE=off` (default) is today's behaviour exactly. `AUTH_MODE=google` puts a session in
-front of everything, this PC included. The allow-list, sessions and sign-in events live in
-`DATA_DIR\accounts.db`, apart from every `drill.db` (a snapshot restore cannot bring back a
-revoked session). Elisha's account is mapped to `DATA_DIR` itself, so her existing
-`drill.db`, `backups\` and `modules\` are used where they are; anyone else gets
-`DATA_DIR\users\<id>\`. The store, modules, import and snapshots take the signed-in account's
-folder from the request; the CLI tools take `--user <email>` and default to `DATA_DIR` as
-before. The one instance lock still covers all of `DATA_DIR`. Only the Google client ID and
-secret are needed, in `.env`; no extra Python packages (urllib, hashlib, secrets). The phone
-keeps the PIN (Google cannot redirect to a plain-http tailnet name), now bound to one account.
-Every response carries a Content-Security-Policy and the usual hardening headers. Details:
-`docs/API.md` "Sign-in".
-
 ## Where the data lives
 
 Everything personal lives in `DATA_DIR` — by default `C:\Users\Elish\OneDrive\DrillData` —
@@ -198,11 +155,8 @@ DrillData\
   backups\        automatic snapshots: on every start and once a day, newest 30 kept
   import-decisions.json   Elisha's import decisions, read by the importer (Phase 3)
   drill-server.lock       empty file the running server locks (one process at a time)
-  phone-access.db         phone PIN hash + phone sessions (Phase 8; only if a PIN was set)
-  accounts.db     approved accounts, sessions, sign-in events (Phase 9; AUTH_MODE=google)
   import\         backup files exported from Drill (read only)
   modules\        your module PDFs
-  users\<id>\     another approved account's own drill.db, backups\, modules\, import\ (Phase 9)
 ```
 
 OneDrive keeps a cloud copy of all of it. **Don't run the app on two PCs at once**, or OneDrive

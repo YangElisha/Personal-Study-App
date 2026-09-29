@@ -1,7 +1,4 @@
 """Restore drill.db from a snapshot:  python -m server.restore [<snapshot file or name>]
-                                        [--user <email>]
-
---user: another account's own database (Phase 9). Default: DATA_DIR itself, as before.
 
 Without an argument it lists the snapshots in DATA_DIR\\backups.
 - Refuses to run while the server (or an import) is running.
@@ -115,16 +112,10 @@ def main(argv=None) -> int:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
-    import argparse
-    from .accounts import AccountError, settings_for_email
-    ap = argparse.ArgumentParser(prog="python -m server.restore")
-    ap.add_argument("snapshot", nargs="?")
-    ap.add_argument("--user", metavar="EMAIL")
-    args = ap.parse_args(sys.argv[1:] if argv is None else argv)
-    argv = [args.snapshot] if args.snapshot else []
+    argv = sys.argv[1:] if argv is None else argv
     try:
-        settings = settings_for_email(load_settings(), args.user)
-    except (SettingsError, AccountError) as e:
+        settings = load_settings()
+    except SettingsError as e:
         print(f"Not restored: {e}")
         return 2
     if not argv:

@@ -41,7 +41,7 @@ from typing import Any
 
 from .settings import ENV_FILE, read_env_file
 
-log = logging.getLogger("drill.ai")
+log = logging.getLogger("monospace.ai")
 
 AI_KEYS = ("OLLAMA_URL", "OLLAMA_MODEL", "OLLAMA_NUM_CTX", "OLLAMA_TIMEOUT", "CLAUDE_CLI",
            "CLAUDE_CLI_PATH", "CLAUDE_MODEL", "CLAUDE_TIMEOUT", "CLAUDE_REACH_HOST")
@@ -59,7 +59,7 @@ AI_DEFAULTS = {
     "CLAUDE_REACH_HOST": "api.anthropic.com:443",
 }
 
-CLAUDE_SYSTEM = ("You are answering a request from Drill, a personal study app. Reply to the "
+CLAUDE_SYSTEM = ("You are answering a request from MonoSpace, a personal study app. Reply to the "
                  "user's message directly, following its instructions exactly. You have no "
                  "tools; answer from the message alone.")
 
@@ -323,7 +323,7 @@ def stream_input_for_claude(msgs) -> str:
 
 def call_claude(cfg: AIConfig, prompt: str, system: str, stream: bool = False) -> dict:
     """prompt: plain text (stream=False) or one stream-json line (stream=True)."""
-    workdir = tempfile.mkdtemp(prefix="drill-claude-")      # empty: no CLAUDE.md to load
+    workdir = tempfile.mkdtemp(prefix="monospace-claude-")      # empty: no CLAUDE.md to load
     try:
         try:
             p = subprocess.run(claude_command(cfg, system, stream), input=prompt.encode("utf-8"),

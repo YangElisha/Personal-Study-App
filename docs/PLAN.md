@@ -206,48 +206,18 @@ Claude still gets 22,000 characters and 8 messages.
 
 ---
 
-## Phase 8 — Phone access (Elisha, 2026-09-29)
+## Phase 8 — Phone access — *Removed 2026-09-29 (Elisha: local-only, no sign-in)*
 
-**Owner:** `backend-builder` (access + PIN) · `frontend-porter` (mobile layout)
-
-- The phone uses the app running on the PC (same database, same Qwen/Claude, nothing to sync),
-  over **Tailscale** (private network, works at home and away; nothing opened to the internet).
-- A **PIN** is required for any device other than the PC itself. The PC stays PIN-free.
-- Every screen works at phone size (360–430 px wide, touch). The desktop layout is unchanged.
-
-**Done when:**
-- [ ] With `PHONE_ACCESS=off` (default) the server is reachable from this PC only, as before
-- [ ] With it on, a phone on the tailnet opens the app, asks for the PIN once, and studies;
-      wrong PINs are rate-limited; other networks/devices are refused
-- [ ] Every screen (home, deck, study modes, flashcards, study guide, teacher chat, new deck,
-      test paper, manage) has no sideways scrolling and usable tap targets at 360 and 390 px
-      wide, checked with screenshots
-- [ ] Reader tests and server tests still pass; the desktop layout is unchanged
-- [ ] Elisha: installs Tailscale on the PC and the phone, runs the firewall step, sets the PIN
+Built in 2dcec76 (Tailscale + PIN), removed 2026-09-29. MonoSpace runs on this PC only; the
+server binds 127.0.0.1 and refuses every non-loopback client.
 
 ---
 
-## Phase 9 — Google sign-in, one database per person (Elisha, 2026-09-29)
+## Phase 9 — Sign-in and accounts — *Removed 2026-09-29 (Elisha: local-only, no sign-in)*
 
-**Owner:** `backend-builder` (sign-in, accounts, per-user databases) · `frontend-porter` (sign-in
-screen, account & security page)
-
-- Everyone signs in with Google (OpenID Connect, authorization code + PKCE, no extra
-  dependencies). One-time codes come from the person's own Google 2-Step Verification.
-- Only approved emails can sign in (`yang.elishalee@gmail.com` first). Anyone else is refused.
-- Each person has their own database. Elisha's account uses the **existing** `DATA_DIR\drill.db`
-  where it is (nothing copied, moved or changed); new people get `DATA_DIR\users\<id>\`.
-- A sign-in lasts **7 days** and keeps working offline; signing in again needs internet.
-- The Google client ID/secret live only in `.env` (never committed). No other keys anywhere.
-- Account & security page: who is signed in, active sessions (sign out others), recent sign-ins.
-
-**Done when:**
-- [x] With sign-in on, nothing (app, API, AI, modules) answers without a valid session — *2026-09-29: tests + live 401 check*
-- [ ] Elisha signs in with Google and sees exactly her 18 decks; the import verifier still passes
-- [ ] A second approved test account sees an empty library; an unapproved account is refused
-- [ ] Offline within 7 days: the app opens and studies without signing in again
-- [x] Sessions can be signed out (one, others, all); a sign-out works instantly — *2026-09-29: account page in headless Edge with a stand-in Google: a revoked session gets 401 at once and lands on the sign-in page; 0 writes*
-- [x] All tests pass; no secrets in the repo or its history — *277 passed; `tools/check_secrets.py` clean (repo + all history)*
+Built in a2ed1aa / 1edbdc9 (Google sign-in, one database per person), removed 2026-09-29.
+There is no sign-in of any kind and one DATA_DIR. Kept from this phase: the security headers
+(CSP, nosniff, no-referrer, DENY; `tests/server/test_security.py`) and `tools/check_secrets.py`.
 
 ---
 
