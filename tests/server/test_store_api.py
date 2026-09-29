@@ -6,6 +6,9 @@ from urllib.parse import quote
 
 import pytest
 from conftest import history, kv_full
+from server.settings import BUNDLE_ROOT
+
+ICON = BUNDLE_ROOT / "assets" / "monospace.ico"
 
 
 def url(key: str) -> str:
@@ -131,14 +134,15 @@ def test_serves_app_dir(make_client, tmp_path):
         f = c.get("/vendor/fonts/f.woff2")
         assert f.status_code == 200 and f.headers["content-type"] == "font/woff2"
         assert c.get("/api/health").json()["ok"] is True       # API still wins over static
-        fav = c.get("/favicon.ico")                            # no icon in app/: 204
-        assert fav.status_code == 204 and fav.content == b""
+        fav = c.get("/favicon.ico")                  # no icon in app/: the MonoSpace icon
+        assert fav.status_code == 200 and fav.content == ICON.read_bytes()
 
 
-def test_favicon_204_without_app_and_served_when_present(make_client, tmp_path):
+def test_favicon_default_icon_without_app_and_app_icon_when_present(make_client, tmp_path):
     with make_client() as c:
         r = c.get("/favicon.ico")
-        assert r.status_code == 204 and r.content == b""
+        assert r.status_code == 200 and r.headers["content-type"] == "image/x-icon"
+        assert r.content == ICON.read_bytes() and r.content[:4] == b"\x00\x00\x01\x00"
     app_dir = tmp_path / "app2"
     app_dir.mkdir()
     (app_dir / "index.html").write_text("x", encoding="utf-8")

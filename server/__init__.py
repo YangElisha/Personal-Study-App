@@ -2,3 +2,5 @@
 
 See docs/ARCHITECTURE.md and docs/API.md.
 """
+
+__version__ = "1.0.0"

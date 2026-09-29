@@ -77,7 +77,8 @@ def test_real_http_prefix_percent_is_literal(live):
 
 def test_real_http_missing_vs_null_and_ai(live):
     assert call("GET", f"{live}/api/store/{enc('deck:x')}") == (204, "")
-    assert call("GET", f"{live}/favicon.ico") == (204, "")
+    with urllib.request.urlopen(f"{live}/favicon.ico", timeout=5) as r:   # the MonoSpace icon
+        assert r.status == 200 and r.headers["content-type"] == "image/x-icon"
     call("PUT", f"{live}/api/store/{enc('deck:x')}", b"null")
     assert call("GET", f"{live}/api/store/{enc('deck:x')}") == (200, "null")
     st, txt = call("POST", f"{live}/api/ai",

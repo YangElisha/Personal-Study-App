@@ -15,7 +15,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from . import ai, db, modules, snapshots
-from .settings import REPO_ROOT, Settings
+from .settings import BUNDLE_ROOT, Settings
 
 log = logging.getLogger("monospace")
 
@@ -89,7 +89,7 @@ def create_app(settings: Settings, app_dir: Path | None = None,
                daily_check_seconds: float = 600.0,
                ai_config: "ai.AIConfig | None" = None,
                modules_md_paths: "list[Path] | None" = None) -> FastAPI:
-    app_dir = REPO_ROOT / "app" if app_dir is None else app_dir
+    app_dir = BUNDLE_ROOT / "app" if app_dir is None else app_dir
     md_paths = (modules.default_md_paths(settings) if modules_md_paths is None
                 else modules_md_paths)
 
@@ -319,9 +319,14 @@ def create_app(settings: Settings, app_dir: Path | None = None,
 
     # ---- the app itself ---------------------------------------------------------------
     if not (app_dir / "favicon.ico").is_file():
+        icon = BUNDLE_ROOT / "assets" / "monospace.ico"
+
         @app.get("/favicon.ico", include_in_schema=False)
         def no_favicon():
-            # the app has no icon; answer "nothing" rather than 404, so the console stays clean
+            # the MonoSpace icon (the app window and taskbar use it); without it, "nothing"
+            # rather than 404, so the console stays clean
+            if icon.is_file():
+                return Response(icon.read_bytes(), media_type="image/x-icon")
             return Response(status_code=204)
 
     if (app_dir / "index.html").is_file():

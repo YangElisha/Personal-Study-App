@@ -10,3 +10,14 @@ iniconfig==2.3.0
 packaging==26.3
 pluggy==1.6.0
 Pygments==2.21.0
+# Desktop app build (packaging/build.ps1): PyInstaller, the icon (Pillow), window tracking (psutil,
+# bundled into MonoSpace.exe; the source server does not need it)
+pyinstaller==6.22.3
+pillow==12.3.0
+psutil==7.2.2
+# --- pulled in by the three above ---
+altgraph==0.17.5
+pefile==2024.8.26
+pyinstaller-hooks-contrib==2026.7
+pywin32-ctypes==0.2.3
+setuptools==84.0.0

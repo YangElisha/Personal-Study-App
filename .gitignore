@@ -22,3 +22,7 @@ Thumbs.db
 
 # Python tests
 .pytest_cache/
+
+# Desktop build output (packaging/build.ps1)
+dist/
+build/

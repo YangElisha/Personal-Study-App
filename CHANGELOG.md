@@ -4,6 +4,21 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — MonoSpace 1.0.0 for Windows (2026-09-29)
+- `MonoSpace.exe` (server/launcher.py, PyInstaller): runs the server in-process on 127.0.0.1
+  and opens the app in its own window (Edge app mode, private profile). Closing the last window
+  stops the server cleanly; a second launch opens another window, never a second server; a busy
+  port → the next free one. First run: a small dialog chooses the data folder (default
+  %USERPROFILE%\MonoSpaceData) and writes %APPDATA%\MonoSpace\settings.env. Logs in
+  %LOCALAPPDATA%\MonoSpace\logs. `MONOSPACE_HOME=<folder>` redirects all of it for tests.
+- Downloads built by `packaging\build.ps1`: `MonoSpace-Setup.exe` (Inno Setup, per-user, no
+  admin, Start menu + desktop icon; the uninstaller never removes data or settings) and
+  `MonoSpace-1.0.0-portable.zip`. Unsigned (SmartScreen: "More info → Run anyway").
+- App icon (assets/monospace.ico), also served as /favicon.ico. 205 server tests.
+- Elisha's data moved to a new folder name: `OneDrive\MonoSpaceData` is a verified copy of
+  `DrillData` (every file byte-identical, every table row-identical, import verifier PASS);
+  `.env` points at it. `DrillData` is left untouched as a backup.
+
 ### Removed (Elisha, 2026-09-29: MonoSpace is local-only, free and open source, no sign-in)
 - Phase 9 (Google sign-in, accounts, one database per person) and Phase 8 (phone access over
   Tailscale with a PIN). Deleted server/google_auth.py, accounts.py, phone.py, pin.py,

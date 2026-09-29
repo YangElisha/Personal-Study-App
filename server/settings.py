@@ -1,16 +1,55 @@
-"""Settings, read from the repo's .env.
+"""Settings, read from the repo's .env (or, in the desktop app, from settings.env).
 
 A process environment variable with the same name overrides the .env value (the tests
 use this to point DATA_DIR at a scratch folder). Nothing else is read.
+
+Desktop app (MonoSpace.exe, a PyInstaller build): the settings file is
+%APPDATA%\\MonoSpace\\settings.env (same keys as .env), the program's own files are in the
+bundle, and DATA_DIR may not be inside the program folder. MONOSPACE_HOME=<folder> moves
+settings.env, logs and the window profile into that folder (used by tests and the build
+check, so the real %APPDATA% is never touched).
 """
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-ENV_FILE = REPO_ROOT / ".env"
+FROZEN = bool(getattr(sys, "frozen", False))
+
+
+def desktop_home() -> Path | None:
+    """MONOSPACE_HOME override, or None."""
+    h = os.environ.get("MONOSPACE_HOME", "").strip()
+    return Path(h).resolve() if h else None
+
+
+def desktop_settings_file() -> Path:
+    h = desktop_home()
+    if h:
+        return h / "settings.env"
+    appdata = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
+    return Path(appdata) / "MonoSpace" / "settings.env"
+
+
+def desktop_local_dir() -> Path:
+    """Logs, the app window's browser profile, the running-server note."""
+    h = desktop_home()
+    if h:
+        return h / "local"
+    local = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+    return Path(local) / "MonoSpace"
+
+
+if FROZEN:
+    BUNDLE_ROOT = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)).resolve()
+    REPO_ROOT = Path(sys.executable).resolve().parent     # the program folder
+    ENV_FILE = desktop_settings_file()
+else:
+    REPO_ROOT = Path(__file__).resolve().parent.parent
+    BUNDLE_ROOT = REPO_ROOT                                # app/ and assets/ live here
+    ENV_FILE = REPO_ROOT / ".env"
 
 DEFAULTS = {"BACKUP_KEEP": "30", "PORT": "8765"}
 
@@ -91,13 +130,15 @@ def load_settings(env_file: Path | None = None, environ: dict | None = None,
     if not data_dir.is_absolute():
         raise SettingsError(f"DATA_DIR must be an absolute path, got {raw_dir!r}.")
     data_dir = data_dir.resolve()
+    where = "MonoSpace program" if FROZEN else "repo"
     if _is_inside(data_dir, repo_root.resolve()):
         raise SettingsError(
-            f"DATA_DIR ({data_dir}) is inside the repo folder ({repo_root}). Personal data "
-            "must never be stored in the repo. Point DATA_DIR in .env somewhere outside it.")
+            f"DATA_DIR ({data_dir}) is inside the {where} folder ({repo_root}). Personal data "
+            f"must never be stored in the {where}. Point DATA_DIR in {env_file.name} somewhere "
+            "outside it.")
     if not data_dir.is_dir():
         # Refuse rather than create: a typo in .env would otherwise open an empty app.
-        raise SettingsError(f"DATA_DIR ({data_dir}) does not exist. Create it or fix .env.")
+        raise SettingsError(f"DATA_DIR ({data_dir}) does not exist. Create it or fix {env_file}.")
 
     try:
         keep = int(values["BACKUP_KEEP"])

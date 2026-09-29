@@ -29,7 +29,7 @@ import uuid
 from pathlib import Path
 
 from . import db
-from .settings import REPO_ROOT, Settings
+from .settings import FROZEN, REPO_ROOT, Settings
 
 MAX_UPLOAD = 400 * 1024 * 1024          # Module 3 is 115 MB
 CHUNK = 1024 * 1024
@@ -409,6 +409,8 @@ def render_modules_md(mods: list[dict]) -> str:
 
 
 def default_md_paths(settings: Settings) -> list[Path]:
+    if FROZEN:      # the desktop app: the program folder is not a repo; DATA_DIR only
+        return [settings.data_dir / "MODULES.md"]
     return [REPO_ROOT / "MODULES.md", settings.data_dir / "MODULES.md"]
 
 
