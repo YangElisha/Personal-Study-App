@@ -1066,6 +1066,17 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
 .folder.dropon>.fname,.libsec.dropon>.libhead{background:color-mix(in srgb,var(--fc,var(--acc)) 22%,transparent);
   outline:2px dashed var(--fc,var(--acc));outline-offset:-2px;border-radius:10px}
 .libsec.dropon .cgrid{outline:2px dashed var(--fc,var(--acc));outline-offset:6px;border-radius:14px}
+/* MonoSpace: build queue */
+.bqueue{border:1px solid var(--rule);background:var(--surface-2);border-radius:var(--r);padding:14px 16px;margin:0 0 22px}
+.bqhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.bqrow{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--rule)}
+.bqrow:first-child{border-top:0}
+.bqrow .bqn{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bqrow .bqs{font-size:.82em;color:var(--ink-2);white-space:nowrap;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+.bqrow .bqs.err{color:var(--bad,#e5484d)}
+.bqrow .bqbar{width:90px;height:5px;border-radius:3px;background:var(--surface-3);overflow:hidden;flex:0 0 auto}
+.bqrow .bqbar i{display:block;height:100%;background:var(--live);transition:width .35s}
+.bqnote{margin:10px 0 0;font-size:.8em;color:var(--ink-3)}
 </style>
 <script src="splash.js"></script>
 
@@ -1093,7 +1104,7 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
           <path d="M16 10a6 6 0 1 1-2-4.5M16 3v3.5h-3.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Review</span><em class="navcount hide" id="nav-duecount"></em></button>
       <button class="navbtn" id="nav-new">
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-          <path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg><span>New deck</span></button>
+          <path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg><span>New deck</span><em class="navcount hide" id="nav-queue" title="Decks building or waiting"></em></button>
     </div>
     <div class="navsubj">
       <div class="navsec"><span>Subjects</span>
@@ -1468,6 +1479,12 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
     <section id="v-new" class="page hide">
       <h1>New deck</h1>
       <p class="sub" id="new-sub">Paste or drop your material. Claude reads it, pulls out the concepts, and writes the questions.</p>
+        <div class="bqueue hide" id="bqueue">
+          <div class="bqhead"><p class="eyebrow" style="margin:0">Build queue</p>
+            <button class="link" id="bq-clear">Clear finished</button></div>
+          <div id="bq-list"></div>
+          <p class="bqnote">Set up the next module while this one builds — each one starts when the one before it finishes. Keep MonoSpace open until the queue is done.</p>
+        </div>
       <div class="seg" id="source-seg" style="max-width:520px;margin-bottom:20px">
         <button data-src="ai" aria-pressed="true">From my material</button>
         <button data-src="terms">From a term list</button>
@@ -3284,14 +3301,98 @@ function showNew(){
   $("n-name").value = ""; $("n-text").value = ""; $("t-text").value = "";
   $("c-text").value = ""; $("c-context").value = "";
   uploads = []; cUploads = []; renderFiles(); renderCFiles(); previewTerms(); setSource("ai");
-  $("prog").classList.add("hide");
+  if(!JOB) $("prog").classList.add("hide");
+  renderQueue();
   const sel = $("n-folder"); sel.innerHTML = "";
   LIB.folders.forEach(f => { const o = document.createElement("option"); o.value = f.id; o.textContent = f.name; sel.appendChild(o); });
   const o = document.createElement("option"); o.value = "__new"; o.textContent = "+ New folder…"; sel.appendChild(o);
 }
 function plog(m, err){ const d = document.createElement("div"); d.textContent = m; if(err) d.className = "err";
   $("prog-log").appendChild(d); $("prog-log").scrollTop = 9e9; }
-function pbar(p, head){ $("prog-bar").style.width = p + "%"; if(head) $("prog-head").textContent = head; }
+function pbar(p, head){ $("prog-bar").style.width = p + "%";
+  if(head) $("prog-head").textContent = JOB ? "“" + JOB.name + "” · " + head : head;
+  if(JOB){ JOB.pct = p; if(head) JOB.head = head; renderQueue(); } }
+/* BUILD QUEUE (MonoSpace 2026-09-29). "Build the deck" copies the form into a job and clears it,
+   so the next module can be set up while this one builds. Jobs run one at a time — the AI
+   (Qwen on the GPU especially) does one build well rather than two slowly. The queue is kept in
+   memory only: closing MonoSpace drops jobs that have not finished, and it warns first. */
+const QUEUE = []; let JOB = null;
+async function enqueueBuild(){
+  const name = $("n-name").value.trim() || "Untitled deck";
+  let folderId = $("n-folder").value;
+  const material = $("n-text").value.trim();
+  if(!material && !uploads.length){ toast("Paste some material or add a file first"); return; }
+  if(folderId === "__new"){
+    const fn = await ask("New folder", "", "", "Create");
+    if(!fn || !fn.trim()) return;
+    const f = {id:uid(), name:fn.trim(), color:PALETTE[LIB.folders.length % PALETTE.length]};
+    LIB.folders.push(f); await store.set("library", LIB); folderId = f.id;
+    const o = document.createElement("option"); o.value = f.id; o.textContent = f.name;
+    $("n-folder").insertBefore(o, $("n-folder").lastChild); $("n-folder").value = f.id;
+    renderNav();
+  }
+  const busy = !!JOB || QUEUE.some(j => j.state === "waiting");
+  QUEUE.push({id:uid(), name, folderId, material, uploads:uploads.slice(),
+              notes:($("n-notes").value || "").trim(), makeCards:$("n-makecards").checked,
+              state:"waiting", pct:0, head:"Waiting"});
+  // the form is free for the next module (the subject stays chosen)
+  $("n-name").value = ""; $("n-text").value = ""; $("n-notes").value = "";
+  uploads = []; renderFiles();
+  toast(busy ? "“" + name + "” added to the queue" : "Building “" + name + "”");
+  renderQueue();
+  runQueue();
+}
+async function runQueue(){
+  if(JOB) return;
+  for(let job; (job = QUEUE.find(j => j.state === "waiting")); ){
+    JOB = job; job.state = "building"; job.head = "Starting…";
+    $("prog").classList.remove("hide"); $("prog-log").innerHTML = "";
+    renderQueue();
+    let id = null;
+    try{ id = await build(job); }catch(e){ plog(e.message, true); }
+    job.deckId = id || null; job.state = id ? "done" : "failed";
+    if(!id && job.head === "Starting…") job.head = "Stopped";
+    job.uploads = null; job.material = "";          // let the PDFs go
+    JOB = null;
+    renderQueue();
+    if(id) toast("“" + job.name + "” is ready");
+  }
+}
+/* A finished build opens its deck only when nothing else is queued and you are not setting up
+   another one — otherwise it waits in the queue list with an Open button. */
+async function jobDone(id){
+  await renderNav();
+  const idle = !QUEUE.some(j => j.state === "waiting") && !$("v-new").classList.contains("hide") &&
+               !$("n-name").value.trim() && !$("n-text").value.trim() && !uploads.length;
+  if(idle) openDeck(id);
+  return id;
+}
+function renderQueue(){
+  const active = QUEUE.filter(j => j.state === "waiting" || j.state === "building").length;
+  const nq = $("nav-queue"); nq.textContent = active ? String(active) : ""; nq.classList.toggle("hide", !active);
+  $("btn-build").textContent = JOB ? "Add to queue" : "Build the deck";
+  $("bqueue").classList.toggle("hide", !QUEUE.length);
+  $("bq-clear").classList.toggle("hide", !QUEUE.some(j => j.state === "done" || j.state === "failed"));
+  const list = $("bq-list"); list.replaceChildren();
+  QUEUE.forEach((j, i) => {
+    const row = el("div", "bqrow");
+    row.appendChild(el("span", "bqn", j.name));
+    const waitingAhead = QUEUE.slice(0, i).filter(x => x.state === "waiting").length + (JOB ? 1 : 0);
+    const st = j.state === "building" ? j.head
+             : j.state === "waiting" ? (waitingAhead ? "Waiting · " + waitingAhead + " ahead" : "Next")
+             : j.state === "done" ? "Ready" : "Stopped — see the log";
+    const se = el("span", "bqs" + (j.state === "failed" ? " err" : ""), st); se.title = st;
+    row.appendChild(se);
+    if(j.state === "building"){ const b = el("span", "bqbar"), i2 = el("i"); i2.style.width = (j.pct || 0) + "%"; b.appendChild(i2); row.appendChild(b); }
+    if(j.state === "waiting"){ const x = el("button", "btn2 sm", "Remove");
+      x.onclick = () => { const k = QUEUE.indexOf(j); if(k >= 0 && j.state === "waiting") QUEUE.splice(k, 1); renderQueue(); };
+      row.appendChild(x); }
+    if(j.state === "done" && j.deckId){ const o = el("button", "btn sm", "Open"); o.onclick = () => openDeck(j.deckId); row.appendChild(o); }
+    list.appendChild(row);
+  });
+}
+$("bq-clear").onclick = () => { for(let i = QUEUE.length - 1; i >= 0; i--) if(QUEUE[i].state === "done" || QUEUE[i].state === "failed") QUEUE.splice(i, 1); renderQueue(); };
+window.addEventListener("beforeunload", e => { if(JOB || QUEUE.some(j => j.state === "waiting")){ e.preventDefault(); e.returnValue = ""; } });
 const unxml = t => t.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">")
                      .replace(/&quot;/g,'"').replace(/&apos;/g,"'");
 /* .pptx and .docx are ZIP files. This reads them with the browser's own
@@ -4205,7 +4306,7 @@ For each item:
 
 async function extractChunk(chunk, depth){
   depth = depth || 0;
-  const notes = ($("n-notes") && $("n-notes").value.trim()) || "";
+  const notes = JOB ? JOB.notes : (($("n-notes") && $("n-notes").value.trim()) || "");
   const r = await claudeFull(
 `${EXTRACT_RULES}
 ${notes ? "\nWHAT THE STUDENT SAYS ABOUT THIS MATERIAL — follow it: " + notes + "\n" : ""}
@@ -4402,19 +4503,11 @@ async function moduleRecord(mod, id){
     if(!d.first_upload) setTimeout(() => toast(note), 2500);   // the log is off-screen once the deck opens
   }catch(e){ plog("Module library: this upload was not recorded (server not reachable)"); }
 }
-async function build(){
-  const name = $("n-name").value.trim() || "Untitled deck";
-  let folderId = $("n-folder").value;
-  if(folderId === "__new"){
-    const fn = await ask("New folder", "", "", "Create");
-    if(!fn || !fn.trim()) return;
-    const f = {id:uid(), name:fn.trim(), color:PALETTE[LIB.folders.length % PALETTE.length]};
-    LIB.folders.push(f); await store.set("library", LIB); folderId = f.id;
-  }
-  let material = $("n-text").value.trim();
-  if(!material && !uploads.length){ toast("Paste some material or add a file first"); return; }
-  $("btn-build").disabled = true;
-  $("prog").classList.remove("hide"); $("prog-log").innerHTML = "";
+/* Builds one queued job (runQueue). Returns the new (or existing) deck id, or null if it stopped. */
+async function build(job){
+  const {name, folderId} = job;
+  let material = job.material;
+  const uploads = job.uploads;          // the job's own files; the form's list is free for the next one
   pbar(4, "Reading your material…");
   rateNotice = msg => plog(msg);
   try{
@@ -4426,14 +4519,13 @@ async function build(){
       const msg = "No changes: this is the same PDF as your deck “" + mod.deck_name + "” (uploaded " +
                   new Date(mod.uploaded_at).toLocaleDateString() + ")";
       pbar(100, "No changes"); plog(msg);
-      $("btn-build").disabled = false;
-      await openDeck(mod.deck_id); toast(msg);
-      return;
+      toast(msg);
+      return jobDone(mod.deck_id);
     }
     let fromSlides = [], coverage = null, pictures = [];
     const pdfs = uploads.filter(u => u.kind === "pdfpages" && u.doc);
     const others = uploads.filter(u => !(u.kind === "pdfpages" && u.doc));
-    const notes = ($("n-notes") && $("n-notes").value.trim()) || "";
+    const notes = job.notes;
     let unsureAll = [];
     for(const u of pdfs){
       pbar(8, "Reading " + u.name + "…");
@@ -4501,7 +4593,7 @@ async function build(){
         items:c.items, steps:c.steps, pages:c.pages, star:false, qs:questionsFromTerms(pairs, i)}));
       const idS = uid();
       const okS = await store.set("deck:"+idS, {id:idS, name, concepts, cards:
-        $("n-makecards").checked ? concepts.map(c => ({id:uid(), front:c.name, back:c.fact})) : [],
+        job.makeCards ? concepts.map(c => ({id:uid(), front:c.name, back:c.fact})) : [],
         coverage}, true);
       if(!okS) throw new Error("The deck could not be saved — storage may be full.");
       LIB.decks.push({id:idS, name, folderId, created:Date.now(), nCon:concepts.length,
@@ -4511,10 +4603,8 @@ async function build(){
       pbar(100, "Done");
       plog("Deck saved · " + concepts.length + " terms · every content slide accounted for" +
            (coverage && coverage.empty.length ? " except " + coverage.empty.length : ""));
-      $("btn-build").disabled = false;
-      await renderNav(); openDeck(idS);
       toast(concepts.length + " terms read from the slides");
-      return;
+      return jobDone(idS);
     }
     if(material) plog("Material ready · " + material.length + " characters, nothing summarised");
     {   // every material deck gets complete extraction — the capped path is gone
@@ -4526,7 +4616,7 @@ async function build(){
         concepts = merged.map((c,i) => ({id:uid(), name:c.name, topic:c.topic, fact:c.fact,
           items:c.items, steps:c.steps, star:false, qs:questionsFromTerms(pairs, i)}));
       }
-      const cards = $("n-makecards").checked
+      const cards = job.makeCards
         ? concepts.filter(c => (c.fact||"").length > 10).map(c => ({id:uid(), front:c.name, back:c.fact}))
         : [];
       const id2 = uid();
@@ -4540,10 +4630,8 @@ async function build(){
       pbar(100, "Done");
       plog("Deck saved · " + concepts.length + " concepts · " +
            concepts.reduce((a,c)=>a+c.qs.length,0) + " questions");
-      $("btn-build").disabled = false;
-      await renderNav(); openDeck(id2);
       toast(concepts.length + " concepts saved, none dropped");
-      return;
+      return jobDone(id2);
     }
     pbar(14, "Finding the concepts…");
     const names = parseJSON(await claude(
@@ -4615,7 +4703,7 @@ Respond with ONLY a JSON array, no preamble, no markdown fences:
       plog("Some batches did not come back — the deck has " + concepts.length + " of " + names.length +
            " concepts. Use “Write more questions” later to top it up.", true);
     const id = uid();
-    const cards = $("n-makecards").checked
+    const cards = job.makeCards
       ? concepts.filter(c => (c.fact||"").length > 10).map(c => ({id:uid(), front:c.name, back:c.fact}))
       : [];
     await store.set("deck:"+id, {id, name, concepts, cards});
@@ -4628,11 +4716,11 @@ Respond with ONLY a JSON array, no preamble, no markdown fences:
     await store.set("library", LIB);
     await moduleRecord(mod, id);   // LOCAL PORT (Phase 6)
     pbar(100,"Done"); toast(concepts.length + " concepts saved");
-    $("btn-build").disabled = false;
-    await renderNav(); openDeck(id);
+    return jobDone(id);
   }catch(e){
     plog(e.message, true); pbar(100,"Stopped");
-    $("btn-build").disabled = false; toast("Build stopped — see the log");
+    toast("“" + name + "” stopped — see the log");
+    return null;
   } finally { rateNotice = null; }
 }
 async function topUp(){
@@ -7902,7 +7990,7 @@ $("btn-clearkey").onclick = () => {
   KEYSTORE.set(""); $("apikey").value = "";
   $("keystate").textContent = ""; toast("Key removed");
 };
-$("btn-build").onclick = build;
+$("btn-build").onclick = enqueueBuild;
 $("btn-more").onclick = () => { if(needDeck()) topUp(); };
 function needDeck(){
   if(DECK && PROG) return true;

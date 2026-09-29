@@ -4,6 +4,18 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — build queue (2026-09-29)
+- "Build the deck" now adds the module to a **build queue** and clears the form (the subject stays
+  chosen), so the next module can be set up while one builds. Jobs run one at a time; each has
+  its status and progress at the top of New deck, waiting ones can be removed, finished ones have
+  Open. The sidebar's New deck shows how many are building or waiting. A finished build opens
+  its deck only when nothing else is queued and you are not setting up another one.
+- The queue is in memory only; closing MonoSpace with builds pending asks first.
+- `build()` now takes a job (name, subject, material, files, notes, flashcards) instead of reading
+  the form; what it builds and saves is unchanged.
+- Checked in headless Edge on a copy of the real database (AI step stubbed): 3 queued, 1 removed,
+  2 built in order into the chosen subject and saved; 0 JS errors. Reader tests 3/3.
+
 ### Added — move decks between subjects; better games (2026-09-29)
 - **Drag a deck onto another subject** in the sidebar (a closed subject opens as you hover) or
   in the Library; also "Move to…" on each deck card's "…" menu. Only the deck's `folderId` in
