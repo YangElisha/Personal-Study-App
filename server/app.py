@@ -166,7 +166,8 @@ def create_app(settings: Settings, app_dir: Path | None = None,
     # ---- health ---------------------------------------------------------------------
     @app.get("/api/health")
     def health():
-        return {"ok": True, "app": "drill", "schema": db.SCHEMA_VERSION}
+        from . import __version__
+        return {"ok": True, "app": "drill", "schema": db.SCHEMA_VERSION, "version": __version__}
 
     # ---- store ----------------------------------------------------------------------
     @app.get("/api/store")
@@ -240,6 +241,20 @@ def create_app(settings: Settings, app_dir: Path | None = None,
                 "added_keys": rep.added_keys, "undecided": rep.undecided,
                 "skipped": rep.skipped, "snapshot": rep.snapshot.name if rep.snapshot else None,
                 "report": rep.lines}
+
+    # ---- backups: list the snapshots, take one now. Never deletes or restores. -------
+    # Restoring stays the CLI (python -m server.restore), which asks for confirmation.
+    @app.get("/api/backups")
+    def backups_list():
+        return snapshots.list_snapshots(settings)
+
+    @app.post("/api/backups/snapshot")
+    async def backups_snapshot():
+        # tagged "manual": outside the pruned pattern, so taking one never removes another
+        p = await asyncio.to_thread(snapshots.take_snapshot, settings, "manual")
+        if p is None:
+            return _err(409, "no_database", "There is no database to snapshot yet")
+        return {"ok": True, "snapshot": snapshots.describe(p)}
 
     # ---- module library (Phase 6). See server/modules.py ------------------------------
     @app.get("/api/modules")

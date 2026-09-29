@@ -4,6 +4,33 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Changed — reorganised app, branding, loading screen (Elisha, 2026-09-29)
+- **Layout:** sidebar = logo, Home (Today), Library, Review (due count), New deck; Subjects
+  (folders collapsed except the current one, one line per deck with a due badge, Archive last);
+  Backups, Appearance, Settings at the bottom. Today: one next action, recently studied decks,
+  progress at a glance. Library: subjects as sections of deck cards, search + subject filter;
+  folder rename/colour/delete live here. Review: everything due, by deck. Deck page: Study,
+  Teach me, "Test & games" and "What to study" menus, a "…" menu for rare actions; tabs
+  Overview · Guide · Terms · Cards · Manage. Settings: AI status, global study options (moved
+  from each deck's "Session options"), appearance, version.
+- **Backups view:** download / restore a backup file, the server's snapshot list, "Take a
+  snapshot now". Server: `GET /api/backups`, `POST /api/backups/snapshot` (manual snapshots are
+  never pruned; nothing can be deleted or restored from the app — restoring stays
+  `python -m server.restore`). `/api/health` reports the version.
+- **Branding:** icon, logo and README cover from Elisha's orb artwork
+  (`assets/monospace-logo-source.png`, `packaging/make_icon.py`); exe, installer, window and
+  favicon use it.
+- **Loading screen** (`app/splash.css`, `app/splash.js`): rotating wireframe sphere, glowing core,
+  orbiting moons, MONOSPACE title, "Loading your decks…"; at least 1.2 s, hides when boot finishes
+  (or after 8 s), then stops and removes itself; still frame with reduced motion.
+- **Data:** no stored key or JSON shape changed; old backups restore as before. Checked on a copy
+  of the real database in headless Edge: 74/74 browse checks with kv/kv_history unchanged, 7/7
+  write checks (only the expected keys changed), a backup download → restore round trip identical,
+  contrast ≥ 4.5:1 in all presets at 1280/1440/1920, 0 JS errors, 0 non-local requests; reader
+  tests 3/3; 215 server tests. A safety snapshot was taken first
+  (`drill-20260929-153138-pre-restructure.db`).
+- Found, not fixed: `startSprint()` (the 60-second sprint) has no button; true before this change.
+
 ### Added — MonoSpace 1.0.0 for Windows (2026-09-29)
 - `MonoSpace.exe` (server/launcher.py, PyInstaller): runs the server in-process on 127.0.0.1
   and opens the app in its own window (Edge app mode, private profile). Closing the last window

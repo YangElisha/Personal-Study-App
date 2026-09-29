@@ -4,6 +4,7 @@
 <title>MonoSpace — your study board</title>
 <link href="vendor/fonts/fonts.css" rel="stylesheet">
 <link href="vendor/fonts/inter.css" rel="stylesheet"><!-- MonoSpace: Inter (OFL), vendored -->
+<link href="splash.css" rel="stylesheet"><!-- MonoSpace loading screen -->
 <style>
 :root{
   --display:"Space Grotesk",system-ui,sans-serif;
@@ -858,201 +859,327 @@ textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
 .hovercard{background:var(--ink);color:var(--surface)}
 ::-webkit-scrollbar-thumb{background:var(--rule);border:3px solid transparent;background-clip:padding-box}
 ::-webkit-scrollbar-thumb:hover{background-color:var(--ink-3)}
+
+/* ---- MonoSpace layout (2026-09-29): sidebar with primary nav + collapsible subjects, Today,
+        Library, Review, Backups and Settings views, a calmer deck page. Colours still come from
+        Theme / PRESETS; this block only arranges and spaces things. ---- */
+:root{--nav:clamp(248px,18vw,300px);--bar:0px;
+      --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px}
+.appbar{display:none}
+.shell{padding-top:0}
+/* sidebar: brand, primary nav, subjects (scrolls), footer */
+.nav{top:0;bottom:0;left:0;display:flex;flex-direction:column;padding:16px 12px 12px;overflow:hidden;
+     font-size:calc(14px + (var(--fs) - 15px) * .5);z-index:46}
+.nav .brand{display:flex;align-items:center;gap:10px;width:100%;padding:6px 10px;margin:0 0 var(--s4);
+     font-size:1.12em;color:var(--rail-ink)}
+.nav .brand:hover{background:var(--rail-2)}
+.brandlogo{width:28px;height:28px;border-radius:8px;display:block;flex:0 0 auto}
+.navmain,.navfoot{display:grid;gap:2px}
+.navbtn{padding:8px 10px;font-size:1em;gap:11px}
+.navbtn span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.navcount{font-style:normal;font-family:var(--mono);font-size:max(11px,.72em);font-weight:500;line-height:1;
+     padding:4px 7px;border-radius:100px;background:color-mix(in srgb,var(--miss) 20%,transparent);color:var(--rail-ink)}
+.navsubj{flex:1;min-height:0;overflow-y:auto;margin:var(--s5) -4px 0;padding:0 4px}
+.navsec{display:flex;align-items:center;justify-content:space-between;font-size:max(11px,.7em);margin:0 0 6px;
+     padding:0 6px 0 10px;position:sticky;top:0;background:transparent}
+.navplus{width:24px;height:24px;border-radius:7px;border:0;background:none;color:var(--rail-ink-2);cursor:pointer;
+     font-size:17px;line-height:1;display:grid;place-items:center}
+.navplus:hover{background:var(--rail-2);color:var(--rail-ink)}
+.folder{margin:0}
+.fname{width:100%;display:flex;align-items:flex-start;gap:8px;line-height:1.3;background:none;border:0;border-radius:var(--rs);
+     padding:7px 10px;margin:0;font-family:var(--body);font-size:.95em;font-weight:500;letter-spacing:0;
+     text-transform:none;color:var(--rail-ink);text-align:left;border-bottom:0}
+.fname:hover{background:var(--rail-2)}
+.fname .caret{display:grid;place-items:center;width:10px;height:1.3em;flex:0 0 auto;color:var(--rail-ink-2);transform:rotate(90deg);
+     transition:transform .18s var(--ease)}
+.folder.shut .fname .caret{transform:none}
+.fdotm{width:8px;height:8px;border-radius:50%;background:var(--fc,var(--rail-ink-2));flex:0 0 auto;margin-top:calc(.65em - 4px)}
+.fn{flex:1;min-width:0;overflow-wrap:anywhere}
+.fdue{font-style:normal;font-family:var(--mono);font-size:max(11px,.72em);color:var(--rail-ink-2);line-height:1.3em;padding-top:.1em}
+.folder:not(.shut) .fdue{visibility:hidden}
+.decks{margin:2px 0 8px 15px;padding-left:8px;border-left:1px solid var(--rail-rule)}
+.deckbtn{display:flex;align-items:flex-start;gap:8px;padding:6px 10px;font-size:.93em;border-left:0;line-height:1.3}
+.deckbtn .dn{flex:1;min-width:0;overflow-wrap:anywhere}
+.dcount{font-style:normal;font-family:var(--mono);font-size:max(11px,.72em);line-height:1;padding:3px 7px;
+     border-radius:100px;background:color-mix(in srgb,var(--miss) 18%,transparent);color:var(--rail-ink)}
+.deckbtn[aria-current="true"]{background:var(--live-soft);box-shadow:none;font-weight:600}
+.nav .empty{padding:4px 10px;font-size:.86em}
+.navrule{height:1px;background:var(--rail-rule);margin:10px 10px}
+.folder.archive .fname{color:var(--rail-ink-2)}
+.navfoot{border-top:1px solid var(--rail-rule);padding-top:10px;margin-top:10px}
+#modelBadge{left:calc(var(--nav) + 12px)!important}
+@media(max-width:900px){
+  :root{--bar:56px}
+  .appbar{display:flex;left:0}
+  .shell{padding-top:var(--bar)}
+  .nav{z-index:55;width:min(300px,86vw)}
+  #modelBadge{left:10px!important}
+}
+@media(min-width:901px){.exambar{left:var(--nav)}}
+.crumb{font-family:var(--body);font-size:.86em;letter-spacing:0;text-transform:none;border-left:0;padding-left:0;color:var(--ink-2)}
+/* pages */
+.page{max-width:1200px;padding:40px clamp(24px,3vw,48px) 120px}
+@media(max-width:640px){.page{padding:22px 16px 110px}}
+.page.studypage{padding-top:92px}
+.phead{display:flex;justify-content:space-between;align-items:flex-end;gap:var(--s4);flex-wrap:wrap;margin:0 0 var(--s6)}
+.phead h1{margin:0}
+.phead .sub{margin:6px 0 0}
+.phead .eyebrow{margin:0 0 6px}
+.sechead{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s4);margin:40px 0 14px}
+.sechead h2{margin:0}
+.card+.card{margin-top:var(--s4)}
+.card>h2{margin:0 0 var(--s2)}
+.card>.sub{margin:0 0 18px}
+code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:1px solid var(--rule-2);
+     padding:1px 6px;border-radius:6px}
+.btn.sm{padding:7px 14px;font-size:.88em}
+.icon.sm{width:30px;height:30px}
+/* today */
+.today{display:flex;gap:var(--s6);align-items:center;background:var(--surface);background-image:var(--sheen);
+     border:1px solid var(--rule);border-radius:calc(var(--r) + 2px);box-shadow:var(--shadow-1);padding:32px}
+.ttxt{flex:1;min-width:0}
+.ttxt h2{font-size:1.5em;margin:0 0 6px}
+.tbig{margin:0 0 6px;font-size:1.12em;color:var(--ink-2)}
+.tbig b{font-family:var(--display);font-weight:700;font-size:2.3em;letter-spacing:-.04em;color:var(--ink);margin-right:6px;line-height:1}
+.ttxt .sub{margin:0 0 20px}
+.ring{height:auto;display:flex;flex-direction:column;align-items:center}
+.ring b{inset:0 0 auto 0;height:104px}
+.ring small{font-size:max(12px,.78em);color:var(--ink-2);margin-top:6px}
+@media(max-width:700px){.today{flex-direction:column;align-items:flex-start}}
+.glance{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.glance .stat s{font-size:1.6em}
+/* deck cards (Today, Library) */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:var(--s4)}
+.dcard{position:relative;display:flex;flex-direction:column;gap:12px;background:var(--surface);background-image:var(--sheen);
+     border:1px solid var(--rule);border-radius:var(--r);box-shadow:var(--shadow-1);padding:18px 18px 16px 20px;cursor:pointer;
+     transition:border-color var(--t) var(--ease),box-shadow var(--t) var(--ease),transform var(--t) var(--ease)}
+.dcard::before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:3px;border-radius:0 3px 3px 0;background:var(--fc,var(--rule))}
+.dcard:hover{border-color:color-mix(in srgb,var(--live) 50%,var(--rule));box-shadow:var(--shadow-2);transform:translateY(-1px)}
+.dcfold{margin:0 0 -6px;font-family:var(--mono);font-size:max(11px,.66em);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+.dctop{display:flex;gap:8px;align-items:flex-start}
+.dcname{flex:1;min-width:0;background:none;border:0;padding:0;text-align:left;cursor:pointer;color:var(--ink);
+     font-family:var(--display);font-weight:600;font-size:1.06em;letter-spacing:-.02em;line-height:1.3;overflow-wrap:anywhere}
+.dcname:hover{text-decoration:underline;text-underline-offset:3px}
+.dcmore{flex:0 0 auto;width:28px;height:28px;margin:-4px -6px 0 0;border:0;border-radius:8px;background:none;color:var(--ink-2);
+     cursor:pointer;display:grid;place-items:center}
+.dcmore:hover,.dcmore[aria-expanded="true"]{background:var(--surface-2);color:var(--ink)}
+.mbar{height:6px;background:var(--surface-3);border-radius:3px;overflow:hidden}
+.mbar i{display:block;height:100%;background:var(--hit);box-shadow:0 0 12px -2px var(--hit);transition:width .5s}
+.dcfoot{display:flex;align-items:center;gap:10px;margin-top:auto}
+.dcstat{flex:1;min-width:0;font-size:max(12.5px,.84em);color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dctop .duepill{margin-top:2px}
+.duepill{flex:0 0 auto;font-size:max(12px,.78em);font-weight:600;line-height:1;padding:5px 9px;border-radius:100px;
+     background:color-mix(in srgb,var(--miss) 16%,transparent);color:var(--ink);white-space:nowrap}
+.duepill.zero{background:var(--surface-3);color:var(--ink-2);font-weight:500}
+.cempty{grid-column:1/-1;color:var(--ink-2);font-size:.92em;padding:6px 0}
+/* library */
+.libbar{display:grid;gap:12px;margin:0 0 var(--s6)}
+.libbar input{max-width:440px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.libbar .chip{font-family:var(--body);text-transform:none;letter-spacing:0;font-size:.86em;padding:6px 13px;color:var(--ink-2)}
+.libbar .chip[aria-pressed="true"]{color:var(--on-live)}
+.libsec{margin:0 0 40px}
+.libsec.archive{padding-top:8px}
+.libhead{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--rule-2)}
+.lht{flex:1;min-width:0;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.lht h2{margin:0}
+.lhm{font-size:.88em;color:var(--ink-2)}
+.lhtools{display:flex;gap:6px}
+.libhead .fdot{width:12px;height:12px}
+/* review */
+.rvlist{background:var(--surface);background-image:var(--sheen);border:1px solid var(--rule);border-radius:var(--r);
+     box-shadow:var(--shadow-1);overflow:hidden}
+.rvrow{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--rule-2)}
+.rvrow:last-child{border-bottom:0}
+.rvdot{width:10px;height:10px;border-radius:50%;background:var(--fc);flex:0 0 auto}
+.rvmid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rvname{background:none;border:0;padding:0;text-align:left;cursor:pointer;color:var(--ink);font-family:var(--display);
+     font-weight:600;font-size:1.02em}
+.rvname:hover{text-decoration:underline;text-underline-offset:3px}
+.rvfold{font-size:.86em;color:var(--ink-2)}
+/* backups + settings */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--s4);margin:0 0 var(--s4)}
+.grid2 .card{margin:0}
+.snaplist{margin-top:14px}
+.snaptable{border:1px solid var(--rule-2);border-radius:var(--rs);overflow:hidden;margin-bottom:10px}
+.snaprow{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(120px,1fr) 80px minmax(0,1.6fr);gap:12px;
+     align-items:center;padding:9px 14px;font-size:.9em;border-bottom:1px solid var(--rule-2)}
+.snaprow:last-child{border-bottom:0}
+.snaprow:nth-child(odd){background:var(--surface-2)}
+.snaprow .sw2,.snaprow .sw3{color:var(--ink-2)}
+.snaprow code{background:none;border:0;padding:0;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:760px){.snaprow{grid-template-columns:1fr 1fr}.snaprow code{grid-column:1/-1}}
+.kv{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid var(--rule-2)}
+.kv:last-child{border-bottom:0}
+.kv span{color:var(--ink-2)}
+.kv b{font-weight:600;text-align:right}
+.setsec{margin:36px 0 12px}
+/* deck page */
+.dhero{padding:28px 30px 22px}
+.dtop{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,380px);gap:var(--s6);align-items:end}
+@media(max-width:760px){.dtop{grid-template-columns:1fr;gap:var(--s4)}}
+.dtitle h1{margin:0;overflow-wrap:anywhere}
+.dhero .fold{color:var(--ink-2);margin:0 0 8px}
+.dprog .pct{margin:0 0 8px;font-size:.88em}
+.dprog .track{margin:0}
+.dactions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:24px;padding-top:20px;border-top:1px solid var(--rule-2)}
+.dactions .grow{flex:1}
+.dactions .btn.big{padding:11px 22px;font-size:1em}
+.dactions .caret{font-size:.8em;opacity:.8;margin-left:2px}
+.menuwrap{position:relative}
+.menu{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:270px;background:var(--surface);background-image:var(--sheen);
+     border:1px solid var(--rule);border-radius:var(--r);box-shadow:var(--shadow-2);padding:6px;display:none}
+.menu.on{display:block}
+.menu.right{left:auto;right:0}
+.menu.wide{width:min(480px,80vw);padding:16px 18px}
+.menu>button,.popmenu button{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 12px;
+     border-radius:var(--rs);color:var(--ink);cursor:pointer;font-size:.95em;line-height:1.35}
+.menu>button:hover,.menu>button:focus-visible,.popmenu button:hover,.popmenu button:focus-visible{background:var(--surface-2)}
+.menu>button b{display:block;font-weight:600}
+.menu>button small{display:block;color:var(--ink-2);font-size:.86em;margin-top:2px}
+.menu>button.danger b,.popmenu button.danger{color:var(--miss)}
+.mlabel{font-family:var(--mono);font-size:max(11px,.66em);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);margin:0 0 8px}
+.mlabel~.mlabel{margin-top:18px}
+.mnote{margin:18px 0 0;font-size:.88em;color:var(--ink-2)}
+.mnote .link{font-size:1em;padding:0;color:var(--ink)}
+.popmenu{position:fixed;z-index:140;min-width:180px;background:var(--surface);background-image:var(--sheen);border:1px solid var(--rule);
+     border-radius:var(--r);box-shadow:var(--shadow-2);padding:6px;display:none}
+.popmenu.on{display:block}
+.tabs{margin:26px 0 22px}
+.actrow{display:flex;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--rule-2)}
+.card>h2+.actrow{border-top:0}
+.actrow>div{flex:1;min-width:0}
+.actrow b{display:block;font-weight:600}
+.actrow small{display:block;color:var(--ink-2);font-size:.88em;margin-top:2px}
+.btn2.warn:hover{border-color:var(--miss);color:var(--miss)}
+/* contrast ≥ 4.5:1 in every preset for the small print */
+.phead .eyebrow,.setsec,.sechead .link,.sw .lab small,.opt .key{color:var(--ink-2)}
+.duepill.zero{color:var(--ink)}
+/* closed drawers and dialogs are out of the Tab order (they only faded or slid away before) */
+.drawer:not(.on),.chatdrawer:not(.on){visibility:hidden}
+.drawer,.chatdrawer{transition:transform .28s cubic-bezier(.2,.7,.3,1),visibility .28s}
+.bmodal:not(.on),.explain:not(.on),.qmodal:not(.on),.modal:not(.on){visibility:hidden}
 </style>
+<script src="splash.js"></script>
 
 <header class="appbar">
   <button class="burger" id="burger" aria-label="Menu">
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
       <path d="M3 5h14M3 10h14M3 15h14" stroke-linecap="round"/></svg>
   </button>
-  <button class="brand" id="brand"><i></i>MonoSpace</button>
   <span class="crumb" id="crumb"></span>
-  <div class="abtools">
-    <button class="icon" id="btn-custom" title="Appearance">
-      <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-        <circle cx="10" cy="10" r="7"/><path d="M10 3v14" /></svg>
-    </button>
-    <button class="btn" id="btn-newtop">New deck</button>
-  </div>
 </header>
 
 <div class="shell">
-  <nav class="nav" id="nav">
-    <p class="navsec">Study</p>
-    <button class="navbtn" id="nav-home">
-      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-        <path d="M3 8l7-5 7 5v9H3z" stroke-linejoin="round"/></svg> All decks</button>
-    <button class="navbtn" id="nav-new">
-      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-        <path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg> New deck</button>
-    <div id="library"></div>
-    <div class="row" style="margin-top:22px;padding:0 6px">
-      <button class="link" id="btn-folder">Add folder</button>
-      <button class="link" id="btn-export">Back up</button>
-      <button class="link" id="btn-import">Restore</button>
+  <nav class="nav" id="nav" aria-label="MonoSpace">
+    <button class="brand" id="brand" title="Home"><img class="brandlogo" src="vendor/brand/logo-128.png" alt=""
+      onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i hidden></i><span>MonoSpace</span></button>
+    <div class="navmain">
+      <button class="navbtn" id="nav-home">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M3 8l7-5 7 5v9H3z" stroke-linejoin="round"/></svg><span>Home</span></button>
+      <button class="navbtn" id="nav-library">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M4 3v14M8 3v14M12 4l4 12.5" stroke-linecap="round"/></svg><span>Library</span></button>
+      <button class="navbtn" id="nav-review">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M16 10a6 6 0 1 1-2-4.5M16 3v3.5h-3.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Review</span><em class="navcount hide" id="nav-duecount"></em></button>
+      <button class="navbtn" id="nav-new">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg><span>New deck</span></button>
     </div>
-    <p class="navsec" id="storenote" style="margin-top:16px"></p>
+    <div class="navsubj">
+      <div class="navsec"><span>Subjects</span>
+        <button class="navplus" id="btn-folder" title="Add a folder" aria-label="Add a folder">+</button></div>
+      <div id="library"></div>
+    </div>
+    <div class="navfoot">
+      <button class="navbtn" id="nav-backups">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M3 6h14v10H3zM6 3h8M8 10h4" stroke-linejoin="round" stroke-linecap="round"/></svg><span>Backups</span></button>
+      <button class="navbtn" id="btn-custom">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+          <circle cx="10" cy="10" r="7"/><path d="M10 3v14"/></svg><span>Appearance</span></button>
+      <button class="navbtn" id="nav-settings">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+          <circle cx="10" cy="10" r="2.6"/><path d="M10 2.5v2.2M10 15.3v2.2M2.5 10h2.2M15.3 10h2.2M4.7 4.7l1.6 1.6M13.7 13.7l1.6 1.6M4.7 15.3l1.6-1.6M13.7 6.3l1.6-1.6" stroke-linecap="round"/></svg><span>Settings</span></button>
+    </div>
   </nav>
 
   <main>
-    <!-- ===== HOME ===== -->
+    <!-- ===== HOME (today) ===== -->
     <section id="v-home" class="page hide">
-      <div class="card" id="pickcard" style="margin-bottom:22px">
-        <div class="spread" style="margin-bottom:14px">
-          <h2 style="margin:0" id="pick-title">What are we working on today?</h2>
-          <button class="link hide" id="pick-clear">Show everything</button>
-        </div>
-        <div class="subjects" id="subjects"></div>
-      </div>
-      <div class="hero" id="hero"></div>
-      <div class="spread" style="margin-bottom:16px">
-        <h2 style="margin:0">Your decks</h2>
-        <span class="eyebrow" style="margin:0" id="deckcount"></span>
-      </div>
-      <div class="tiles" id="tiles"></div>
+      <header class="phead">
+        <div><p class="eyebrow" id="home-date">Today</p><h1 id="home-title">Today</h1></div>
+      </header>
+      <div class="today" id="today"></div>
+      <div class="sechead"><h2>Continue studying</h2><button class="link" id="home-lib">Open the library</button></div>
+      <div class="cgrid" id="recent"></div>
+      <div class="sechead"><h2>At a glance</h2></div>
+      <div class="glance" id="glance"></div>
     </section>
 
-    <!-- ===== DECK ===== -->
-    <section id="v-deck" class="page hide">
-      <div class="dhero">
-        <div class="fold" id="d-fold">—</div>
-        <div class="titlerow">
-          <h1 id="d-name">—</h1>
-          <button class="icon" id="btn-rename" title="Rename this deck">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M13.5 3.5l3 3L7 16H4v-3z" stroke-linejoin="round"/></svg>
-          </button>
-        </div>
-        <div class="track"><i id="d-track" style="width:0%"></i></div>
-        <p class="pct" id="d-pct">—</p>
-        <div class="row">
-          <button class="btn big" id="btn-teach">Teach me</button>
-          <button class="btn2" id="btn-study">Learn</button>
-          <button class="btn2" id="btn-test">Test</button>
-          <button class="btn2" id="btn-match">Matching game</button>
-          <button class="btn2" id="btn-cards">Flashcards</button>
-          <button class="btn2" id="btn-shoot">Defence game</button>
-          <button class="btn2" id="btn-more">Write more questions</button>
-        </div>
-        <p class="modehint" id="modehint">Teach walks you through the deck a few concepts at a time and checks you before moving on · Learn adapts as you go · Test marks a full paper at the end, essays included</p>
+    <!-- ===== LIBRARY ===== -->
+    <section id="v-library" class="page hide">
+      <header class="phead">
+        <div><h1>Library</h1><p class="sub" id="lib-sub">—</p></div>
+        <div class="row"><button class="btn2" id="lib-folder">New folder</button><button class="btn" id="lib-new">New deck</button></div>
+      </header>
+      <div class="libbar">
+        <input type="text" id="lib-search" placeholder="Search decks" aria-label="Search decks">
+        <div class="chips" id="lib-filter" role="group" aria-label="Show a subject"></div>
       </div>
-      <div class="tabs" role="tablist">
-        <button class="tab" data-tab="overview" aria-selected="true">Overview</button>
-        <button class="tab" data-tab="concepts" aria-selected="false">Concepts</button>
-        <button class="tab" data-tab="guide" aria-selected="false">Study guide</button>
-        <button class="tab" data-tab="cards" aria-selected="false">Flashcards</button>
-        <button class="tab" data-tab="options" aria-selected="false">Session options</button>
-        <button class="tab" data-tab="manage" aria-selected="false">Manage</button>
-      </div>
-      <div id="t-overview">
-        <div class="stats">
-          <div class="stat"><b>Due now</b><s id="k-due">0</s></div>
-          <div class="stat"><b>New</b><s id="k-new">0</s></div>
-          <div class="stat"><b>Learning</b><s id="k-learn">0</s></div>
-          <div class="stat"><b>Long-term</b><s id="k-mast">0</s></div>
-          <div class="stat"><b>Lifetime correct</b><s id="k-acc">—</s></div>
-        </div>
-        <div class="card hide" id="cov-card" style="margin-bottom:18px">
-          <p class="eyebrow">What was read from your material</p>
-          <p class="sub" id="cov-sum" style="margin:0 0 6px">—</p>
-          <p id="cov-ok" style="margin:0 0 12px;font-weight:500;font-size:.92em">—</p>
-          <details><summary class="link" style="cursor:pointer">Page by page</summary>
-            <div id="cov-rows" style="margin-top:10px"></div></details>
-        </div>
-        <div class="card" style="margin-bottom:18px">
-          <p class="eyebrow">Your review schedule</p>
-          <p class="sub" id="k-next" style="margin:0 0 16px">—</p>
-          <div class="forecast" id="forecast"></div>
+      <div id="lib-body"></div>
+    </section>
+
+    <!-- ===== REVIEW (due now) ===== -->
+    <section id="v-review" class="page hide">
+      <header class="phead">
+        <div><h1 id="rv-title">Review</h1><p class="sub" id="rv-sub">—</p></div>
+      </header>
+      <div id="rv-body"></div>
+    </section>
+
+    <!-- ===== BACKUPS ===== -->
+    <section id="v-backups" class="page hide">
+      <header class="phead"><div><h1>Backups</h1><p class="sub">Keep a copy of everything you have made, and bring it back.</p></div></header>
+      <div class="grid2">
+        <div class="card">
+          <h2>Download a backup</h2>
+          <p class="sub">Every deck, flashcard, study guide and your progress, in one file. Keep it somewhere safe, such as OneDrive or a USB stick.</p>
+          <button class="btn" id="btn-export">Download a backup</button>
         </div>
         <div class="card">
-          <p class="eyebrow">Concept board — one square per concept</p>
-          <div class="lamps" id="d-lamps"></div>
+          <h2>Restore from a backup</h2>
+          <p class="sub">Merge a backup file back in. Decks and concepts are only added, never removed. Older Drill backups work too.</p>
+          <button class="btn2" id="btn-import">Restore from a backup</button>
         </div>
       </div>
-      <div id="t-concepts" class="hide">
-        <div class="card">
-          <div class="spread" style="margin-bottom:14px">
-            <div style="flex:1;min-width:220px">
-              <input type="text" id="d-search" placeholder="Search terms and definitions">
-            </div>
-            <div class="row">
-              <button class="chip" id="d-starred">Starred only</button>
-              <button class="btn2" id="d-addterm">+ Add term</button>
-            </div>
-          </div>
-          <p class="sub" id="d-listcount" style="margin:0">—</p>
-        </div>
-        <div id="d-list"></div>
+      <div class="card">
+        <div class="spread"><div><h2 style="margin:0 0 4px">Automatic snapshots</h2>
+          <p class="sub" style="margin:0" id="snap-last">—</p></div>
+          <button class="btn2" id="snap-now">Take a snapshot now</button></div>
+        <p class="sub" style="margin:14px 0 0" id="snap-note">MonoSpace copies its whole database into the backups folder each time it starts and once a day.</p>
+        <div class="snaplist" id="snap-list"></div>
+        <p class="sub" style="margin:14px 0 0">To go back to a snapshot, close MonoSpace and run <code>python -m server.restore &lt;name&gt;</code> in the MonoSpace folder; it shows what will change and asks you to type yes.</p>
       </div>
-      <div id="t-guide" class="hide">
-        <div class="card">
-          <div class="spread" style="margin-bottom:6px">
-            <div>
-              <h2 style="margin:0 0 4px">Study guide</h2>
-              <p class="sub" style="margin:0" id="g-count">—</p>
-            </div>
-            <div class="row">
-              <button class="btn" id="btn-guide-ai">Write the full guide</button>
-              <button class="btn2" id="btn-guide-copy">Copy all</button>
-            </div>
-          </div>
-          <div class="prog hide" id="gprog">
-            <p id="gprog-head">Working…</p>
-            <div class="track"><i id="gprog-bar" style="width:0%"></i></div>
-          </div>
-        </div>
-        <div class="gbar">
-          <input type="text" id="g-search" placeholder="Search terms, definitions, examples">
-          <div class="row" id="g-filters">
-            <button class="chip" data-gf="all" aria-pressed="true">All</button>
-            <button class="chip" data-gf="due">Due now</button>
-            <button class="chip" data-gf="new">Not studied</button>
-            <button class="chip" data-gf="star">Starred</button>
-          </div>
-          <div class="gtopics" id="g-topics"></div>
-          <div class="glegend">
-            <span><i style="background:var(--miss)"></i>Due now</span>
-            <span><i style="background:var(--live)"></i>Learning</span>
-            <span><i style="background:var(--hit)"></i>Long-term</span>
-            <span><i style="background:var(--ink-3)"></i>Not studied</span>
-          </div>
-        </div>
-        <div id="guide-body"></div>
+      <div class="card">
+        <h2>Where your data lives</h2>
+        <p class="sub" style="margin:0" id="storefull">—</p>
       </div>
-      <div id="t-cards" class="hide">
-        <div class="card">
-          <div class="spread" style="margin-bottom:16px">
-            <div>
-              <h2 style="margin:0 0 4px">Flashcards</h2>
-              <p class="sub" style="margin:0" id="c-count">—</p>
-            </div>
-            <div class="row">
-              <button class="btn" id="btn-studycards">Study cards</button>
-              <button class="btn2" id="btn-autocards">Auto-create from concepts</button>
-              <button class="btn2" id="btn-addcard">+ Add card</button>
-            </div>
-          </div>
-          <div id="c-editor"></div>
-        </div>
+    </section>
+
+    <!-- ===== SETTINGS ===== -->
+    <section id="v-settings" class="page hide">
+      <header class="phead"><div><h1>Settings</h1><p class="sub">These apply to every deck.</p></div></header>
+      <div class="card">
+        <h2>AI</h2>
+        <div class="kv"><span>Answering right now</span><b id="ai-now">Checking…</b></div>
+        <div class="kv"><span>Internet</span><b id="netstate">—</b></div>
+        <p class="sub" style="margin:12px 0 0">Claude answers when you are online and it is switched on; otherwise Qwen on this PC answers. This is automatic; there is nothing to set here.</p>
       </div>
-      <div id="t-options" class="hide">
-        <div class="card">
-          <h2>What to drill</h2>
-          <div class="field">
-            <label class="f">Scope</label>
-            <div class="row">
-              <button class="chip" data-scope="due" aria-pressed="true">Due today + new</button>
-              <button class="chip" data-scope="new">New material only</button>
-              <button class="chip" data-scope="star">Starred only</button>
-              <button class="chip" data-scope="weak">Weak spots only</button>
-              <button class="chip" data-scope="all">Everything, ignore the schedule</button>
-            </div>
-          </div>
-          <div class="field" style="margin:0">
-            <label class="f">Topics</label>
-            <div class="row" id="d-topics"></div>
-          </div>
-        </div>
+      <div id="set-study">
+        <p class="eyebrow setsec">Study options</p>
         <div class="card">
           <h2>Question types</h2>
           <p class="sub" style="margin-bottom:14px">Turn off anything you don't want to see. At least one has to stay on.</p>
@@ -1119,29 +1246,17 @@ textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
           </div>
         </div>
       </div>
-      <div id="t-manage" class="hide">
-        <div class="card">
-          <h2>Check this deck for missing content</h2>
-          <p class="sub" style="margin-bottom:14px">Paste the original module text. Every passage is re-read and checked, and anything this deck is missing — terms, sub-types, principles, examples, list members — is added. Your progress on what is already here is kept.</p>
-          <textarea id="m-source" style="min-height:150px" placeholder="Paste the full module text here"></textarea>
-          <div class="row" style="margin-top:14px">
-            <button class="btn" id="m-pdf">Check against the PDF</button>
-            <input type="file" id="m-pdffile" class="hide" accept=".pdf">
-            <button class="btn2" id="m-recheck">Check against pasted text</button>
-            <button class="btn2" id="m-clean">Remove course outcomes &amp; admin</button>
-          </div>
-          <div class="log hide" id="m-recheck-log" style="margin-top:14px;max-height:170px"></div>
-        </div>
-        <div class="card">
-          <h2>Where your data lives</h2>
-          <p class="sub" style="margin-bottom:10px" id="storefull">—</p>
-          <p class="sub" style="margin-bottom:14px" id="netstate">—</p>
-          <div class="row">
-            <button class="btn2" id="btn-export2">Download a backup</button>
-            <button class="btn2" id="btn-import2">Restore from backup</button>
-          </div>
-        </div>
-        <div class="card" id="keycard">
+      <div class="card">
+        <h2>Appearance</h2>
+        <p class="sub">Light or dark, colour presets, text size.</p>
+        <button class="btn2" id="set-appearance">Open appearance</button>
+      </div>
+      <div class="card">
+        <h2>About</h2>
+        <div class="kv"><span>Version</span><b id="about-ver">MonoSpace</b></div>
+        <div class="kv"><span>Your data</span><b id="storenote">—</b></div>
+      </div>
+              <div class="card" id="keycard">
           <h2>Anthropic API key</h2>
           <p class="sub" style="margin-bottom:14px">Only needed when you run this file outside Claude. Without a key the app still works — you just can't build new decks from material or have questions written for you. The key is stored in this browser only and never goes into your backup file.</p>
           <div class="field" style="margin-bottom:12px">
@@ -1154,15 +1269,189 @@ textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
             <span class="sub" style="margin:0" id="keystate"></span>
           </div>
         </div>
-        <div class="card">
-          <h2>Manage this deck</h2>
-          <p class="sub" style="margin-bottom:18px">Resetting keeps every question and clears only your progress.</p>
-          <div class="row">
-            <button class="btn2" id="btn-steps">Find processes &amp; steps</button>
-            <button class="btn2" id="btn-tidy">Tidy term names</button>
-            <button class="btn2" id="btn-resetprog">Reset progress</button>
-            <button class="btn2" id="btn-delete">Delete deck</button>
+
+    </section>
+
+    <!-- ===== DECK ===== -->
+    <section id="v-deck" class="page hide">
+      <div class="dhero">
+        <div class="dtop">
+          <div class="dtitle">
+            <p class="fold" id="d-fold">—</p>
+            <h1 id="d-name">—</h1>
           </div>
+          <div class="dprog">
+            <p class="pct" id="d-pct">—</p>
+            <div class="track"><i id="d-track" style="width:0%"></i></div>
+          </div>
+        </div>
+        <div class="dactions">
+          <button class="btn big" id="btn-study" title="Learn: adapts as you go">Study</button>
+          <button class="btn2" id="btn-teach" title="Walks you through the deck a few concepts at a time and checks you before moving on">Teach me</button>
+          <div class="menuwrap">
+            <button class="btn2" id="btn-testmenu" aria-haspopup="true" aria-expanded="false" aria-controls="menu-test">Test &amp; games <span class="caret" aria-hidden="true">▾</span></button>
+            <div class="menu" id="menu-test">
+              <button id="btn-test"><b>Practice test</b><small>A full paper, marked at the end, essays included</small></button>
+              <button id="btn-cards"><b>Flashcards</b><small>Flip each card and say whether you knew it</small></button>
+              <button id="btn-match"><b>Matching game</b><small>Pair terms with their definitions</small></button>
+              <button id="btn-shoot"><b>Defence game</b><small>Type the term before it lands</small></button>
+            </div>
+          </div>
+          <div class="menuwrap">
+            <button class="btn2" id="btn-session" aria-haspopup="true" aria-expanded="false" aria-controls="menu-session">What to study <span class="caret" aria-hidden="true">▾</span></button>
+            <div class="menu wide" id="menu-session">
+              <p class="mlabel">Scope</p>
+            <div class="row">
+              <button class="chip" data-scope="due" aria-pressed="true">Due today + new</button>
+              <button class="chip" data-scope="new">New material only</button>
+              <button class="chip" data-scope="star">Starred only</button>
+              <button class="chip" data-scope="weak">Weak spots only</button>
+              <button class="chip" data-scope="all">Everything, ignore the schedule</button>
+            </div>
+              <p class="mlabel">Topics</p>
+              <div class="row" id="d-topics"></div>
+              <p class="mnote">Question types, feedback and layout are in <button class="link" id="to-settings">Settings</button>.</p>
+            </div>
+          </div>
+          <span class="grow"></span>
+          <div class="menuwrap">
+            <button class="icon" id="btn-overflow" aria-haspopup="true" aria-expanded="false" aria-controls="menu-more" aria-label="More actions for this deck" title="More actions">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><circle cx="4.5" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="15.5" cy="10" r="1.6"/></svg></button>
+            <div class="menu right" id="menu-more">
+              <button id="btn-rename"><b>Rename deck</b></button>
+              <button id="btn-more"><b>Write more questions</b><small>AI adds new questions to this deck</small></button>
+              <button id="mm-manage"><b>Check for missing content</b><small>Compare the deck with the module again</small></button>
+              <button id="mm-reset"><b>Reset progress</b></button>
+              <button id="mm-delete" class="danger"><b>Delete deck</b></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="tab" data-tab="overview" aria-selected="true">Overview</button>
+        <button class="tab" data-tab="guide" aria-selected="false">Guide</button>
+        <button class="tab" data-tab="concepts" aria-selected="false">Terms</button>
+        <button class="tab" data-tab="cards" aria-selected="false">Cards</button>
+        <button class="tab" data-tab="manage" aria-selected="false">Manage</button>
+      </div>
+      <div id="t-overview">
+        <div class="stats">
+          <div class="stat"><b>Due now</b><s id="k-due">0</s></div>
+          <div class="stat"><b>New</b><s id="k-new">0</s></div>
+          <div class="stat"><b>Learning</b><s id="k-learn">0</s></div>
+          <div class="stat"><b>Long-term</b><s id="k-mast">0</s></div>
+          <div class="stat"><b>Lifetime correct</b><s id="k-acc">—</s></div>
+        </div>
+        <div class="card hide" id="cov-card" style="margin-bottom:18px">
+          <p class="eyebrow">What was read from your material</p>
+          <p class="sub" id="cov-sum" style="margin:0 0 6px">—</p>
+          <p id="cov-ok" style="margin:0 0 12px;font-weight:500;font-size:.92em">—</p>
+          <details><summary class="link" style="cursor:pointer">Page by page</summary>
+            <div id="cov-rows" style="margin-top:10px"></div></details>
+        </div>
+        <div class="card" style="margin-bottom:18px">
+          <p class="eyebrow">Your review schedule</p>
+          <p class="sub" id="k-next" style="margin:0 0 16px">—</p>
+          <div class="forecast" id="forecast"></div>
+        </div>
+        <div class="card">
+          <p class="eyebrow">Concept board — one square per concept</p>
+          <div class="lamps" id="d-lamps"></div>
+        </div>
+      </div>
+      <div id="t-guide" class="hide">
+        <div class="card">
+          <div class="spread" style="margin-bottom:6px">
+            <div>
+              <h2 style="margin:0 0 4px">Study guide</h2>
+              <p class="sub" style="margin:0" id="g-count">—</p>
+            </div>
+            <div class="row">
+              <button class="btn" id="btn-guide-ai">Write the full guide</button>
+              <button class="btn2" id="btn-guide-copy">Copy all</button>
+            </div>
+          </div>
+          <div class="prog hide" id="gprog">
+            <p id="gprog-head">Working…</p>
+            <div class="track"><i id="gprog-bar" style="width:0%"></i></div>
+          </div>
+        </div>
+        <div class="gbar">
+          <input type="text" id="g-search" placeholder="Search terms, definitions, examples">
+          <div class="row" id="g-filters">
+            <button class="chip" data-gf="all" aria-pressed="true">All</button>
+            <button class="chip" data-gf="due">Due now</button>
+            <button class="chip" data-gf="new">Not studied</button>
+            <button class="chip" data-gf="star">Starred</button>
+          </div>
+          <div class="gtopics" id="g-topics"></div>
+          <div class="glegend">
+            <span><i style="background:var(--miss)"></i>Due now</span>
+            <span><i style="background:var(--live)"></i>Learning</span>
+            <span><i style="background:var(--hit)"></i>Long-term</span>
+            <span><i style="background:var(--ink-3)"></i>Not studied</span>
+          </div>
+        </div>
+        <div id="guide-body"></div>
+      </div>
+      <div id="t-concepts" class="hide">
+        <div class="card">
+          <div class="spread" style="margin-bottom:14px">
+            <div style="flex:1;min-width:220px">
+              <input type="text" id="d-search" placeholder="Search terms and definitions">
+            </div>
+            <div class="row">
+              <button class="chip" id="d-starred">Starred only</button>
+              <button class="btn2" id="d-addterm">+ Add term</button>
+            </div>
+          </div>
+          <p class="sub" id="d-listcount" style="margin:0">—</p>
+        </div>
+        <div id="d-list"></div>
+      </div>
+      <div id="t-cards" class="hide">
+        <div class="card">
+          <div class="spread" style="margin-bottom:16px">
+            <div>
+              <h2 style="margin:0 0 4px">Flashcards</h2>
+              <p class="sub" style="margin:0" id="c-count">—</p>
+            </div>
+            <div class="row">
+              <button class="btn" id="btn-studycards">Study cards</button>
+              <button class="btn2" id="btn-autocards">Auto-create from concepts</button>
+              <button class="btn2" id="btn-addcard">+ Add card</button>
+            </div>
+          </div>
+          <div id="c-editor"></div>
+        </div>
+      </div>
+      <div id="t-manage" class="hide">
+        <div class="card">
+          <h2>Check this deck for missing content</h2>
+          <p class="sub" style="margin-bottom:14px">Paste the original module text. Every passage is re-read and checked, and anything this deck is missing — terms, sub-types, principles, examples, list members — is added. Your progress on what is already here is kept.</p>
+          <textarea id="m-source" style="min-height:150px" placeholder="Paste the full module text here"></textarea>
+          <div class="row" style="margin-top:14px">
+            <button class="btn" id="m-pdf">Check against the PDF</button>
+            <input type="file" id="m-pdffile" class="hide" accept=".pdf">
+            <button class="btn2" id="m-recheck">Check against pasted text</button>
+          </div>
+          <div class="log hide" id="m-recheck-log" style="margin-top:14px;max-height:170px"></div>
+        </div>
+        <div class="card">
+          <h2>Tidy up</h2>
+          <div class="actrow"><div><b>Find processes &amp; steps</b><small>Turns ordered processes into put-the-steps-in-order questions (uses AI).</small></div>
+            <button class="btn2" id="btn-steps">Find processes &amp; steps</button></div>
+          <div class="actrow"><div><b>Tidy term names</b><small>Shortens terms that read like sentences.</small></div>
+            <button class="btn2" id="btn-tidy">Tidy term names</button></div>
+          <div class="actrow"><div><b>Remove course outcomes &amp; admin</b><small>Drops learning outcomes, grading and other non-content entries. Asks first.</small></div>
+            <button class="btn2" id="m-clean">Remove course outcomes &amp; admin</button></div>
+        </div>
+        <div class="card">
+          <h2>Reset or delete</h2>
+          <div class="actrow"><div><b>Reset progress</b><small>Keeps every question and flashcard; clears only your mastery. Asks first.</small></div>
+            <button class="btn2" id="btn-resetprog">Reset progress</button></div>
+          <div class="actrow"><div><b>Delete this deck</b><small>The deck, its questions, flashcards and progress. Asks first.</small></div>
+            <button class="btn2 warn" id="btn-delete">Delete deck</button></div>
         </div>
       </div>
     </section>
@@ -1680,6 +1969,7 @@ Availability: Information is there when it is needed"></textarea>
 </aside>
 <div class="hovercard" id="hovercard"></div>
 <div class="swatchpop" id="swatchpop"></div>
+<div class="popmenu" id="popmenu" role="menu"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -2064,7 +2354,7 @@ function openSwatches(el, folder){
       folder.color = c;
       await store.set("library", LIB);
       pop.classList.remove("on");
-      renderNav(); renderHome();
+      renderNav(); refreshView();
     };
     pop.appendChild(b);
   });
@@ -2213,14 +2503,16 @@ function parseJSON(t){
 /* ============================================================
    NAVIGATION
    ============================================================ */
-const VIEWS = ["v-home","v-deck","v-new","v-study","v-match","v-cards","v-sprint","v-shoot","v-teach","v-lesson","v-course","v-unit","v-exam-setup","v-exam","v-exam-result","v-report"];
+const VIEWS = ["v-home","v-library","v-review","v-backups","v-settings","v-deck","v-new","v-study","v-match","v-cards","v-sprint","v-shoot","v-teach","v-lesson","v-course","v-unit","v-exam-setup","v-exam","v-exam-result","v-report"];
 function go(v, crumb){
   VIEWS.forEach(x => $(x).classList.toggle("hide", x !== v));
   askVisible(!!DECK && ["v-deck","v-study","v-teach","v-lesson","v-course","v-unit","v-report","v-exam-result"].includes(v));
   if(v !== "v-study" && v !== "v-lesson" && v !== "v-unit") CHAT.focus = null;
   $("crumb").textContent = crumb || "";
-  $("nav-home").setAttribute("aria-current", v === "v-home");
-  $("nav-new").setAttribute("aria-current", v === "v-new");
+  [["nav-home","v-home"],["nav-library","v-library"],["nav-review","v-review"],["nav-new","v-new"],
+   ["nav-backups","v-backups"],["nav-settings","v-settings"]].forEach(([b, w]) => $(b).setAttribute("aria-current", v === w));
+  if(typeof closePop === "function") closePop();
+  closeMenus();
   closeNav();
   window.scrollTo({top:0});
 }
@@ -2241,6 +2533,7 @@ async function boot(){
   }
   LIB = await store.get("library");
   if((!LIB && store.readFailed) || prefsFailed){      // LOCAL PORT: server down → say so; never write an empty library
+    window.MonoSplash && MonoSplash.done();
     await confirmDlg("Can't reach the MonoSpace server",
       "Your decks are safe on this PC, but the MonoSpace server isn't answering. Make sure start.bat is " +
       "running, then reload this page.", "OK");
@@ -2276,8 +2569,8 @@ async function boot(){
   const off = () => {
     const on = navigator.onLine !== false;
     $("netstate").textContent = on
-      ? "Online. Everything is available. AI answers come from Claude (Qwen on this PC if Claude can't answer)."
-      : "Offline. Everything still works. AI answers come from Qwen on this PC.";
+      ? "Online"
+      : "Offline — everything still works";
   };
   off(); window.addEventListener("online", off); window.addEventListener("offline", off);
   if(STORE_MODE === "none") toast("This browser is not saving data — back up before closing");
@@ -2304,79 +2597,77 @@ function dueCount(p){
 }
 
 let navToken = 0, navPending = null;
+/* MonoSpace layout (2026-09-29): the sidebar lists subjects collapsed, except the one you are
+   working in. Which ones are open is kept for this visit only; nothing about it is saved. */
+const openFolders = new Set();
+let navSeeded = false;
+function isArchive(f){ return !!f && (f.id === "f-archive" || /^archive$/i.test(String(f.name || "").trim())); }
+function orderedFolders(){ return LIB.folders.filter(f => !isArchive(f)).concat(LIB.folders.filter(isArchive)); }
+function el(tag, cls, text){ const e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined) e.textContent = text; return e; }
+function plural(n, one, many){ return n + " " + (n === 1 ? one : (many || one + "s")); }
+async function deckRows(list){
+  const rows = [];
+  for(const d of (list || LIB.decks)){
+    const p = await progOf(d.id);
+    rows.push({d, p, done:masteredCount(p, d), due:d.kind === "skill" ? 0 : dueCount(p), last:(p && p.last) || 0});
+  }
+  return rows;
+}
 async function renderNav(){
   const mine = ++navToken;
+  const rows = await deckRows();
+  if(mine !== navToken) return;
+  const byId = {}; rows.forEach(r => byId[r.d.id] = r);
+  if(!navSeeded){                       // first draw: open the subject you studied most recently
+    navSeeded = true;
+    const recent = rows.filter(r => r.last).sort((a,b) => b.last - a.last)[0];
+    if(recent) openFolders.add(recent.d.folderId);
+  }
   const box = document.createDocumentFragment();
-  for(let fi = 0; fi < LIB.folders.length; fi++){
-    const f = LIB.folders[fi];
+  let totalDue = 0, archiveDone = false;
+  for(const f of orderedFolders()){
+    const fi = LIB.folders.indexOf(f);
     const decks = LIB.decks.filter(d => d.folderId === f.id);
     const colour = folderColor(f, fi);
-    const wrap = document.createElement("div");
-    wrap.className = "folder" + (shutFolders[f.id] ? " shut" : "");
+    const due = decks.reduce((a,d) => a + byId[d.id].due, 0);
+    totalDue += due;
+    if(isArchive(f) && !archiveDone){ archiveDone = true; box.appendChild(el("div", "navrule")); }
+    const wrap = el("div", "folder" + (openFolders.has(f.id) ? "" : " shut") + (isArchive(f) ? " archive" : ""));
     wrap.style.setProperty("--fc", colour);
-    const h = document.createElement("div"); h.className = "fname";
-    const left = document.createElement("span"); left.className = "left";
-    const dot = document.createElement("button"); dot.className = "fdot"; dot.title = "Colour for " + f.name;
-    dot.onclick = e => { e.stopPropagation(); openSwatches(e.currentTarget, f); };
-    const caret = document.createElement("span"); caret.className = "caret"; caret.textContent = "▾";
-    const n = document.createElement("span");
-    n.textContent = f.name + " · " + decks.length;
-    n.style.overflow = "hidden"; n.style.textOverflow = "ellipsis"; n.style.whiteSpace = "nowrap";
-    left.append(dot, caret, n);
-    left.onmouseenter = e => showHover(e.currentTarget, {
-      title:f.name, colour, folder:decks.length + (decks.length === 1 ? " deck" : " decks"),
-      total:decks.reduce((a,d) => a + d.nCon, 0),
-      due:decks.reduce((a,d) => a + dueCount(progCache[d.id]), 0),
-      questions:decks.reduce((a,d) => a + d.nQ, 0),
-      isFolder:true});
-    left.onmouseleave = hideHover;
-    left.onclick = () => {
-      shutFolders[f.id] = !shutFolders[f.id];
-      wrap.classList.toggle("shut", !!shutFolders[f.id]);
-      savePrefs();
+    const h = el("button", "fname");
+    h.setAttribute("aria-expanded", openFolders.has(f.id));
+    h.title = f.name + " · " + plural(decks.length, "deck");
+    const caret = el("span", "caret"); caret.setAttribute("aria-hidden", "true");
+    caret.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 2l4 3-4 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const nm = el("span", "fn", f.name);
+    const dueEl = el("em", "fdue", due ? String(due) : "");
+    if(due) dueEl.title = due + " due now";
+    h.append(caret, el("span", "fdotm"), nm, dueEl);
+    h.onclick = () => {
+      openFolders.has(f.id) ? openFolders.delete(f.id) : openFolders.add(f.id);
+      wrap.classList.toggle("shut", !openFolders.has(f.id));
+      h.setAttribute("aria-expanded", openFolders.has(f.id));
     };
-    const tools = document.createElement("span");
-    const ren = document.createElement("button"); ren.textContent = "✎"; ren.title = "Rename folder";
-    ren.onclick = async () => {
-      const v = await ask("Rename folder", "", f.name);
-      if(!v || !v.trim()) return;
-      f.name = v.trim(); await store.set("library", LIB); renderNav(); toast("Folder renamed");
-    };
-    const x = document.createElement("button"); x.textContent = "×"; x.title = "Delete folder";
-    x.onclick = () => delFolder(f.id);
-    tools.append(ren,x);
-    h.append(left,tools); wrap.appendChild(h);
-    const body = document.createElement("div"); body.className = "decks";
-    wrap.appendChild(body);
-    if(!decks.length){ const e = document.createElement("div"); e.className = "empty"; e.textContent = "No decks yet"; body.appendChild(e); }
+    const body = el("div", "decks");
+    if(!decks.length) body.appendChild(el("div", "empty", "No decks yet"));
     for(const d of decks){
-      const p = await progOf(d.id), done = masteredCount(p, d), nDue = d.kind === "skill" ? 0 : dueCount(p);
-      const b = document.createElement("button"); b.className = "deckbtn";
+      const r = byId[d.id];
+      const b = el("button", "deckbtn");
       b.setAttribute("aria-current", !!(DECK && DECK.id === d.id));
-      b.onmouseenter = e => showHover(e.currentTarget, {
-        title:d.name, colour, folder:f.name, total:d.nCon, done, due:nDue, questions:d.nQ});
-      b.onmouseleave = hideHover;
-      const t = document.createElement("span"); t.textContent = d.name;
-      const s = document.createElement("small");
-      s.textContent = d.kind === "skill" ? done + " of " + d.nCon + " lessons passed"
-                    : nDue ? nDue + " due now · " + done + "/" + d.nCon + " long-term"
-                           : done + " of " + d.nCon + " long-term";
-      const bar = document.createElement("div"); bar.className = "bar";
-      const i = document.createElement("i"); i.style.width = (d.nCon ? done/d.nCon*100 : 0) + "%";
-      bar.appendChild(i); b.append(t,s,bar);
+      b.title = d.name + (r.due ? " · " + r.due + " due" : "");
+      b.append(el("span", "dn", d.name));
+      if(r.due) b.append(el("em", "dcount", String(r.due)));
       b.onclick = () => openDeck(d.id);
-      const rowWrap = document.createElement("div"); rowWrap.className = "deckrow";
-      const kill = document.createElement("button"); kill.className = "deckdel";
-      kill.textContent = "×"; kill.title = "Delete " + d.name;
-      kill.onclick = e => { e.stopPropagation(); hideHover(); deleteDeckById(d.id, d.name); };
-      rowWrap.append(b, kill);
-      body.appendChild(rowWrap);
+      body.appendChild(b);
     }
+    wrap.append(h, body);
     box.appendChild(wrap);
   }
   if(mine !== navToken) return;          // a newer render started while we waited
-  const host = $("library");
-  host.replaceChildren(box);             // one swap, no half-built list on screen
+  $("library").replaceChildren(box);     // one swap, no half-built list on screen
+  const nc = $("nav-duecount");
+  nc.textContent = totalDue > 999 ? "999+" : String(totalDue);
+  nc.classList.toggle("hide", !totalDue);
 }
 /* Several things can ask for a redraw at once — collapse them into one. */
 function navSoon(){
@@ -2385,127 +2676,306 @@ function navSoon(){
 }
 
 /* ============================================================
-   HOME
+   SHARED PIECES: deck cards, small menus
+   ============================================================ */
+let popT = null;
+function closePop(){
+  const m = $("popmenu"); if(!m) return;
+  m.classList.remove("on"); m.replaceChildren();
+  if(m._anchor){ m._anchor.setAttribute("aria-expanded", "false"); m._anchor = null; }
+}
+/* A small menu under a button; items are [label, onClick, danger]. */
+function popMenu(anchor, items){
+  let m = $("popmenu");
+  if(m._anchor === anchor){ closePop(); return; }
+  closePop();
+  items.forEach(([label, fn, danger]) => {
+    const b = el("button", danger ? "danger" : "", label);
+    b.onclick = e => { e.stopPropagation(); closePop(); fn(); };
+    m.appendChild(b);
+  });
+  m._anchor = anchor; anchor.setAttribute("aria-expanded", "true");
+  m.classList.add("on");
+  const r = anchor.getBoundingClientRect(), w = m.offsetWidth || 180, h = m.offsetHeight || 100;
+  m.style.left = Math.max(8, Math.min(r.right - w, innerWidth - w - 8)) + "px";
+  m.style.top = (r.bottom + h + 8 > innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6) + "px";
+  setTimeout(() => { const f = m.querySelector("button"); if(f) f.focus(); }, 0);
+}
+function deckStatus(r){
+  const {d, done, due} = r;
+  if(d.kind === "skill") return done + "/" + d.nCon + " lessons passed";
+  return done + "/" + d.nCon + " long-term";
+}
+function progressBar(r){
+  const t = el("div", "mbar"); const i = el("i");
+  i.style.width = (r.d.nCon ? Math.min(100, r.done / r.d.nCon * 100) : 0) + "%";
+  t.appendChild(i); return t;
+}
+function deckCard(r, showFolder){
+  const {d, due} = r;
+  const f = LIB.folders.find(x => x.id === d.folderId);
+  const c = el("div", "dcard");
+  c.style.setProperty("--fc", colorOfDeck(d));
+  const top = el("div", "dctop");
+  const name = el("button", "dcname", d.name);
+  name.title = "Open " + d.name;
+  name.onclick = () => openDeck(d.id);
+  const more = el("button", "dcmore");
+  more.setAttribute("aria-label", "More for " + d.name); more.setAttribute("aria-haspopup", "true");
+  more.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><circle cx="4.5" cy="10" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="15.5" cy="10" r="1.5"/></svg>';
+  more.onclick = e => { e.stopPropagation(); popMenu(more, [
+    ["Open", () => openDeck(d.id)],
+    ["Rename", async () => { await openDeck(d.id); if(DECK && DECK.id === d.id && DECK.kind !== "skill") $("btn-rename").click(); }],
+    ["Delete", () => deleteDeckById(d.id, d.name), true]]); };
+  top.append(name, el("span", "duepill" + (due ? "" : " zero"), due ? due + " due" : "Up to date"), more);
+  if(showFolder && f) c.appendChild(el("p", "dcfold", f.name));
+  c.appendChild(top);
+  c.appendChild(progressBar(r));
+  const foot = el("div", "dcfoot");
+  const st = el("span", "dcstat", deckStatus(r));
+  const go1 = el("button", "btn sm", d.kind === "skill" ? "Open" : "Study");
+  go1.onclick = e => { e.stopPropagation(); studyDeck(d.id); };
+  foot.append(st, go1);
+  c.appendChild(foot);
+  c.onclick = e => { if(e.target === c || e.target.classList.contains("mbar")) openDeck(d.id); };
+  return c;
+}
+/* Open a deck and start studying it — exactly what its Study button does. */
+async function studyDeck(id){
+  await openDeck(id);
+  if(!DECK || DECK.id !== id || DECK.kind === "skill" || !PROG) return;
+  if($("v-deck").classList.contains("hide")) return;
+  startSession(buildPool(), false);
+}
+/* Review: only the concepts that are due now, in one deck. */
+async function reviewDeck(id){
+  await openDeck(id);
+  if(!DECK || DECK.id !== id || DECK.kind === "skill" || !PROG) return;
+  if($("v-deck").classList.contains("hide")) return;
+  const due = DECK.concepts.filter(c => isDue(migrate(PROG.m[c.id] || fresh()))).map(c => c.id);
+  startSession(due.length ? shuffle(due) : buildPool(), false);
+}
+
+/* ============================================================
+   HOME — today
    ============================================================ */
 let homeToken = 0;
 async function renderHome(){
   const mine = ++homeToken;
   go("v-home","");
-  const dueBy = {};
-  for(const d of LIB.decks){ dueBy[d.folderId] = (dueBy[d.folderId] || 0) + dueCount(await progOf(d.id)); }
+  const rows = await deckRows();
   if(mine !== homeToken) return;
-  const sb = $("subjects"); sb.innerHTML = "";
-  const chosen = LIB.folders.find(f => f.id === focusFolder);
-  $("pick-title").textContent = chosen ? "Working on " + chosen.name : "What are we working on today?";
-  $("pick-clear").classList.toggle("hide", !chosen);
-  LIB.folders.forEach((f,fi) => {
-    const decks = LIB.decks.filter(d => d.folderId === f.id);
-    const colour = folderColor(f, fi);
-    const b = document.createElement("button"); b.className = "subject";
-    b.style.setProperty("--fc", colour);
-    b.setAttribute("aria-pressed", focusFolder === f.id);
-    const n = document.createElement("b");
-    const sd = document.createElement("span"); sd.className = "sdot";
-    n.append(sd, document.createTextNode(f.name));
-    const s2 = document.createElement("small");
-    s2.textContent = decks.length + (decks.length === 1 ? " deck" : " decks");
-    b.append(n, s2);
-    if(dueBy[f.id]){ const dd = document.createElement("span"); dd.className = "due";
-      dd.textContent = dueBy[f.id] + " due for review"; b.appendChild(dd); }
-    b.onclick = () => {
-      focusFolder = focusFolder === f.id ? null : f.id;
-      LIB.folders.forEach(x => shutFolders[x.id] = focusFolder ? x.id !== focusFolder : false);
-      savePrefs(); navSoon(); renderHome();
-    };
-    sb.appendChild(b);
-  });
-  $("pickcard").classList.toggle("hide", LIB.folders.length < 2 && !focusFolder);
-  if(mine !== homeToken) return;
-  const hero = $("hero"); hero.innerHTML = "";
-  const tiles = $("tiles"); tiles.innerHTML = "";
-  const shown = LIB.decks.filter(d => !focusFolder || d.folderId === focusFolder);
-  $("deckcount").textContent = shown.length + (shown.length === 1 ? " deck" : " decks") +
-    (focusFolder ? " in this subject" : "");
-
-  let totalC = 0, totalM = 0, totalDue = 0, recent = null, recentT = 0;
-  const rows = [];
-  const visible = LIB.decks.filter(d => !focusFolder || d.folderId === focusFolder);
-  for(const d of visible){
-    const p = await progOf(d.id), done = masteredCount(p, d);
-    totalC += d.nCon; totalM += done; totalDue += (d.kind === "skill" ? 0 : dueCount(p));
-    if(p && p.last && p.last > recentT){ recentT = p.last; recent = d; }
-    rows.push({d, p, done});
+  const hour = new Date().getHours();
+  $("home-date").textContent = new Date().toLocaleDateString(undefined, {weekday:"long", day:"numeric", month:"long"});
+  $("home-title").textContent = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const totalDue = rows.reduce((a,r) => a + r.due, 0);
+  const dueDecks = rows.filter(r => r.due > 0);
+  const recentRows = rows.filter(r => r.last).sort((a,b) => b.last - a.last);
+  const recent = recentRows[0];
+  // the one thing to do next
+  const pick = dueDecks.length
+    ? (recentRows.find(r => r.due > 0) || dueDecks.sort((a,b) => b.due - a.due)[0])
+    : recent;
+  const t = $("today"); t.replaceChildren();
+  const txt = el("div", "ttxt");
+  const act = el("div", "row");
+  if(!LIB.decks.length){
+    txt.append(el("h2", "", "Nothing here yet"),
+      el("p", "sub", "Drop in a PDF, PowerPoint or screenshot and the AI builds the deck — or type your own list of terms."));
+    const b = el("button", "btn big", "Build your first deck"); b.onclick = showNew; act.appendChild(b);
+  } else if(totalDue){
+    const big = el("p", "tbig"); big.append(el("b", "", String(totalDue)), document.createTextNode(" concepts due for review"));
+    txt.append(big, el("p", "sub", "Across " + plural(dueDecks.length, "deck") + ". Reviewing them now is what makes them stick."));
+    const b = el("button", "btn big", "Review " + pick.d.name + " · " + pick.due + " due");
+    b.onclick = () => reviewDeck(pick.d.id); act.appendChild(b);
+    const b2 = el("button", "btn2", "See everything due"); b2.onclick = renderReview; act.appendChild(b2);
+  } else {
+    const big = el("p", "tbig"); big.append(el("b", "", "0"), document.createTextNode(" due right now"));
+    txt.append(big, el("p", "sub", recent ? "Everything you have studied is scheduled. Carry on with new material, or come back when reviews come due."
+                                          : "Pick a deck and get going."));
+    const target = recent || rows[0];
+    const b = el("button", "btn big", (recent ? "Continue " : "Open ") + target.d.name);
+    b.onclick = () => openDeck(target.d.id); act.appendChild(b);
   }
-  const pct = totalC ? Math.round(totalM/totalC*100) : 0;
-
-  const txt = document.createElement("div"); txt.className = "txt";
-  const h = document.createElement("h1");
-  h.textContent = !LIB.decks.length ? "Nothing here yet"
-                : totalDue ? totalDue + " concept" + (totalDue === 1 ? "" : "s") + " ready for review"
-                : recent ? "Nothing due — you are on top of it" : "Ready when you are";
-  const sub = document.createElement("p");
-  const dueDeck = rows.find(r => dueCount(r.p) > 0);
-  sub.textContent = !LIB.decks.length
-    ? "Drop in a PDF, PowerPoint or screenshot and Claude will build the deck — or type your own list of terms."
-    : totalDue
-      ? "These are the ones your memory is about to let go of. Reviewing them now is what makes them stick."
-      : recent
-        ? "Everything you have studied is scheduled. Come back when reviews come due, or start new material."
-        : "Pick a deck and get going.";
-  const row = document.createElement("div"); row.className = "row"; row.style.marginTop = "18px";
-  const go1 = document.createElement("button"); go1.className = "btn big";
-  const empty = !LIB.decks.length;
-  go1.textContent = empty ? "Build your first deck"
-                  : totalDue ? "Start reviewing" : recent ? "Resume studying" : "Open a deck";
-  go1.onclick = () => empty ? showNew()
-    : openDeck((dueDeck && dueDeck.d.id) || (recent && recent.id) || (LIB.decks[0] && LIB.decks[0].id));
-  const go2 = document.createElement("button"); go2.className = "btn2"; go2.textContent = "New deck from material";
-  go2.onclick = () => { showNew(); if(!LIB.decks.length) setSource("terms"); };
-  row.append(go1, go2);
-  txt.append(h, sub, row);
-
-  const ring = document.createElement("div"); ring.className = "ring";
-  ring.innerHTML = '<svg width="104" height="104"><circle class="t" cx="52" cy="52" r="44"/>' +
+  txt.appendChild(act);
+  const totalC = rows.reduce((a,r) => a + (r.d.kind === "skill" ? 0 : r.d.nCon), 0);
+  const totalM = rows.reduce((a,r) => a + (r.d.kind === "skill" ? 0 : r.done), 0);
+  const pct = totalC ? Math.round(totalM / totalC * 100) : 0;
+  const ring = el("div", "ring");
+  ring.innerHTML = '<svg width="104" height="104" aria-hidden="true"><circle class="t" cx="52" cy="52" r="44"/>' +
     '<circle class="v" cx="52" cy="52" r="44" stroke-dasharray="276.5" stroke-dashoffset="' +
-    (276.5 - 276.5*pct/100) + '"/></svg><b>' + pct + '%</b>';
-  hero.append(txt, ring);
+    (276.5 - 276.5*pct/100) + '"/></svg><b>' + pct + '%</b><small>long-term</small>';
+  ring.title = totalM + " of " + totalC + " concepts are in long-term memory";
+  t.append(txt, ring);
+  // continue studying: the decks you touched most recently
+  const rc = $("recent"); rc.replaceChildren();
+  const show = (recentRows.length ? recentRows : rows).slice(0, 3);
+  show.forEach(r => rc.appendChild(deckCard(r, true)));
+  if(!show.length) rc.appendChild(el("p", "sub", "Decks you study will show up here."));
+  // at a glance
+  const g = $("glance"); g.replaceChildren();
+  const studiedToday = rows.filter(r => r.last && new Date(r.last).toDateString() === new Date().toDateString()).length;
+  [[totalDue, "Due now"], [totalM + "/" + totalC, "Concepts long-term"],
+   [LIB.decks.length, "Decks in " + plural(LIB.folders.length, "subject")], [studiedToday, "Decks studied today"]]
+    .forEach(([v, k]) => { const s = el("div", "stat"); s.append(el("b", "", k), el("s", "", String(v))); g.appendChild(s); });
+}
 
+/* ============================================================
+   LIBRARY — every subject and deck
+   ============================================================ */
+let libFilter = null, libQuery = "";
+async function renderLibrary(){
+  const mine = ++homeToken;
+  go("v-library", "Library");
+  if(libFilter === null && focusFolder && LIB.folders.some(f => f.id === focusFolder)) libFilter = focusFolder;
+  const rows = await deckRows();
   if(mine !== homeToken) return;
-  rows.forEach(({d,p,done}) => {
-    const folder = LIB.folders.find(f => f.id === d.folderId);
-    const t = document.createElement("button"); t.className = "tile";
-    t.style.setProperty("--fc", colorOfDeck(d));
-    t.onmouseenter = e => showHover(e.currentTarget, {title:d.name, colour:colorOfDeck(d),
-      folder:folder ? folder.name : "—", total:d.nCon, done, due:dueCount(p), questions:d.nQ});
-    t.onmouseleave = hideHover;
-    const fd = document.createElement("div"); fd.className = "fold"; fd.textContent = folder ? folder.name : "—";
-    const h3 = document.createElement("h3"); h3.textContent = d.name;
-    const tr = document.createElement("div"); tr.className = "track";
-    const i = document.createElement("i"); i.style.width = (d.nCon ? done/d.nCon*100 : 0) + "%"; tr.appendChild(i);
-    const m = document.createElement("div"); m.className = "meta";
-    const nDue = d.kind === "skill" ? 0 : dueCount(p);
-    const a = document.createElement("span");
-    a.textContent = d.kind === "skill" ? done + "/" + d.nCon + " lessons"
-                  : nDue ? nDue + " due for review" : done + "/" + d.nCon + " long-term";
-    if(nDue){ const bg = document.createElement("span"); bg.className = "badge"; bg.textContent = nDue;
-              h3.appendChild(bg); }
-    const b = document.createElement("span");
-    b.textContent = d.nQ + (d.kind === "skill" ? " problems" : " questions");
-    m.append(a,b);
-    t.append(fd,h3,tr,m);
-    t.onclick = () => openDeck(d.id);
-    const wrapT = document.createElement("div"); wrapT.className = "tilewrap";
-    const killT = document.createElement("button"); killT.className = "tiledel";
-    killT.textContent = "×"; killT.title = "Delete " + d.name;
-    killT.onclick = e => { e.stopPropagation(); hideHover(); deleteDeckById(d.id, d.name); };
-    wrapT.append(t, killT);
-    tiles.appendChild(wrapT);
+  const byId = {}; rows.forEach(r => byId[r.d.id] = r);
+  $("lib-sub").textContent = plural(LIB.decks.length, "deck") + " in " + plural(LIB.folders.length, "subject");
+  const chips = $("lib-filter"); chips.replaceChildren();
+  const chip = (label, id) => { const b = el("button", "chip", label); b.setAttribute("aria-pressed", (libFilter || "") === (id || ""));
+    b.onclick = () => { libFilter = id; renderLibrary(); }; chips.appendChild(b); };
+  chip("All", "");
+  orderedFolders().forEach(f => chip(f.name, f.id));
+  const q = libQuery.trim().toLowerCase();
+  const body = $("lib-body"); body.replaceChildren();
+  let shown = 0;
+  for(const f of orderedFolders()){
+    if(libFilter && f.id !== libFilter) continue;
+    const fi = LIB.folders.indexOf(f);
+    let decks = LIB.decks.filter(d => d.folderId === f.id);
+    if(q) decks = decks.filter(d => d.name.toLowerCase().includes(q) || f.name.toLowerCase().includes(q));
+    if(q && !decks.length) continue;
+    const sec = el("section", "libsec" + (isArchive(f) ? " archive" : ""));
+    sec.style.setProperty("--fc", folderColor(f, fi));
+    const h = el("div", "libhead");
+    const dot = el("button", "fdot"); dot.title = "Colour for " + f.name; dot.setAttribute("aria-label", "Colour for " + f.name);
+    dot.onclick = e => { e.stopPropagation(); openSwatches(e.currentTarget, f); };
+    const due = decks.reduce((a,d) => a + byId[d.id].due, 0);
+    const tt = el("div", "lht"); tt.append(el("h2", "", f.name),
+      el("span", "lhm", plural(decks.length, "deck") + (due ? " · " + due + " due" : "")));
+    const tools = el("div", "lhtools");
+    const ren = el("button", "icon sm"); ren.title = "Rename folder"; ren.setAttribute("aria-label", "Rename " + f.name);
+    ren.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M13.5 3.5l3 3L7 16H4v-3z" stroke-linejoin="round"/></svg>';
+    ren.onclick = async () => {
+      const v = await ask("Rename folder", "", f.name);
+      if(!v || !v.trim()) return;
+      f.name = v.trim(); await store.set("library", LIB); renderNav(); renderLibrary(); toast("Folder renamed");
+    };
+    const del = el("button", "icon sm"); del.title = "Delete folder"; del.setAttribute("aria-label", "Delete " + f.name);
+    del.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h12M8 6V4h4v2M6 6l1 10h6l1-10" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+    del.onclick = () => delFolder(f.id);
+    tools.append(ren, del);
+    h.append(dot, tt, tools);
+    sec.appendChild(h);
+    const grid = el("div", "cgrid");
+    decks.forEach(d => grid.appendChild(deckCard(byId[d.id], false)));
+    if(!decks.length){ const e = el("div", "cempty"); const b = el("button", "link", "New deck"); b.onclick = showNew;
+      e.append(document.createTextNode("No decks in this subject yet. "), b); grid.appendChild(e); }
+    sec.appendChild(grid);
+    body.appendChild(sec);
+    shown += decks.length;
+  }
+  if(q && !shown) body.appendChild(el("p", "sub", "No deck matches “" + libQuery.trim() + "”."));
+}
+
+/* ============================================================
+   REVIEW — what is due now, across every deck
+   ============================================================ */
+async function renderReview(){
+  const mine = ++homeToken;
+  go("v-review", "Review");
+  const rows = await deckRows();
+  if(mine !== homeToken) return;
+  const due = rows.filter(r => r.due > 0).sort((a,b) => b.due - a.due);
+  const total = due.reduce((a,r) => a + r.due, 0);
+  $("rv-title").textContent = total ? plural(total, "concept") + " due" : "Nothing due";
+  const body = $("rv-body"); body.replaceChildren();
+  if(!total){
+    let next = Infinity;
+    rows.forEach(r => { if(r.p && r.p.m) Object.values(r.p.m).forEach(x => { if((x.box||0) > 0 && x.due > Date.now()) next = Math.min(next, x.due); }); });
+    $("rv-sub").textContent = next < Infinity ? "You are up to date. The next review comes due " + whenText(next - Date.now()) + "."
+                                              : "Nothing is scheduled yet — study a deck to start the clock.";
+    return;
+  }
+  $("rv-sub").textContent = "Across " + plural(due.length, "deck") + ", most due first. Review goes through only what is due in that deck.";
+  const list = el("div", "rvlist");
+  due.forEach(r => {
+    const f = LIB.folders.find(x => x.id === r.d.folderId);
+    const row = el("div", "rvrow"); row.style.setProperty("--fc", colorOfDeck(r.d));
+    const mid = el("div", "rvmid");
+    const nm = el("button", "rvname", r.d.name); nm.onclick = () => openDeck(r.d.id);
+    mid.append(nm, el("span", "rvfold", (f ? f.name : "—") + " · " + deckStatus(r)));
+    const n = el("span", "duepill", r.due + " due");
+    const b = el("button", "btn sm", "Review"); b.onclick = () => reviewDeck(r.d.id);
+    row.append(el("span", "rvdot"), mid, n, b);
+    list.appendChild(row);
   });
-  const add = document.createElement("button"); add.className = "tile add";
-  add.innerHTML = "<span>+</span>"; const lbl = document.createElement("div");
-  lbl.textContent = "New deck from your material"; add.appendChild(lbl);
-  add.onclick = showNew;
-  tiles.appendChild(add);
+  body.appendChild(list);
+}
+
+/* ============================================================
+   BACKUPS — download, restore, and the server's snapshots
+   ============================================================ */
+let snapAll = false;
+function fmtSize(n){ return n >= 1048576 ? (n/1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n/1024)) + " KB"; }
+function fmtWhen(iso){
+  if(!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, {day:"numeric", month:"short", year:"numeric"}) + ", " +
+         d.toLocaleTimeString(undefined, {hour:"2-digit", minute:"2-digit"});
+}
+async function renderBackups(){
+  const mine = ++homeToken;
+  go("v-backups", "Backups");
+  let data = null;
+  try{ const r = await fetch("/api/backups", {cache:"no-store"}); if(r.ok) data = await r.json(); }catch(e){}
+  if(mine !== homeToken) return;
+  const list = $("snap-list"); list.replaceChildren();
+  if(!data){ $("snap-last").textContent = "Could not reach the MonoSpace server to list snapshots."; return; }
+  $("snap-last").textContent = "Last automatic snapshot: " + (data.last_automatic ? fmtWhen(data.last_automatic) : "none yet");
+  $("snap-note").textContent = "MonoSpace copies its whole database into the backups folder each time it starts and once a day, " +
+    "keeping the newest " + data.keep + ". Snapshots you take here, and the safety copies made before an import or restore, are kept too.";
+  const kinds = {automatic:"Automatic", manual:"Taken by you", "pre-import":"Before an import", "pre-restore":"Before a restore"};
+  const items = snapAll ? data.snapshots : data.snapshots.slice(0, 6);
+  if(!items.length){ list.appendChild(el("p", "sub", "No snapshots yet.")); return; }
+  const tb = el("div", "snaptable");
+  items.forEach(s => {
+    const row = el("div", "snaprow");
+    row.append(el("span", "sw1", fmtWhen(s.time)), el("span", "sw2", kinds[s.kind] || s.kind),
+               el("span", "sw3", fmtSize(s.size)), el("code", "sw4", s.name));
+    tb.appendChild(row);
+  });
+  list.appendChild(tb);
+  if(data.snapshots.length > 6){
+    const b = el("button", "link", snapAll ? "Show fewer" : "Show all " + data.snapshots.length);
+    b.onclick = () => { snapAll = !snapAll; renderBackups(); };
+    list.appendChild(b);
+  }
+}
+async function snapshotNow(){
+  const b = $("snap-now"); b.disabled = true; b.textContent = "Saving…";
+  try{
+    const r = await fetch("/api/backups/snapshot", {method:"POST"});
+    const j = await r.json().catch(() => ({}));
+    toast(r.ok ? "Snapshot saved: " + j.snapshot.name : "Snapshot not taken — " + (j.message || r.status));
+  }catch(e){ toast("Snapshot not taken — the MonoSpace server isn't answering"); }
+  b.disabled = false; b.textContent = "Take a snapshot now";
+  if(!$("v-backups").classList.contains("hide")) renderBackups();
+}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+async function renderSettings(){
+  go("v-settings", "Settings");
+  syncOptionChips();
+  $("ai-now").textContent = "Checking…";
+  const [route, health] = await Promise.all([aiRoute(),
+    fetch("/api/health", {cache:"no-store"}).then(r => r.ok ? r.json() : null).catch(() => null)]);
+  $("ai-now").textContent = !route ? "Unknown — the server isn't answering"
+    : route.model === "claude" ? "Claude" : "Qwen, on this PC";
+  $("about-ver").textContent = "MonoSpace" + (health && health.version ? " " + health.version : "");
 }
 
 /* ============================================================
@@ -2526,6 +2996,7 @@ async function openDeck(id){
   }
   DECK = loaded;
   if(DECK.kind === "skill"){
+    const sm = LIB.decks.find(d => d.id === id); if(sm) openFolders.add(sm.folderId);
     PROG = await progOf(id) || {sessions:0, asked:0, right:0, last:0, m:{}};
     progCache[id] = PROG;
     navSoon();
@@ -2543,6 +3014,7 @@ async function openDeck(id){
   if(stale) await store.set("deck:"+DECK.id, DECK);   // clear out blanks made by the old rule
   const meta = LIB.decks.find(d => d.id === id);
   const folder = LIB.folders.find(f => f.id === meta.folderId);
+  if(meta) openFolders.add(meta.folderId);          // the sidebar opens the subject you are in
   const total = DECK.concepts.length;
   const nQ = DECK.concepts.reduce((a,c)=>a+c.qs.length,0);
   const c = counts(), done = c.long;
@@ -2556,7 +3028,7 @@ async function openDeck(id){
   $("k-learn").textContent = c.learn;
   $("k-mast").textContent = done + "/" + total;
   $("k-acc").textContent = PROG.asked ? Math.round(PROG.right/PROG.asked*100) + "%" : "—";
-  $("btn-study").textContent = (c.due + c.fresh) ? "Learn · " + (c.due + c.fresh) + " ready" : "Learn";
+  $("btn-study").textContent = (c.due + c.fresh) ? "Study · " + (c.due + c.fresh) + " ready" : "Study";
   const ls = lessons(), lp = Object.keys((PROG.teach && PROG.teach.passed) || {}).length;
   $("btn-teach").textContent = lp ? "Teach me · lesson " + Math.min(lp + 1, ls.length) + " of " + ls.length
                                   : "Teach me";
@@ -2616,7 +3088,7 @@ async function openDeck(id){
   });
   syncOptionChips();
   tab("overview");
-  go("v-deck", DECK.name);
+  go("v-deck", (folder ? folder.name + "  /  " : "") + DECK.name);
   navSoon();
 }
 let termFilter = "", starOnly = false, termSaveT = null;
@@ -2708,7 +3180,7 @@ function renderCoverage(){
 }
 function tab(name){
   document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === name));
-  ["overview","concepts","guide","cards","options","manage"].forEach(n => $("t-"+n).classList.toggle("hide", n !== name));
+  ["overview","concepts","guide","cards","manage"].forEach(n => $("t-"+n).classList.toggle("hide", n !== name));
   if(name === "cards") renderCardEditor();
   if(name === "guide") renderGuide();
 }
@@ -7198,7 +7670,7 @@ async function deleteDeckById(id, name){
   await store.set("library", LIB);
   if(DECK && DECK.id === id){ DECK = null; PROG = null; }
   await renderNav();
-  await renderHome();
+  await (onView("v-library") ? renderLibrary() : renderHome());
   toast("Deck deleted");
   return true;
 }
@@ -7212,18 +7684,63 @@ async function delFolder(fid){
   LIB.folders = LIB.folders.filter(f => f.id !== fid);
   if(!LIB.folders.length) LIB.folders.push({id:uid(), name:"My decks"});
   await store.set("library", LIB); DECK = null;
-  await renderNav(); renderHome();
+  await renderNav(); onView("v-library") ? renderLibrary() : renderHome();
 }
 
-$("pick-clear").onclick = () => {
-  focusFolder = null;
-  LIB.folders.forEach(f => shutFolders[f.id] = false);
-  savePrefs(); navSoon(); renderHome();
-};
 $("brand").onclick = () => renderHome();
 $("nav-home").onclick = () => renderHome();
 $("nav-new").onclick = showNew;
-$("btn-newtop").onclick = showNew;
+$("nav-library").onclick = () => renderLibrary();
+$("nav-review").onclick = () => renderReview();
+$("nav-backups").onclick = () => renderBackups();
+$("nav-settings").onclick = () => renderSettings();
+$("home-lib").onclick = () => renderLibrary();
+$("lib-new").onclick = showNew;
+$("lib-folder").onclick = () => $("btn-folder").click();
+$("lib-search").oninput = e => { libQuery = e.target.value; renderLibrary(); };
+$("snap-now").onclick = snapshotNow;
+$("to-settings").onclick = () => renderSettings();
+$("set-appearance").onclick = () => $("btn-custom").click();
+$("mm-manage").onclick = () => { closeMenus(); tab("manage"); $("t-manage").scrollIntoView({block:"start"}); };
+$("mm-reset").onclick = () => { closeMenus(); $("btn-resetprog").click(); };
+$("mm-delete").onclick = () => { closeMenus(); $("btn-delete").click(); };
+/* the header menus on the deck page: one open at a time; Escape or a click elsewhere closes */
+function closeMenus(except){
+  document.querySelectorAll(".menuwrap .menu.on").forEach(m => { if(m !== except){ m.classList.remove("on");
+    const b = m.parentElement.querySelector("[aria-haspopup]"); if(b) b.setAttribute("aria-expanded", "false"); } });
+}
+document.querySelectorAll(".menuwrap > [aria-haspopup]").forEach(b => b.onclick = e => {
+  e.stopPropagation(); closePop();
+  const m = $(b.getAttribute("aria-controls")), open = !m.classList.contains("on");
+  closeMenus(m); m.classList.toggle("on", open); b.setAttribute("aria-expanded", open);
+  if(open){
+    m.style.transform = "";                       // keep the whole menu on screen
+    const r = m.getBoundingClientRect(), dx = r.right > innerWidth - 12 ? innerWidth - 12 - r.right : r.left < 12 ? 12 - r.left : 0;
+    if(dx) m.style.transform = "translateX(" + Math.round(dx) + "px)";
+    const f = m.querySelector("button"); if(f) setTimeout(() => f.focus(), 0);
+  }
+});
+document.querySelectorAll(".menuwrap .menu").forEach(m => m.addEventListener("click", e => {
+  // picking an action closes the menu; the session chips stay open so you can set several
+  if(m.id !== "menu-session" && e.target.closest("button")) closeMenus();
+}));
+document.addEventListener("click", e => {
+  if(!e.target.closest(".menuwrap")) closeMenus();
+  if(!e.target.closest("#popmenu")) closePop();
+});
+document.addEventListener("keydown", e => {
+  if(e.key !== "Escape") return;
+  const open = document.querySelector(".menuwrap .menu.on");
+  if(open){ const b = open.parentElement.querySelector("[aria-haspopup]"); closeMenus(); if(b) b.focus(); }
+  if($("popmenu").classList.contains("on")){ const a = $("popmenu")._anchor; closePop(); if(a) a.focus(); }
+}, true);
+function onView(v){ return !$(v).classList.contains("hide"); }
+/* redraw the list view that is on screen (after a colour, folder or deck change) */
+function refreshView(){
+  if(onView("v-library")) return renderLibrary();
+  if(onView("v-review")) return renderReview();
+  if(onView("v-home")) return renderHome();
+}
 $("btn-cancel").onclick = () => DECK ? openDeck(DECK.id) : renderHome();
 window.addEventListener("error", e => {
   if(e && e.message && /storage|quota/i.test(e.message)) return;
@@ -7235,6 +7752,7 @@ $("btn-folder").onclick = async () => {
   const n = await ask("New folder", "Group your decks by subject.", "", "Create");
   if(!n || !n.trim()) return;
   LIB.folders.push({id:uid(), name:n.trim(), color:PALETTE[LIB.folders.length % PALETTE.length]}); await store.set("library", LIB); renderNav();
+  refreshView();
 };
 $("bk-close").onclick = closeBackup;
 $("bscrim").onclick = closeBackup;
@@ -7250,8 +7768,6 @@ $("bk-file").onchange = async e => {
 $("bk-restore").onclick = () => applyBackup($("bk-text").value);
 $("btn-export").onclick = exportAll;
 $("btn-import").onclick = importAll;
-$("btn-export2").onclick = exportAll;
-$("btn-import2").onclick = importAll;
 $("btn-savekey").onclick = () => {
   const v = $("apikey").value.trim();
   if(v && !v.startsWith("sk-ant-")) return toast("That does not look like an Anthropic key");
@@ -7660,7 +8176,7 @@ document.addEventListener("keydown", e => {
   if(f && f.box.children[n-1]) f.box.children[n-1].click();
 });
 
-boot();
+boot().finally(() => window.MonoSplash && MonoSplash.done());   // MonoSpace: hide the loading screen
 
 
 </script>

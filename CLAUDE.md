@@ -34,7 +34,7 @@ afterwards, with identical content.
 
 ## Non-negotiable rules
 
-1. **Change only the two seams.** The legacy app talks to the outside world in exactly two
+1. **Keep data and the reader compatible.** *(Updated 2026-09-29: Elisha now directs UI changes — MonoSpace redesign. Stored keys/JSON shapes and the slide reader must stay compatible; `npm test` must pass.)* Originally: **Change only the two seams.** The legacy app talks to the outside world in exactly two
    places: the storage layer (`store.get / set / delete / list`) and the AI call
    (`claudeRawCall`). Porting means replacing those two, nothing else. The slide reader,
    self-check, study modes, spaced repetition and UI stay byte-for-byte the same unless a

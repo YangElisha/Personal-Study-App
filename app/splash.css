@@ -1,0 +1,48 @@
+/* MonoSpace loading screen. Markup and animation: splash.js. No external resources: the fonts
+   are the vendored Space Grotesk / IBM Plex Mono / Inter that index.html already loads. */
+html.ms-splashing,html.ms-splashing body{background:#030306}
+
+#ms-splash{position:fixed;inset:0;z-index:2147483000;overflow:hidden;contain:strict;
+  background:#030306;color:#f4f4f8;opacity:1;cursor:progress;user-select:none;-webkit-user-select:none;
+  font-family:"Space Grotesk","Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  transition:opacity .6s cubic-bezier(.4,0,.2,1)}
+#ms-splash .ms-sky{position:absolute;inset:0;width:100%;height:100%;display:block;
+  animation:ms-fade .8s ease-out both;transition:transform .6s cubic-bezier(.4,0,.2,1)}
+#ms-splash .ms-stage{position:absolute;inset:0;pointer-events:none;
+  transition:transform .6s cubic-bezier(.4,0,.2,1)}
+
+#ms-splash .ms-head{position:absolute;left:0;right:0;top:17.5vh;display:flex;flex-direction:column;
+  align-items:center;gap:3.3vh;text-align:center}
+#ms-splash .ms-title{margin:0;font-weight:400;line-height:1;white-space:nowrap;
+  font-size:clamp(30px,min(6vw,9.4vh),96px);letter-spacing:.42em;padding-left:.42em;
+  color:#f7f7fb;text-shadow:0 0 34px rgba(150,146,255,.20),0 2px 20px rgba(0,0,0,.65);
+  animation:ms-rise .9s .08s cubic-bezier(.2,.7,.2,1) both}
+#ms-splash .ms-sub{margin:0;white-space:nowrap;
+  font:400 clamp(10px,min(1.32vw,2.1vh),19px)/1 "IBM Plex Mono",ui-monospace,Consolas,monospace;
+  letter-spacing:.42em;padding-left:.42em;color:rgba(180,182,210,.78);
+  text-shadow:0 1px 12px rgba(0,0,0,.8);animation:ms-rise .9s .22s cubic-bezier(.2,.7,.2,1) both}
+
+#ms-splash .ms-pill{position:absolute;left:50%;bottom:5.5vh;transform:translateX(-50%);
+  display:inline-flex;align-items:center;gap:12px;padding:13px 26px 13px 18px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.09);
+  background:linear-gradient(180deg,rgba(30,30,40,.78),rgba(12,12,18,.78));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 12px 34px rgba(0,0,0,.55);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  font:500 13px/1 "IBM Plex Mono",ui-monospace,Consolas,monospace;letter-spacing:.26em;
+  text-transform:uppercase;color:rgba(228,229,240,.88);white-space:nowrap;
+  animation:ms-pill .8s .38s cubic-bezier(.2,.7,.2,1) both}
+#ms-splash .ms-dot{width:8px;height:8px;border-radius:50%;flex:none;background:#b3b0f4;
+  box-shadow:0 0 10px rgba(179,176,244,.85);animation:ms-dot 1.4s ease-in-out infinite}
+
+#ms-splash.ms-out{opacity:0;pointer-events:none;cursor:auto}
+#ms-splash.ms-out .ms-sky,#ms-splash.ms-out .ms-stage{transform:scale(1.045)}
+
+@keyframes ms-fade{from{opacity:0}to{opacity:1}}
+@keyframes ms-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes ms-pill{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translateX(-50%)}}
+@keyframes ms-dot{0%,100%{opacity:.35;transform:scale(.78)}50%{opacity:1;transform:scale(1)}}
+
+@media (prefers-reduced-motion:reduce){
+  #ms-splash *{animation:none!important}
+  #ms-splash.ms-out .ms-sky,#ms-splash.ms-out .ms-stage{transform:none}
+}

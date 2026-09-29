@@ -1,3 +1,5 @@
+![MonoSpace](assets/cover.png)
+
 # MonoSpace
 
 A study app that turns lecture slides and notes into decks, lessons, flashcards, tests and

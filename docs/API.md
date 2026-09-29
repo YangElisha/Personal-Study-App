@@ -41,7 +41,9 @@ Errors are JSON: `{"ok":false,"error":"<kind>","message":"..."}`.
 
 | Request | What it does |
 |---|---|
-| `GET /api/health` | `{"ok":true,"app":"drill","schema":1}` |
+| `GET /api/health` | `{"ok":true,"app":"drill","schema":1,"version":"1.0.0"}` |
+| `GET /api/backups` | The snapshots in the backups folder (`DATA_DIR\backups`), newest first, read-only: `{"ok":true,"snapshots":[{"name","size","time","kind"}],"keep":n,"last_automatic":iso\|null}`. `kind` is `automatic`, `manual`, `pre-import` or `pre-restore`; `time` is local time from the file name. Used by the Backups view. |
+| `POST /api/backups/snapshot` | Takes a snapshot now, named `drill-<ts>-manual.db`: outside the pruned pattern, so it never removes another snapshot. 200 `{"ok":true,"snapshot":{...}}`; 409 `no_database`. Origin rules apply. There is **no** endpoint that deletes or restores a snapshot: restoring stays `python -m server.restore`, which asks first. |
 | `POST /api/import` | Runs the importer inside the server, but **only ever adds keys**. 200 `{"ok":true,"kv_writes":n,"history_rows":n,"added_keys":[...],"undecided":[...],"skipped":[...],"snapshot":name\|null,"report":[lines]}` when it only added (or nothing was to do). **409** `{"ok":false,"error":"confirmation_required","message":...,"plan":[lines]}` when an existing key would change: nothing is written; stop the server and run `python -m server.importer`, which shows the plan and asks for `yes`. 409 `import_stopped` for any other stop (nothing written). Reload the app after an import. |
 | `GET/POST /api/modules`, `POST /api/modules/{sha}/deck` | Module library (Phase 6). See "Modules" below. |
 | `POST /api/ai` | The AI router (Phase 5, `server/ai.py`). See "AI" below. |

@@ -95,6 +95,30 @@ def newest_regular_time(backups_dir: Path) -> datetime | None:
     return datetime.strptime(REGULAR.match(snaps[-1].name).group(1), "%Y%m%d-%H%M%S")
 
 
+ANY = re.compile(r"^drill-(\d{8}-\d{6})(?:-(\d+))?(?:-([a-z-]+))?\.db$")
+
+
+def describe(p: Path) -> dict:
+    """name, size, time (from the name, local time) and kind of one snapshot file."""
+    m = ANY.match(p.name)
+    when = datetime.strptime(m.group(1), "%Y%m%d-%H%M%S") if m else None
+    tag = (m.group(3) or "") if m else ""
+    return {"name": p.name, "size": p.stat().st_size,
+            "time": when.isoformat(timespec="seconds") if when else None,
+            "kind": tag or "automatic"}
+
+
+def list_snapshots(settings) -> dict:
+    """Every snapshot in DATA_DIR\\backups, newest first. Read-only."""
+    d = settings.backups_dir
+    found = [p for p in d.iterdir() if p.is_file() and ANY.match(p.name)] if d.is_dir() else []
+    items = sorted((describe(p) for p in found), key=lambda x: (x["time"] or "", x["name"]),
+                   reverse=True)
+    last = newest_regular_time(d)
+    return {"ok": True, "snapshots": items, "keep": settings.backup_keep,
+            "last_automatic": last.isoformat(timespec="seconds") if last else None}
+
+
 def daily_due(settings, now: datetime | None = None) -> bool:
     last = newest_regular_time(settings.backups_dir)
     now = now or datetime.now()
