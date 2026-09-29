@@ -264,6 +264,17 @@ Newest first. Every change gets an entry in the same commit.
   deck content is only added to, and progress is taken per deck from whichever side has
   answered more questions (Elisha, 2026-09-28; outside the two seams by her decision).
 
+### Fixed (visual polish, Elisha 2026-09-29; app/index.html, marked "LOCAL PORT (polish)")
+- Measured in headless Edge, both themes, 1440x900 and 1280x720 (before → after):
+  - dark primary buttons: text contrast 3.1 → 6.2:1;
+  - light muted text: 2.7–3.1 → 4.6–5.2:1; light sidebar muted: 4.0 → 6.3:1;
+  - the study bar no longer covers the question card (15 px overlap → 0) or the sidebar, and its
+    stats are centred on the content;
+  - "Ask the teacher" no longer hides page ends (more bottom space);
+  - big buttons line up with their neighbours (a legacy `.big` class clash);
+  - home-page text 8.5–10.9 px → 11–12.5 px; sidebar folder names no longer cut off;
+  - New deck labels aligned; text boxes and the flashcard hint use the normal font.
+
 ### Fixed (usability pass, Elisha 2026-09-29; app/index.html, marked "LOCAL PORT")
 - Server unreachable at startup: the app says "Can't reach the Drill server" and writes nothing,
   instead of opening an empty library and saving it (or default settings) over the real ones;

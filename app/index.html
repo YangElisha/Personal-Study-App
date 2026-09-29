@@ -764,6 +764,21 @@ textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var
 ::-webkit-scrollbar-thumb{background:var(--rule);border-radius:6px;border:3px solid var(--bg)}
 ::-webkit-scrollbar-track{background:transparent}
 @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+
+/* ---- LOCAL PORT (polish, Elisha 2026-09-29): desktop readability & layout fixes ---- */
+.studypage{padding-top:76px}                                  /* study bar no longer hides the card top */
+@media(min-width:901px){.studybar{left:var(--nav)}}           /* ...nor the sidebar */
+.page{padding-bottom:120px}                                   /* "Ask the teacher" never covers page ends */
+@media(max-width:640px){.page{padding-bottom:110px}}
+.tab{color:var(--ink-2)}                                      /* inactive tabs readable */
+.btn.big{display:inline-flex;margin-bottom:0}                 /* big buttons line up with their neighbours */
+.tile .fold,.subject .due,.badge{font-size:max(11px,.64em)}   /* tiny home-page text */
+.subject small,.tile .meta{font-size:max(12.5px,.82em)}
+.fname{letter-spacing:.06em}                                  /* sidebar folder names not cut off */
+.fname .left span:not(.caret){white-space:normal!important;overflow:visible!important}  /* renderNav sets these inline */
+.fname .left{align-items:flex-start}                         /* caret/dot level with the first line */
+textarea{font-family:inherit}                                 /* one font in text boxes */
+.face small{text-transform:none;letter-spacing:.02em;font-family:inherit}
 </style>
 
 <header class="appbar">
@@ -1087,7 +1102,7 @@ textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var
           <label class="f" for="n-name">Deck name</label>
           <input type="text" id="n-name" placeholder="SE Chapter 2 — Software processes">
         </div>
-        <div class="row" style="gap:18px;align-items:flex-end">
+        <div class="row" style="gap:18px;align-items:flex-start">
           <div class="field" style="flex:1;min-width:200px;margin:0">
             <label class="f" for="n-folder">Folder</label>
             <select id="n-folder"></select>
@@ -1623,7 +1638,7 @@ Availability: Information is there when it is needed"></textarea>
   const rgba = (h,a) => "rgb(" + hex2(h).join(",") + " / " + a + ")";
   const lum = h => { const [r,g,b] = hex2(h).map(v => { v/=255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4); });
                      return .2126*r+.7152*g+.0722*b; };
-  const on = h => lum(h) > .45 ? "#0A0F17" : "#FFFFFF";
+  const on = h => lum(h) > .179 ? "#0A0F17" : "#FFFFFF";   // LOCAL PORT (polish): whichever text colour contrasts more
   const ok = h => /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h.trim());
 
   const T = window.Theme = {
@@ -1636,7 +1651,7 @@ Availability: Information is there when it is needed"></textarea>
       const S=(k,v)=>s.setProperty(k,v);
       S("--bg",c.bg); S("--grid-line",mix(c.bg,c.ink,.07));
       S("--surface",c.surface); S("--surface-2",mix(c.surface,c.ink,.045)); S("--surface-3",mix(c.surface,c.ink,.09));
-      S("--ink",c.ink); S("--ink-2",c.ink2); S("--ink-3",mix(c.ink2,c.surface,.3));
+      S("--ink",c.ink); S("--ink-2",c.ink2); S("--ink-3",mix(c.ink2,c.surface,.05));
       S("--rule",mix(c.surface,c.ink,.15)); S("--rule-2",mix(c.surface,c.ink,.08));
       S("--live",c.live); S("--on-live",on(c.live)); S("--live-soft",rgba(c.live,dark?.16:.09));
       S("--hit",c.hit); S("--hit-soft",rgba(c.hit,dark?.14:.09));
@@ -1644,7 +1659,7 @@ Availability: Information is there when it is needed"></textarea>
       S("--lamp-off",mix(c.surface,c.ink,.18)); S("--glow","0 0 0 3px "+rgba(c.live,.2));
       const ri = on(c.rail)==="#FFFFFF" ? mix(c.rail,"#FFFFFF",.92) : mix(c.rail,"#000000",.84);
       S("--rail",c.rail); S("--rail-2",mix(c.rail,ri,.08)); S("--rail-rule",mix(c.rail,ri,.15));
-      S("--rail-ink",ri); S("--rail-ink-2",mix(ri,c.rail,.4));
+      S("--rail-ink",ri); S("--rail-ink-2",mix(ri,c.rail,.25));
       S("--shadow-1","0 1px 2px rgba(0,0,0,"+(dark?".35":".05")+"),0 2px 8px rgba(0,0,0,"+(dark?".3":".05")+")");
       S("--shadow-2","0 4px 10px rgba(0,0,0,"+(dark?".5":".08")+"),0 18px 40px rgba(0,0,0,"+(dark?".45":".1")+")");
       S("--fs",this.fs+"px");
