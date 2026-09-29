@@ -1060,6 +1060,12 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
 .drawer:not(.on),.chatdrawer:not(.on){visibility:hidden}
 .drawer,.chatdrawer{transition:transform .28s cubic-bezier(.2,.7,.3,1),visibility .28s}
 .bmodal:not(.on),.explain:not(.on),.qmodal:not(.on),.modal:not(.on){visibility:hidden}
+/* MonoSpace: drag a deck onto another subject */
+.deckbtn[draggable=true],.dcard[draggable=true]{cursor:grab}
+.dragging{opacity:.45}
+.folder.dropon>.fname,.libsec.dropon>.libhead{background:color-mix(in srgb,var(--fc,var(--acc)) 22%,transparent);
+  outline:2px dashed var(--fc,var(--acc));outline-offset:-2px;border-radius:10px}
+.libsec.dropon .cgrid{outline:2px dashed var(--fc,var(--acc));outline-offset:6px;border-radius:14px}
 </style>
 <script src="splash.js"></script>
 
@@ -1294,6 +1300,7 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
             <div class="menu" id="menu-test">
               <button id="btn-test"><b>Practice test</b><small>A full paper, marked at the end, essays included</small></button>
               <button id="btn-cards"><b>Flashcards</b><small>Flip each card and say whether you knew it</small></button>
+              <button id="btn-sprint"><b>60-second sprint</b><small>Quick-fire questions against the clock, weak spots first</small></button>
               <button id="btn-match"><b>Matching game</b><small>Pair terms with their definitions</small></button>
               <button id="btn-shoot"><b>Defence game</b><small>Type the term before it lands</small></button>
             </div>
@@ -2614,6 +2621,51 @@ async function deckRows(list){
   }
   return rows;
 }
+/* Move a deck to another subject: drag it onto a subject (sidebar or Library), or "Move to…".
+   Only the deck's folderId in "library" changes; the deck, its progress and history stay as they are. */
+let dragDeckId = null;
+async function moveDeck(id, fid){
+  const d = LIB.decks.find(x => x.id === id), f = LIB.folders.find(x => x.id === fid);
+  if(!d || !f || d.folderId === fid) return;
+  d.folderId = fid;
+  await store.set("library", LIB);
+  openFolders.add(fid);
+  navSoon();
+  if(!$("v-library").classList.contains("hide")) renderLibrary();
+  toast("Moved “" + d.name + "” to " + f.name);
+}
+function moveMenu(anchor, d){
+  const opts = orderedFolders().filter(f => f.id !== d.folderId).map(f => [f.name, () => moveDeck(d.id, f.id)]);
+  if(opts.length) popMenu(anchor, opts); else toast("There is no other subject to move it to.");
+}
+function dragSource(node, id){
+  node.draggable = true;
+  node.addEventListener("dragstart", e => {
+    dragDeckId = id; node.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+  });
+  node.addEventListener("dragend", () => {
+    dragDeckId = null; node.classList.remove("dragging");
+    document.querySelectorAll(".dropon").forEach(x => x.classList.remove("dropon"));
+  });
+}
+function dropTarget(node, fid, onEnter){
+  let depth = 0;
+  node.addEventListener("dragenter", e => {
+    if(!dragDeckId) return;
+    e.preventDefault(); depth++; node.classList.add("dropon");
+    if(onEnter) onEnter();
+  });
+  node.addEventListener("dragover", e => { if(dragDeckId){ e.preventDefault(); e.dataTransfer.dropEffect = "move"; } });
+  node.addEventListener("dragleave", () => { if(dragDeckId && --depth <= 0){ depth = 0; node.classList.remove("dropon"); } });
+  node.addEventListener("drop", e => {
+    if(!dragDeckId) return;
+    e.preventDefault(); depth = 0; node.classList.remove("dropon");
+    const id = dragDeckId; dragDeckId = null;
+    moveDeck(id, fid);
+  });
+}
 async function renderNav(){
   const mine = ++navToken;
   const rows = await deckRows();
@@ -2659,9 +2711,11 @@ async function renderNav(){
       b.append(el("span", "dn", d.name));
       if(r.due) b.append(el("em", "dcount", String(r.due)));
       b.onclick = () => openDeck(d.id);
+      dragSource(b, d.id);
       body.appendChild(b);
     }
     wrap.append(h, body);
+    dropTarget(wrap, f.id, () => { if(!openFolders.has(f.id)){ openFolders.add(f.id); wrap.classList.remove("shut"); h.setAttribute("aria-expanded", "true"); } });
     box.appendChild(wrap);
   }
   if(mine !== navToken) return;          // a newer render started while we waited
@@ -2727,6 +2781,7 @@ function deckCard(r, showFolder){
   more.onclick = e => { e.stopPropagation(); popMenu(more, [
     ["Open", () => openDeck(d.id)],
     ["Rename", async () => { await openDeck(d.id); if(DECK && DECK.id === d.id && DECK.kind !== "skill") $("btn-rename").click(); }],
+    ["Move to…", () => moveMenu(more, d)],
     ["Delete", () => deleteDeckById(d.id, d.name), true]]); };
   top.append(name, el("span", "duepill" + (due ? "" : " zero"), due ? due + " due" : "Up to date"), more);
   if(showFolder && f) c.appendChild(el("p", "dcfold", f.name));
@@ -2739,6 +2794,7 @@ function deckCard(r, showFolder){
   foot.append(st, go1);
   c.appendChild(foot);
   c.onclick = e => { if(e.target === c || e.target.classList.contains("mbar")) openDeck(d.id); };
+  dragSource(c, d.id);
   return c;
 }
 /* Open a deck and start studying it — exactly what its Study button does. */
@@ -2874,6 +2930,7 @@ async function renderLibrary(){
     if(!decks.length){ const e = el("div", "cempty"); const b = el("button", "link", "New deck"); b.onclick = showNew;
       e.append(document.createTextNode("No decks in this subject yet. "), b); grid.appendChild(e); }
     sec.appendChild(grid);
+    dropTarget(sec, f.id);
     body.appendChild(sec);
     shown += decks.length;
   }
@@ -7343,7 +7400,7 @@ let SP = null, spTimer = null;
 function startSprint(){
   const usable = DECK.concepts.filter(c => (c.fact || "").length > 12);
   if(usable.length < 4){ toast("This deck needs at least four concepts with definitions"); return; }
-  SP = {pool:usable, score:0, combo:1, right:0, wrong:0, left:60, t0:Date.now(), asked:0};
+  SP = {pool:usable, score:0, combo:1, right:0, wrong:0, left:60, t0:Date.now(), asked:0, recent:[], missed:[]};
   $("sp-best").textContent = PROG.best60 || "—";
   go("v-sprint", DECK.name + " · sprint");
   paintSprint(); nextSprint();
@@ -7361,9 +7418,37 @@ function paintSprint(){
   $("sp-combo").textContent = "×" + SP.combo;
   $("sp-time").textContent = Math.max(0, SP.left);
 }
+/* Games pick what you need most: never-seen, low-box and often-missed concepts weigh more,
+   and nothing repeats within the last few questions. Read-only on progress. */
+function gameWeight(c){
+  const p = PROG.m[c.id];
+  if(!p) return 3;
+  const box = p.box || 0, miss = (p.wrong || 0) - (p.right || 0);
+  return 1 + Math.max(0, 4 - box) + Math.max(0, Math.min(3, miss)) + (p.seen ? 0 : 1);
+}
+function weightedPick(list){
+  let t = 0; const w = list.map(c => (t += gameWeight(c)));
+  const r = Math.random() * t;
+  return list[w.findIndex(x => x > r)] || list[list.length - 1];
+}
+/* Wrong answers from the same topic first — telling neighbours apart is the real test. */
+function distractors(c, pool, n){
+  const same = shuffle(pool.filter(x => x !== c && x.topic === c.topic && x.name !== c.name));
+  const rest = shuffle(pool.filter(x => x !== c && x.topic !== c.topic && x.name !== c.name));
+  const out = [], seen = new Set([c.name.toLowerCase()]);
+  for(const x of same.concat(rest)){
+    if(out.length >= n) break;
+    if(seen.has(x.name.toLowerCase())) continue;
+    seen.add(x.name.toLowerCase()); out.push(x);
+  }
+  return out;
+}
 function nextSprint(){
-  const c = SP.pool[Math.random()*SP.pool.length|0];
-  const others = shuffle(SP.pool.filter(x => x !== c)).slice(0,3);
+  const fresh1 = SP.pool.filter(x => !SP.recent.includes(x.id));
+  const c = weightedPick(fresh1.length ? fresh1 : SP.pool);
+  SP.recent.push(c.id);
+  if(SP.recent.length > Math.min(6, SP.pool.length - 1)) SP.recent.shift();
+  const others = distractors(c, SP.pool, 3);
   const askTerm = Math.random() < 0.5;
   $("sp-tag").textContent = c.topic;
   const short = t => trimNice(t, 150);
@@ -7391,6 +7476,7 @@ function nextSprint(){
       } else {
         SP.wrong++; life.wrong++;
         SP.combo = 1;
+        if(!SP.missed.includes(c)) SP.missed.push(c);
         b.dataset.r = "miss";
         [...box.children].forEach((x,j) => { if(opts[j].ok) x.dataset.r = "hit"; });
       }
@@ -7420,33 +7506,54 @@ function endSprint(){
     const b = document.createElement("b"); b.textContent = l;
     d.append(s2,b); nb.appendChild(d);
   });
-  $("r-weak").innerHTML = "<li>Sprint sharpens recall speed. It does not change your review schedule — Learn and Test do that.</li>";
-  $("r-again").classList.add("hide");
+  gameMissed(SP.missed, "Sprint sharpens recall speed. It does not change your review schedule — Learn and Test do that.");
+  playAgain("sprint");
   SP = null;
   go("v-report", DECK.name);
+}
+
+/* Game reports: what you got wrong, and a Play again button. */
+function gameMissed(list, none){
+  const ul = $("r-weak"); ul.replaceChildren();
+  if(!list.length){ ul.appendChild(el("li", "", none)); return; }
+  list.slice(0, 12).forEach(c => { const li = el("li"); li.append(el("b", "", c.name), document.createTextNode(" — " + trimNice(c.fact || "", 140))); ul.appendChild(li); });
+  if(list.length > 12) ul.appendChild(el("li", "", "…and " + (list.length - 12) + " more."));
+}
+function playAgain(mode){
+  $("r-again").classList.remove("hide");
+  $("r-again").textContent = "Play again";
+  $("r-again").dataset.teach = mode;
 }
 
 /* ============================================================
    MATCHING GAME
    ============================================================ */
-let MS = null;
+let MS = null, matchTimer = null;
+function matchSub(){
+  if(!MS || $("v-match").classList.contains("hide")){ clearInterval(matchTimer); return; }
+  const secs = Math.floor((Date.now() - MS.t0) / 1000);
+  $("m-sub").textContent = "Pair each concept with its definition · round " + (MS.round+1) + " of " +
+    Math.ceil(MS.pool.length/5) + " · " + Math.floor(secs/60) + ":" + String(secs%60).padStart(2, "0") +
+    (MS.wrong ? " · " + plural(MS.wrong, "mistake") : "");
+}
 function shortDef(c){
   return trimNice(maskTerm((c.fact || "").split(/(?<=[.!?])\s/)[0] || c.fact || "", c.name), 150);
 }
 function startMatch(){
   const pool = buildPool().filter(id => (con(id).fact || "").length > 15);
   if(pool.length < 4){ toast("This deck needs more concepts with definitions for matching"); return; }
-  MS = {pool, round:0, matched:0, wrong:0, sel:null, t0:Date.now()};
+  MS = {pool, round:0, matched:0, wrong:0, sel:null, t0:Date.now(), missed:[]};
   PROG.sessions++;
   go("v-match", DECK.name);
   matchRound();
+  clearInterval(matchTimer);
+  matchTimer = setInterval(matchSub, 1000);
 }
 function matchRound(){
   const size = Math.min(5, MS.pool.length - MS.round*5);
   if(size <= 0) return matchReport();
   const ids = MS.pool.slice(MS.round*5, MS.round*5 + size);
-  $("m-sub").textContent = "Pair each concept with its definition · round " + (MS.round+1) +
-                           " of " + Math.ceil(MS.pool.length/5);
+  matchSub();
   const L = $("m-left"), R = $("m-right");
   L.innerHTML = ""; R.innerHTML = "";
   MS.left = {}; MS.done = 0; MS.size = size; MS.sel = null;
@@ -7481,6 +7588,8 @@ function tryMatch(right){
     if(MS.done >= MS.size){ MS.round++; setTimeout(matchRound, 500); }
   } else {
     MS.wrong++; life.wrong++; life.run = 0; life.done = false; PROG.asked++;
+    if(!MS.missed.includes(id)) MS.missed.push(id);
+    matchSub();
     const a = MS.sel;
     a.dataset.s = "bad"; right.dataset.s = "bad";
     setTimeout(() => { if(a.dataset.s === "bad") delete a.dataset.s;
@@ -7490,10 +7599,11 @@ function tryMatch(right){
   saveProg();
 }
 function matchReport(){
+  clearInterval(matchTimer);
   saveProg(true);
   const secs = Math.floor((Date.now()-MS.t0)/1000);
   const total = MS.matched + MS.wrong;
-  $("r-head").textContent = "Matched " + MS.matched + " pairs";
+  $("r-head").textContent = "Matched " + plural(MS.matched, "pair");
   $("r-sub").textContent = DECK.name + " · matching game";
   $("r-reviewcard").classList.add("hide");
   const nums = [[MS.matched,"Pairs matched"], [MS.wrong,"Wrong attempts"],
@@ -7504,8 +7614,8 @@ function matchReport(){
     const s = document.createElement("s"); s.textContent = v;
     const b = document.createElement("b"); b.textContent = l;
     d.append(s,b); nb.appendChild(d); });
-  $("r-weak").innerHTML = "<li>Open the deck to see which concepts still need work.</li>";
-  $("r-again").classList.add("hide");
+  gameMissed(MS.missed.map(con), "Every pair matched first time.");
+  playAgain("match");
   go("v-report", DECK.name);
 }
 
@@ -7809,6 +7919,7 @@ $("brand").addEventListener("click", () => { if(PAPER && !PAPER.submitted) saveD
 $("xr-again").onclick = () => { if(needDeck()) openExamSetup(); };
 $("xr-back").onclick = () => DECK ? openDeck(DECK.id) : renderHome();
 $("btn-match").onclick = () => { if(needDeck()) startMatch(); };
+$("btn-sprint").onclick = () => { if(needDeck()) startSprint(); };
 $("btn-shoot").onclick = () => { if(needDeck()) startShooter(); };
 $("sh-fire").onclick = () => fire();
 $("sh-quit").onclick = () => endShooter();
@@ -7859,6 +7970,8 @@ $("r-again").onclick = () => {
   const mode = $("r-again").dataset.teach;
   $("r-again").dataset.teach = "";
   if(mode === "shoot"){ $("r-again").textContent = "Drill the weak spots"; return startShooter(); }
+  if(mode === "sprint"){ $("r-again").textContent = "Drill the weak spots"; return startSprint(); }
+  if(mode === "match"){ $("r-again").textContent = "Drill the weak spots"; return startMatch(); }
   if(mode === "next"){ $("r-again").textContent = "Drill the weak spots"; return openTeach(); }
   if(mode === "retry"){
     const l = S.teach, missed = S.teachIds.filter(id => S.m[id] && S.m[id].wrong > 0);

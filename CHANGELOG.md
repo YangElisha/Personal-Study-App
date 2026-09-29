@@ -4,6 +4,19 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — move decks between subjects; better games (2026-09-29)
+- **Drag a deck onto another subject** in the sidebar (a closed subject opens as you hover) or
+  in the Library; also "Move to…" on each deck card's "…" menu. Only the deck's `folderId` in
+  `library` changes.
+- **60-second sprint** now has a button (Test & games); it existed with none.
+- Sprint picks weak, unseen and often-missed concepts more often, never repeats within the last
+  few questions, and draws wrong answers from the same topic first (no duplicate options).
+- Matching shows a live timer and mistakes. Sprint and matching reports list what you missed and
+  offer "Play again".
+- Checked in headless Edge on a copy of the real database: drag in sidebar and Library, Move to…,
+  sprint (14 answers, no repeats), matching, both reports and Play again; only the moved deck's
+  entry changed; 0 JS errors. Reader tests 3/3.
+
 - Loading screen now stays about 10 s (was at least 1.2 s); a click or any key skips it.
 
 ### Changed — native app window (2026-09-29)
