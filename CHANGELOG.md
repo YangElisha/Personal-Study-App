@@ -4,6 +4,36 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed — one picture PDF used ~120 Claude requests and a whole usage window (2026-09-29)
+- Cause: a 6-page picture PDF went page by page through the exhaustive extract / re-check /
+  expand loop, every maths symbol became a concept (267), and each was taught 3 per request;
+  Claude Code's default (largest) model answered; after the usage limit every request failed on
+  Claude first, then Qwen got a job sized for Claude.
+- Picture pages are typed out once and read as one document with the rest of the material.
+- Material is **outlined** in large passages (one request each; 14,000 characters for Claude,
+  3,500 for Qwen), notation and worked examples grouped, a hard per-passage ceiling, then taught.
+  The exhaustive loop (`completeBuild`) is gone, and with it the unused Depth control.
+- Teaching: 6 concepts per Claude request sharing one copy of the source; Qwen one per request.
+  The model is checked before every request, so a mid-build switch to Qwen is sized for Qwen.
+- **Budget:** a build that needs more than 25 AI requests asks first.
+- Server: Claude runs **Sonnet** unless `CLAUDE_MODEL` says otherwise; a usage / session / rate
+  limit pauses Claude for 30 minutes (`/api/ai/route` says `claude_paused`) so requests go
+  straight to Qwen.
+- **Accuracy:** a concept's name must be found in the module text (word stems); otherwise it
+  keeps its own name, and invented extra terms are dropped. Filler endings ("task type",
+  "mechanism", "objective"…) are removed.
+- Outline replies of plain names (Qwen sometimes drops "| topic") are used, not discarded; an
+  empty reply is retried once; a passage that still yields nothing is kept whole as one concept
+  (a Qwen run had lost the whole neural-network passage). Names over 8 words and generic words
+  ("algorithms", "programming steps") are left out.
+- `MODULES.md` in the repo is written only for the data folder in the repo's `.env`, never for a
+  scratch folder (test runs had put test decks into it); restored from DATA_DIR.
+- Checked on copies of the real database through the queue with Claude: text PDF 3 requests /
+  7 concepts, the picture PDF 12 requests (6 images) / 24 concepts, pasted notes 4 / 10 — every
+  concept taught, every name found in its source, in order, 0 JS errors; fake-AI count with
+  Claude running out mid-build: 16 requests. All screens, both themes: 0 JS errors. 219 server
+  tests, reader tests 3/3.
+
 ### Fixed — decks were raw slide text with template questions (2026-09-29)
 - A slide PDF the reader could read fully was saved with **no AI at all**: slide titles as terms,
   bullets pasted as definitions, template questions. Pasted/Word material was extracted word for

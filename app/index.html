@@ -1500,14 +1500,6 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
             <label class="f" for="n-folder">Folder</label>
             <select id="n-folder"></select>
           </div>
-          <div class="field" style="margin:0">
-            <label class="f">Depth</label>
-            <div class="row">
-              <button class="chip" data-size="12">12 concepts</button>
-              <button class="chip" data-size="24" aria-pressed="true">24</button>
-              <button class="chip" data-size="40">40</button>
-            </div>
-          </div>
         </div>
       </div>
       <div class="card hide" id="course-card">
@@ -2399,7 +2391,7 @@ function toast(m){ const t = $("toast"); t.textContent = m; t.classList.add("on"
   clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove("on"), 2600); }
 
 let LIB = null, DECK = null, PROG = null, S = null;
-let scope = "due", viewMode = "focus", density = 6, buildSize = 24;
+let scope = "due", viewMode = "focus", density = 6;
 let focusFolder = null, shutFolders = {};
 const PALETTE = ["#E0554A","#E8873A","#D9A420","#4FAE5F","#2FA8AE","#4A82E8","#8B6FE0","#D65FA0"];
 function folderColor(f, i){
@@ -4422,60 +4414,6 @@ Respond with ONLY a JSON array, no fences:
   }
   return added;
 }
-async function completeBuild(material, name, folderId){
-  mergeConcepts.admin = [];
-  const chunks = chunkText(material, 2800);
-  plog("Source split into " + chunks.length + " passage" + (chunks.length === 1 ? "" : "s") + " — nothing is truncated");
-  const all = [];
-  for(let i = 0; i < chunks.length; i++){
-    pbar(15 + i/chunks.length*55, "Reading passage " + (i+1) + " of " + chunks.length + "…");
-    let got = [];
-    try{ got = await extractChunk(chunks[i]); }
-    catch(e){ plog("Passage " + (i+1) + " failed: " + trimNice(e.message,70), true); continue; }
-    const added = mergeConcepts(all, got);
-    plog("Passage " + (i+1) + ": " + got.length + " items found, " + added + " new");
-
-    // verification gate — re-read the same passage and recover anything dropped
-    for(let round = 0; round < 2; round++){
-      let missing = [];
-      try{ missing = await verifyChunk(chunks[i], all.map(c => c.name)); }
-      catch(e){ plog("Check on passage " + (i+1) + " failed: " + trimNice(e.message,60), true); break; }
-      if(!missing.length){
-        plog("Passage " + (i+1) + " verified · nothing missing");
-        break;
-      }
-      const rec = mergeConcepts(all, missing);
-      plog("Check " + (round+1) + " recovered " + rec + ": " + missing.map(m => m.name).join(", "), true);
-      if(!rec) break;
-    }
-  }
-  if(!all.length) throw new Error("Nothing could be extracted from that material.");
-  const admin = (mergeConcepts.admin || []).filter((c,i,arr) =>
-    arr.findIndex(x => norm(x.name) === norm(c.name)) === i);
-  if(admin.length){
-    const keep = await choiceDlg("Include course admin?",
-      "The material also lists " + admin.length + " item" + (admin.length === 1 ? "" : "s") +
-      " that look like course administration: " + admin.map(c => c.name).join(", ") +
-      ". Usually these are not examined. Include them anyway?", "Leave them out", "Include them");
-    if(!keep){ admin.forEach(c => { c.topic = c.topic || "Course admin"; all.push(c); }); }
-    plog(keep ? "Course admin left out: " + admin.map(c => c.name).join(", ")
-              : "Course admin included at your request");
-  }
-  pbar(72, "Opening up the grouped terms…");
-  const grew = await expandGroups(all, material, (m,e) => plog(m,e));
-  if(grew) plog("Expanded groups into " + grew + " more concept" + (grew === 1 ? "" : "s"));
-  pbar(80, "Writing questions…");
-  // questions are built here, from the extracted items — no further calls, so
-  // nothing can be lost between extraction and the finished deck
-  const pairs = all.map(c => ({term:c.name, def:c.fact}));
-  const concepts = all.map((c,i) => ({
-    id: uid(), name: c.name, topic: c.topic, fact: c.fact,
-    items: c.items, steps: c.steps, star:false,
-    qs: questionsFromTerms(pairs, i)
-  }));
-  return concepts;
-}
-
 /* LOCAL PORT (Phase 6): the module library on this PC (docs/API.md "Modules"). Only a build
    from exactly one PDF and nothing else is checked and recorded; the library never blocks a build. */
 async function moduleCheck(u){
@@ -4524,8 +4462,8 @@ Use ONLY the source text given for each concept (and your general knowledge only
 
 For EACH numbered concept return:
 - "i": its number
-- "name": the exact term a student must recall (e.g. "Supervised learning", "K-fold cross-validation"). If the given name is a slide title or a question rather than a term ("Why use it?", "Train/Test in Practice", "Model"), name the idea the slide actually teaches. Keep the module's spelling for real terms.
-- "definition": ONE clear sentence saying what it is. If the source gives a definition, keep its wording; otherwise write a precise one from the source. Never start with a bullet, "This slide", or "The concept".
+- "name": the exact term a student must recall (e.g. "Supervised learning", "K-fold cross-validation"). If the given name is a slide title or a question rather than a term ("Why use it?", "Train/Test in Practice", "Model"), name the idea the slide actually teaches. Keep the module's spelling for real terms. Use the module's own words for the term; never invent a label, and never add filler such as "mechanism", "objective", "type", "hierarchy", "calculation" or "scope".
+- "definition": ONE clear sentence saying what it is. If the source gives a definition, keep its wording; if it only names the term, give the standard textbook definition in one sentence. Never contradict the module or add claims it does not support. Never start with a bullet, "This slide", or "The concept".
 - "example": the module's example in one sentence, or "" if it has none.
 - "explain": 2-3 plain-language sentences: how it works / why it matters, as a tutor would say it.
 - "confuse": one sentence starting "Students often confuse this with" naming the nearest confusable idea and how to tell them apart, or "".
@@ -4565,7 +4503,7 @@ function taughtConcept(base, r){
   const def = str(r.definition).replace(/^[•▪◦●\-*]\s*/, "");
   const ex = str(r.example);
   const c = Object.assign({}, base);
-  c.name = tidyName(str(r.name)) || str(r.name) || base.name;
+  c.name = stripFiller(tidyName(str(r.name)) || str(r.name)) || base.name;
   if(def) c.fact = def + (ex ? " Example: " + ex.replace(/^(for )?example:?\s*/i, "") : "");
   const guide = [str(r.explain), str(r.confuse)].filter(Boolean).join(" ");
   if(guide) c.guide = guide;
@@ -4574,26 +4512,122 @@ function taughtConcept(base, r){
   c.aiQs = goodQs(r.qs);
   return c;
 }
+/* How a build spends AI requests (MonoSpace 2026-09-29). A 6-page picture PDF once used about
+   120 Claude requests and a whole usage window: every page went through the exhaustive
+   extract / re-check / expand loop, every symbol became a concept (267), and each was taught
+   3 at a time. Now: material is outlined in large passages, one request each, with notation and
+   fragments grouped; Claude teaches 6 concepts per request (Qwen one — it stops after the first
+   item of a list); the model is checked before EVERY request, because Claude can hit its limit
+   mid-build and Qwen then answers; and a build that needs more than BUILD_ASK requests asks. */
+const BUILD_ASK = 25;
+function aiSizes(route){
+  const qwen = !route || route.model !== "claude";
+  return {qwen, who: !route ? "the AI" : qwen ? "Qwen" : "Claude",
+          chunk: qwen ? 3500 : 14000, batch: qwen ? 1 : 6, maxOut: qwen ? 3500 : 8000};
+}
+async function budgetOk(n, what, qwen){
+  if(n <= BUILD_ASK) return true;
+  return choiceDlg("This module needs a lot of AI work",
+    what + " takes about " + n + " AI requests" +
+    (qwen ? " — Qwen runs on this PC, so it is slow but uses no Claude usage." : " — a noticeable share of your Claude usage.") +
+    " Go ahead?", "Build it", "Stop");
+}
+/* How much of a concept's name is actually in the module text (0-1). Word stems are compared,
+   so "generalization" matches "generalize"; filler words do not count. Names the AI invents
+   ("multidisciplinary integration", "Clustering task type") score low and are not used. */
+const NAME_FILLER = /^(concepts?|process|mechanism|objective|types?|task|hierarchy|calculation|computation|capability|overview|definition|role|scope|values?|formula|notation|methods?|integration|examples?|the|and|of|in|for|with|its|how|what|why)$/;
+/* "Clustering task type" -> "Clustering", "Unsupervised learning mechanism" -> "Unsupervised learning". */
+function stripFiller(name){
+  const t = String(name || "").trim(), cut = t.replace(/\s+(task type|mechanism|objective|hierarchy|calculation|computation|capability)$/i, "");
+  return cut.split(/\s+/).length >= 1 && cut.length >= 3 ? cut : t;
+}
+function groundScore(name, text){
+  const words = (String(name || "").toLowerCase().match(/[a-z][a-z0-9-]{2,}/g) || []).filter(w => !NAME_FILLER.test(w));
+  if(!words.length) return 1;
+  const low = String(text || "").toLowerCase();
+  return words.filter(w => low.includes(w.slice(0, Math.max(4, Math.min(w.length, 6))))).length / words.length;
+}
+/* The sentence(s) around a term in its passage — what a concept keeps if teaching fails. */
+function excerptFor(name, text){
+  const t = String(text || ""), i = t.toLowerCase().indexOf(String(name || "").toLowerCase());
+  if(i < 0) return trimNice(t.replace(/\s+/g, " "), 300);
+  const from = Math.max(0, t.lastIndexOf(".", i - 1) + 1, i - 200);
+  return trimNice(t.slice(from, from + 400).replace(/\s+/g, " ").trim(), 360);
+}
+const OUTLINE_RULES = `List the concepts a student must learn from this passage of a university module, in the order they appear. A concept is a term, idea, process, method, formula or result that could be examined.
+- Group notation: a set of symbols or variables (z_h1, z_h2, a_h1, w1h1 ...) is ONE concept (e.g. "Forward pass notation"), never one per symbol.
+- A worked example or calculation belongs to the concept it demonstrates, not a concept of its own.
+- Leave out course admin (outcomes, objectives, references) and headings that are not ideas.
+- Each name must be the module's own wording — a term that appears in the passage. Never invent a label.
+- Not everyday words or generic phrases ("algorithms", "programming steps", "computer science problems") unless the module defines them. A name is a term of 1-6 words, never a sentence.
+- Every distinct examinable term, but no fragments: roughly one per 40-150 words of passage, at most 25.
+Write one per line, exactly: name | topic
+No numbering, no other text.`;
+async function outlineMaterial(material, log){
+  const z = aiSizes(await aiRoute());
+  const chunks = chunkText(material, z.chunk);
+  if(!await budgetOk(chunks.length, "Outlining " + material.length.toLocaleString() + " characters", z.qwen))
+    throw new Error("Stopped before building — nothing was sent to the AI");
+  log("Outlining the material with " + z.who + " · " + plural(chunks.length, "passage"));
+  const out = [], seen = new Set();
+  for(let i = 0; i < chunks.length; i++){
+    pbar(15 + i / chunks.length * 28, "Outlining passage " + (i + 1) + " of " + chunks.length + "…");
+    // "name | topic" lines; a reply of plain names (Qwen sometimes drops the topic) is used too
+    const parse = txt => {
+      const ls = String(txt || "").split("\n").map(l => l.replace(/^[\s\-*•\d.)]+/, "").replace(/\*\*/g, "").trim()).filter(Boolean);
+      const piped = ls.filter(l => l.includes("|"));
+      return (piped.length ? piped : ls.filter(l => l.split(/\s+/).length <= 6 && !/[:.?!]$/.test(l)))
+        .map(l => l.split("|").map(x => x.trim()));
+    };
+    let n = 0, off = 0;
+    // a ceiling against runaway lists (one symbol per concept), roomy enough for dense notes
+    const cap = Math.max(8, Math.min(25, Math.round(chunks[i].split(/\s+/).length / 40)));
+    for(let attempt = 0; attempt < 2 && !n; attempt++){     // retry once when nothing usable came back
+      let rows = [];
+      try{ rows = parse(await claude(OUTLINE_RULES + "\n\nPASSAGE:\n" + chunks[i], 1200)); }
+      catch(e){ if(attempt) log("Passage " + (i + 1) + " could not be outlined: " + trimNice(e.message, 70), true); }
+      rows.forEach(([nm, tp]) => {
+        const name = stripFiller(tidyName(nm) || nm), key = norm(name);
+        if(!name || !key || seen.has(key) || n >= cap) return;
+        if(name.split(/\s+/).length > 8 || groundScore(name, chunks[i]) < 0.5){ off++; return; }
+        seen.add(key); n++;
+        out.push({id:uid(), name, topic:tp || "General", fact:excerptFor(name, chunks[i]), _src:chunks[i], star:false, qs:[]});
+      });
+    }
+    if(!n){   // never lose a passage: keep it whole as one concept named by its heading; teaching names it properly
+      const head = (chunks[i].split("\n").map(l => l.replace(/^\[Page \d+\]\s*/, "").trim())
+                     .find(l => l && l.split(/\s+/).length <= 8 && !/^[$\\]/.test(l))) || "Passage " + (i + 1);
+      out.push({id:uid(), name:head, topic:"General", fact:excerptFor(head, chunks[i]), _src:chunks[i], star:false, qs:[]});
+      seen.add(norm(head)); n = 1;
+      log("Passage " + (i + 1) + ": no outline came back — kept whole as “" + head + "”", true);
+    }
+    log("Passage " + (i + 1) + ": " + plural(n, "concept") + (off ? " · left out " + off + " name(s) not found in the text" : ""));
+  }
+  return out;
+}
 async function teachConcepts(list, log){
   if(!list.length) return list;
-  const route = await aiRoute();
-  const who = !route ? "the AI" : route.model === "claude" ? "Claude" : "Qwen (offline)";
-  log("Teaching pass with " + who + ": definitions, explanations and questions for " + plural(list.length, "concept"));
-  const B = route && route.model !== "claude" ? 1 : 3;      // Qwen: one at a time — it tends to stop after the first item
-  const starts = []; for(let i = 0; i < list.length; i += B) starts.push(i);
+  const z0 = aiSizes(await aiRoute());
+  const est = Math.ceil(list.length / z0.batch) + 1;
+  if(!await budgetOk(est, "Teaching " + plural(list.length, "concept"), z0.qwen))
+    throw new Error("Stopped before teaching — nothing was saved");
+  log("Teaching pass with " + z0.who + ": definitions, explanations and questions for " + plural(list.length, "concept"));
   const taught = list.map(tidyFact), extras = list.map(() => []);
-  let done = 0, failed = 0;
+  let done = 0, failed = 0, at = 0, switched = false;
   const deckNames = trimNice(list.map(c => c.name).join("; "), 1500);
-  const run = async start => {
-    const part = list.slice(start, start + B);
-    const body = part.map((c, k) => (k + 1) + ". " + c.name + " (topic: " + (c.topic || "General") + ")\nSOURCE: " +
-      String(c.fact || "").slice(0, 2500) +
-      (c.items && c.items.length ? "\nLISTED: " + c.items.join("; ") : "") +
-      (c.steps && c.steps.length ? "\nSTEPS: " + c.steps.join(" -> ") : "")).join("\n\n");
+  const runBatch = async (start, end, z) => {
+    const part = list.slice(start, end), src = part[0]._src;
+    const body = src
+      ? "SOURCE (the module passage these concepts come from):\n" + String(src).slice(0, z.chunk) + "\n\nCONCEPTS:\n\n" +
+        part.map((c, k) => (k + 1) + ". " + c.name + " (topic: " + (c.topic || "General") + ")").join("\n")
+      : "CONCEPTS:\n\n" + part.map((c, k) => (k + 1) + ". " + c.name + " (topic: " + (c.topic || "General") + ")\nSOURCE: " +
+          String(c.fact || "").slice(0, 2500) +
+          (c.items && c.items.length ? "\nLISTED: " + c.items.join("; ") : "") +
+          (c.steps && c.steps.length ? "\nSTEPS: " + c.steps.join(" -> ") : "")).join("\n\n");
     try{
       let res = [];
       for(let attempt = 0; attempt < 2 && !res.length; attempt++){     // one retry: a bad reply is usually a one-off
-        try{ res = jsonObjects(await claude(TEACH_RULES + "\n\nALREADY IN THE DECK: " + deckNames + "\n\nCONCEPTS:\n\n" + body, 4000)); }
+        try{ res = jsonObjects(await claude(TEACH_RULES + "\n\nALREADY IN THE DECK: " + deckNames + "\n\n" + body, z.maxOut)); }
         catch(e){ if(attempt) throw e; }
       }
       if(!res.length) throw new Error("the reply had no usable entries");
@@ -4601,10 +4635,13 @@ async function teachConcepts(list, log){
       res.forEach(r => {
         const k = (parseInt(r && r.i, 10) || 0) - 1;
         if(k < 0 || k >= part.length) return;
+        const c0 = part[k], srcText = (c0._src || "") + " " + (c0.fact || "") + " " + (c0.items || []).join(" ") + " " + (c0.steps || []).join(" ");
+        if(typeof r.name === "string" && groundScore(r.name, srcText) < 0.5) r.name = c0.name;   // not in the module: keep its own name
         taught[start + k] = taughtConcept(taught[start + k], r); got++;
         (Array.isArray(r.also) ? r.also : []).slice(0, 2).forEach(a => {
-          if(a && typeof a.name === "string" && typeof a.definition === "string" && a.definition.trim())
-            extras[start + k].push(taughtConcept({id:uid(), topic:part[k].topic, pages:part[k].pages, star:false, qs:[]}, a));
+          if(a && typeof a.name === "string" && typeof a.definition === "string" && a.definition.trim() &&
+             groundScore(a.name, srcText) >= 0.5)
+            extras[start + k].push(taughtConcept({id:uid(), topic:c0.topic, pages:c0.pages, star:false, qs:[]}, a));
         });
       });
       if(got < part.length){ failed += part.length - got; log("Teaching pass: " + (part.length - got) + " concept(s) came back empty — kept as read", true); }
@@ -4612,10 +4649,22 @@ async function teachConcepts(list, log){
       failed += part.length;
       log("Teaching pass: " + trimNice(e.message, 70) + " — kept " + plural(part.length, "concept") + " as read", true);
     }
-    done++;
-    pbar(82 + done / starts.length * 16, "Teaching… " + Math.min(list.length, done * B) + " of " + list.length + " concepts");
+    done += part.length;
+    pbar(45 + done / list.length * 52, "Teaching… " + done + " of " + list.length + " concepts");
   };
-  for(let i = 0; i < starts.length; i += 2) await Promise.all(starts.slice(i, i + 2).map(run));
+  // two workers; each asks which model is answering before every request
+  const worker = async () => {
+    while(at < list.length){
+      const z = aiSizes(await aiRoute());
+      if(at >= list.length) break;
+      if(z.qwen && !z0.qwen && !switched){ switched = true; log("Claude is not answering (usage limit?) — Qwen carries on, one concept at a time", true); }
+      const start = at; let end = start + 1;
+      while(end < list.length && end - start < z.batch && list[end]._src === list[start]._src) end++;
+      at = end;
+      await runBatch(start, end, z);
+    }
+  };
+  await Promise.all([worker(), worker()]);
   // concepts in module order, each followed by the key terms found inside it; no duplicate names
   const seen = new Set(), out = [];
   taught.forEach((c, k) => {
@@ -4663,7 +4712,7 @@ Respond with ONLY a JSON array, [] if nothing to fold:
   out.forEach((c, i) => {
     const recall = questionsFromTerms(pairs, i).filter(q => q.t === "txt" || /Which term is this\?$/.test(q.q));
     c.qs = (c.aiQs && c.aiQs.length) ? c.aiQs.concat(recall) : questionsFromTerms(pairs, i);
-    delete c.aiQs;
+    delete c.aiQs; delete c._src;
     if(!c.id) c.id = uid();
   });
   const added = out.length - list.length;
@@ -4721,6 +4770,8 @@ async function build(job){
       if(coverage.empty.length) plog("Slides with text but no term found: " + coverage.empty.join(", "), true);
       // each picture slide is read on its own, so what it teaches can be placed
       // back where it sits in the module
+      if(r.textless.length && !await budgetOk(r.textless.length, "Reading " + plural(r.textless.length, "picture page"), aiSizes(await aiRoute()).qwen))
+        throw new Error("Stopped before reading the picture pages — nothing was built");
       for(const pn of r.textless){
         const txt = await pdfPagesAsText(Object.assign({}, u, {range:String(pn)}), (m,e) => plog(m,e));
         if(txt.trim()) pictures.push({page:pn, text:txt});
@@ -4731,24 +4782,8 @@ async function build(job){
       material = (material + "\n\n" + got).trim();
     }
     if(pictures.length){
-      const typed = material.trim();
-      if(typed || others.length){
-        material = (material + "\n\n" + pictures.map(x => x.text).join("\n\n")).trim();
-      } else {
-        for(const pic of pictures){
-          plog("Reading what slide " + pic.page + " shows…");
-          try{
-            const got = await completeBuild(pic.text, name, folderId);
-            got.forEach(c => { c.pages = [pic.page]; });
-            fromSlides = fromSlides.concat(got.map(c => ({name:c.name, topic:c.topic, fact:c.fact,
-                                                         items:c.items, steps:c.steps, pages:[pic.page]})));
-          }catch(e){ plog("Slide " + pic.page + " could not be read: " + trimNice(e.message, 70), true); }
-        }
-        // back into module order
-        fromSlides.sort((a,b) => ((a.pages||[999])[0]) - ((b.pages||[999])[0]));
-        const seenN = new Set();
-        fromSlides = fromSlides.filter(c => { const k = norm(c.name); if(seenN.has(k)) return false; seenN.add(k); return true; });
-      }
+      // picture pages are typed out once, then read as one document with the rest of the material
+      material = (material + "\n\n" + pictures.map(x => "[Page " + x.page + "]\n" + x.text).join("\n\n")).trim();
     }
     if(unsureAll.length){
       const pick = await pickDlg("Are these part of what you study?",
@@ -4765,7 +4800,7 @@ async function build(job){
       const pairs = fromSlides.map(c => ({term:c.name, def:c.fact}));
       let concepts = fromSlides.map((c,i) => ({id:uid(), name:c.name, topic:c.topic, fact:c.fact,
         items:c.items, steps:c.steps, pages:c.pages, star:false, qs:questionsFromTerms(pairs, i)}));
-      pbar(82, "Teaching…");
+      pbar(45, "Teaching…");
       concepts = await teachConcepts(concepts, (m,e) => plog(m,e));
       const idS = uid();
       const okS = await store.set("deck:"+idS, {id:idS, name, concepts, cards:
@@ -4783,16 +4818,16 @@ async function build(job){
       return jobDone(idS);
     }
     if(material) plog("Material ready · " + material.length + " characters, nothing summarised");
-    {   // every material deck gets complete extraction — the capped path is gone
-      let concepts = await completeBuild(material, name, folderId);
-      if(fromSlides.length){
-        const merged = fromSlides.map(c => ({name:c.name, topic:c.topic, fact:c.fact, items:c.items, steps:c.steps}));
-        mergeConcepts(merged, concepts);
-        const pairs = merged.map(c => ({term:c.name, def:c.fact}));
-        concepts = merged.map((c,i) => ({id:uid(), name:c.name, topic:c.topic, fact:c.fact,
-          items:c.items, steps:c.steps, star:false, qs:questionsFromTerms(pairs, i)}));
+    {   // outline the material in large passages, then teach — see BUILD_ASK
+      let concepts = fromSlides.map(c => ({id:uid(), name:c.name, topic:c.topic, fact:c.fact,
+        items:c.items, steps:c.steps, pages:c.pages, star:false, qs:[]}));
+      if(material.trim()){
+        const seenM = new Set(concepts.map(c => norm(c.name)));
+        (await outlineMaterial(material, (m,e) => plog(m,e))).forEach(c => {
+          const k = norm(c.name); if(k && !seenM.has(k)){ seenM.add(k); concepts.push(c); } });
       }
-      pbar(82, "Teaching…");
+      if(!concepts.length) throw new Error("Nothing could be found in that material.");
+      pbar(45, "Teaching…");
       concepts = await teachConcepts(concepts, (m,e) => plog(m,e));
       const cards = job.makeCards
         ? concepts.filter(c => (c.fact||"").length > 10).map(c => ({id:uid(), front:c.name, back:c.fact}))
@@ -4811,90 +4846,6 @@ async function build(job){
       toast(concepts.length + " concepts saved, none dropped");
       return jobDone(id2);
     }
-    pbar(14, "Finding the concepts…");
-    const names = parseJSON(await claude(
-`Here is study material for a university course.
-
-MATERIAL:
-${material.slice(0,14000)}
-
-List the ${buildSize} most testable distinct concepts in it.
-
-The "name" must be the exact term a student has to recall — "Non-repudiation", "Information asset", "Batch processing system". NEVER write it as "Definition of X", "What is X", "Overview of X" or a whole sentence. If the material only offers a description, name the thing being described.
-
-Each also needs a topic heading that groups related concepts (reuse topic names across concepts). Cover the whole material, not just the start. No duplicates.
-
-Respond with ONLY a JSON array, no preamble, no markdown fences:
-[{"name":"...","topic":"..."}]`, 1500)).slice(0, buildSize);
-    plog("Found " + names.length + " concepts");
-
-    const batches = [];
-    for(let i=0;i<names.length;i+=4) batches.push(names.slice(i,i+4));
-    const concepts = []; let done = 0;
-    const runBatch = async b => {
-      const txt = await claude(
-`You write exam questions for a university course. Use ONLY the material below — never invent facts.
-
-MATERIAL:
-${material.slice(0,14000)}
-
-Write an entry for each of these concepts:
-${b.map(x => "- " + x.name + " (topic: " + x.topic + ")").join("\n")}
-
-For each concept:
-- "steps": ONLY when the concept is a process, procedure, lifecycle, or ordered sequence — the steps in order, as an array of short strings. Omit it entirely for anything that is not ordered.
-- "items": ONLY when the concept is a fixed list, set or classification that is not ordered (the three states of data, the four attributes) — the members as an array of short strings. Omit otherwise.
-- "fact": 2-3 sentences that actually teach the idea — what it is, and why it matters or how it differs from the thing students confuse it with. Not a bare definition.
-- 3 questions: one multiple choice with 4 options and exactly one correct answer, one true/false, and one short type-in answer of 1-3 words. Plausible distractors drawn from real confusions.
-- each question's "why": 1-2 sentences explaining the reasoning, not just restating the answer. Where a distractor is tempting, say what makes it wrong.
-
-Be specific. Never write a vague summary where the material gives concrete steps, counts or names — put those in "steps"/"items" and reference them in the questions.
-
-Respond with ONLY a JSON array, no preamble, no markdown fences:
-[{"name":"...","topic":"...","fact":"...","steps":["first","second"],"qs":[
-{"t":"mcq","q":"...","o":["a","b","c","d"],"a":0,"why":"..."},
-{"t":"tf","q":"...","a":true,"why":"..."},
-{"t":"txt","q":"...","accept":["answer","alt"],"why":"..."}]}]`, 3000);
-      parseJSON(txt).forEach(c => {
-        if(!c || !c.name || !Array.isArray(c.qs)) return;
-        const qs = c.qs.filter(q =>
-          (q.t === "mcq" && Array.isArray(q.o) && q.o.length === 4 && typeof q.a === "number") ||
-          (q.t === "tf" && typeof q.a === "boolean") ||
-          (q.t === "txt" && Array.isArray(q.accept) && q.accept.length));
-        if(qs.length){
-          const entry = {id:uid(), name:tidyName(c.name) || c.name, topic:c.topic || "General",
-                         fact:c.fact || "", qs};
-          if(Array.isArray(c.steps) && c.steps.length >= 3) entry.steps = c.steps.map(String);
-          if(Array.isArray(c.items) && c.items.length >= 3) entry.items = c.items.map(String);
-          concepts.push(entry);
-        }
-      });
-      done++;
-      pbar(14 + done/batches.length*82, "Writing questions… " + concepts.length + " concepts ready");
-      plog("Batch " + done + "/" + batches.length + " · " + concepts.length + " concepts so far");
-    };
-    for(let i=0;i<batches.length;i+=2){
-      await Promise.all(batches.slice(i,i+2).map(b => runBatch(b).catch(e => { done++; plog("A batch failed: " + e.message, true); })));
-    }
-    if(!concepts.length) throw new Error("Nothing usable came back. Wait a moment and try again, or shorten the material.");
-    if(concepts.length < names.length * 0.6)
-      plog("Some batches did not come back — the deck has " + concepts.length + " of " + names.length +
-           " concepts. Use “Write more questions” later to top it up.", true);
-    const id = uid();
-    const cards = job.makeCards
-      ? concepts.filter(c => (c.fact||"").length > 10).map(c => ({id:uid(), front:c.name, back:c.fact}))
-      : [];
-    await store.set("deck:"+id, {id, name, concepts, cards});
-    const check = await store.get("deck:"+id);
-    if(!check || !Array.isArray(check.concepts)){
-      throw new Error("The deck could not be saved — storage may be full. Download a backup and try again.");
-    }
-    LIB.decks.push({id, name, folderId, created:Date.now(), nCon:concepts.length,
-                    nQ:concepts.reduce((a,c)=>a+c.qs.length,0)});
-    await store.set("library", LIB);
-    await moduleRecord(mod, id);   // LOCAL PORT (Phase 6)
-    pbar(100,"Done"); toast(concepts.length + " concepts saved");
-    return jobDone(id);
   }catch(e){
     plog(e.message, true); pbar(100,"Stopped");
     toast("“" + name + "” stopped — see the log");
@@ -8356,10 +8307,6 @@ document.querySelectorAll("[data-type]").forEach(b => b.onclick = () => {
 [["o-adaptive","adaptive"],["o-ai","ai"],["o-shuffle","shuffle"],["o-timer","timer"],["o-instant","instant"],
  ["o-explain","explain"],["o-explainok","explainOk"],["o-strict","strict"]]
   .forEach(([id,k]) => $(id).onchange = e => { OPT[k] = e.target.checked; savePrefs(); });
-document.querySelectorAll("[data-size]").forEach(b => b.onclick = () => {
-  buildSize = +b.dataset.size;
-  document.querySelectorAll("[data-size]").forEach(x => x.setAttribute("aria-pressed", x === b));
-});
 $("m-ok").onclick = () => {
   const f = modalDone; modalDone = null;
   const val = $("m-input").classList.contains("hide") ? true : $("m-input").value;

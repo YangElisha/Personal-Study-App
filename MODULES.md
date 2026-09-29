@@ -5,18 +5,29 @@ Every module PDF uploaded to MonoSpace, newest first: its deck, term count, fing
 
 | Module | Deck | Terms | Pages | Uploaded | SHA-256 | Changes |
 |---|---|---|---|---|---|---|
-| What_is._machine_learning.pdf | ML test (taught) | 10 | 8 | 2026-09-29 | `fea2d5d5aa46` | first upload |
+| Module 1 Machine Learning.pdf | Q picture PDF (Module 1) | 17 | 6 | 2026-09-29 | `df181e422b6d` | first upload |
+| What_is._machine_learning.pdf | Module 1 (A) | 9 | 8 | 2026-09-29 | `fea2d5d5aa46` | first upload |
 | MODULE3_S-ITCS318.pdf | IA Module 3 | 23 | 33 | 2026-09-29 | `0d1eeb2b43f9` | first upload |
 | MODULE2_S-ITCS318.pdf | IA Module 2 | 40 | 37 | 2026-09-29 | `09132ea86c48` | first upload |
 
+## Module 1 Machine Learning.pdf (2026-09-29)
+
+- Deck: Q picture PDF (Module 1) (`mumv87b18zve`)
+- Terms: 17; pages: 6; size: 1.0 MB
+- Uploaded: 2026-09-29 13:10 UTC; stored as `modules/m1.pdf`
+- SHA-256: `df181e422b6dd159572a992d62ababb6c942c6018fc14de378a4167dae0df60a`
+- Coverage: 0 content slides, 0 with text but no term, 0 skipped
+- Uploaded again 2026-09-29 15:58 UTC: identical file, no changes
+- Changes: first upload of this module
+
 ## What_is._machine_learning.pdf (2026-09-29)
 
-- Deck: ML test (taught) (`mumon7gotly4`)
-- Terms: 10; pages: 8; size: 1.4 MB
-- Uploaded: 2026-09-29 12:09 UTC; stored as `modules/ml.pdf`
+- Deck: Module 1 (A) (`mump2mfvqwye`)
+- Terms: 9; pages: 8; size: 1.4 MB
+- Uploaded: 2026-09-29 12:09 UTC; stored as `modules/What_is._machine_learning.pdf`
 - SHA-256: `fea2d5d5aa46174b355814c559f7fa1fd6b88f8d24b7f6d1bcf0ca9c5fcc326b`
 - Coverage: 7 content slides, 0 with text but no term, 0 skipped
-- Uploaded again 2026-09-29 12:57 UTC: identical file, no changes
+- Uploaded again 2026-09-29 13:09 UTC: identical file, no changes
 - Changes: first upload of this module
 
 ## MODULE3_S-ITCS318.pdf (2026-09-29)

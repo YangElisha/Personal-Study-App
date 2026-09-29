@@ -253,6 +253,32 @@ def test_claude_failure_retried_once_on_qwen(ai_client, fake_claude, online, oll
     assert len(ollama.requests) == 1
 
 
+def test_usage_limit_pauses_claude_and_goes_straight_to_qwen(ai_client, fake_claude, online, ollama):
+    fake_claude.mode("limit")
+    c = ai_client(claude="on", reach=online, claude_path=fake_claude.path)
+    d = ask(c, "first").json()
+    assert d["model_used"] == "qwen" and "usage limit" in d["fallback_reason"]
+    d2 = ask(c, "second").json()
+    assert d2["model_used"] == "qwen" and d2["fallback_from"] == "claude"
+    assert len(fake_claude.calls()) == 1          # the second request never tried Claude
+    r = c.get("/api/ai/route").json()
+    assert r["model"] == "qwen" and r["claude_paused"] is True
+
+
+def test_ordinary_claude_error_does_not_pause(ai_client, fake_claude, online, ollama):
+    fake_claude.mode("error")
+    c = ai_client(claude="on", reach=online, claude_path=fake_claude.path)
+    ask(c, "first"); ask(c, "second")
+    assert len(fake_claude.calls()) == 2
+    assert c.get("/api/ai/route").json()["claude_paused"] is False
+
+
+def test_claude_uses_sonnet_by_default(ai_client, fake_claude, online):
+    ask(ai_client(claude="on", reach=online, claude_path=fake_claude.path), "hi")
+    argv = fake_claude.calls()[0]["argv"]
+    assert argv[argv.index("--model") + 1] == "sonnet"
+
+
 def test_claude_missing_program_falls_back(ai_client, online):
     d = ask(ai_client(claude="on", reach=online, claude_path="drill-no-such-claude"), "hi").json()
     assert d["model_used"] == "qwen" and "not found" in d["fallback_reason"]
@@ -361,7 +387,7 @@ def test_malformed_body(ai_client):
 # ---- GET /api/ai/route: lets the app size a prompt for Qwen -------------------------------
 def test_route_says_qwen_with_its_context_when_claude_off(ai_client, online):
     d = ai_client(claude="off", reach=online, num_ctx=8192).get("/api/ai/route").json()
-    assert d == {"model": "qwen", "num_ctx": 8192}
+    assert d == {"model": "qwen", "num_ctx": 8192, "claude_paused": False}
 
 
 def test_route_says_qwen_when_offline(ai_client, fake_claude):

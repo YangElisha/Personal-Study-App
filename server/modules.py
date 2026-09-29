@@ -29,7 +29,7 @@ import uuid
 from pathlib import Path
 
 from . import db
-from .settings import FROZEN, REPO_ROOT, Settings
+from .settings import ENV_FILE, FROZEN, REPO_ROOT, Settings, read_env_file
 
 MAX_UPLOAD = 400 * 1024 * 1024          # Module 3 is 115 MB
 CHUNK = 1024 * 1024
@@ -409,9 +409,17 @@ def render_modules_md(mods: list[dict]) -> str:
 
 
 def default_md_paths(settings: Settings) -> list[Path]:
+    """DATA_DIR always; the repo's copy only for the data folder named in the repo's .env, so a
+    run against a scratch folder (tests, trials) never writes its modules into the repo."""
+    own = settings.data_dir / "MODULES.md"
     if FROZEN:      # the desktop app: the program folder is not a repo; DATA_DIR only
-        return [settings.data_dir / "MODULES.md"]
-    return [REPO_ROOT / "MODULES.md", settings.data_dir / "MODULES.md"]
+        return [own]
+    configured = read_env_file(ENV_FILE).get("DATA_DIR", "").strip()
+    try:
+        mine = bool(configured) and Path(configured).resolve() == Path(settings.data_dir).resolve()
+    except OSError:
+        mine = False
+    return [REPO_ROOT / "MODULES.md", own] if mine else [own]
 
 
 def write_modules_md(settings: Settings, md_paths=None) -> None:

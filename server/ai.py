@@ -5,7 +5,11 @@ Per request (2026-09-29: Claude whenever online, Qwen only offline):
      text AND pictures (pictures go in as image blocks via --input-format stream-json).
   2. otherwise (offline, or CLAUDE_CLI=off) -> Qwen.
 If Claude fails for any reason (e.g. usage limit) the request is retried once on Qwen; the
-reply then says model_used "qwen" with fallback_from "claude" and the reason.
+reply then says model_used "qwen" with fallback_from "claude" and the reason. A usage/rate
+limit also pauses Claude for CLAUDE_LIMIT_PAUSE seconds, so the requests after it go straight
+to Qwen instead of each failing on Claude first (GET /api/ai/route says claude_paused).
+Claude runs Sonnet unless CLAUDE_MODEL says otherwise: building decks does not need the
+largest model, and it spends far less of the user's Claude usage.
 
 Claude is reached ONLY by running the official `claude` program: prompt on stdin, from an
 empty temporary folder, no tools, one turn, JSON output. Claude Code's login is never read
@@ -52,7 +56,7 @@ AI_DEFAULTS = {
     "OLLAMA_TIMEOUT": "900",          # seconds; an 8000-token transcription takes minutes
     "CLAUDE_CLI": "off",
     "CLAUDE_CLI_PATH": "claude",
-    "CLAUDE_MODEL": "",               # empty = Claude Code's own default model
+    "CLAUDE_MODEL": "sonnet",         # "" = Claude Code's own default (often the largest model)
     "CLAUDE_TIMEOUT": "600",
     # host:port the 2-second reachability check connects to. Only change it to simulate
     # being offline (e.g. 127.0.0.1:9) — the real check is api.anthropic.com:443.
@@ -353,9 +357,15 @@ def call_claude(cfg: AIConfig, prompt: str, system: str, stream: bool = False) -
 
 
 # ---- routing ------------------------------------------------------------------------------
+CLAUDE_LIMIT_PAUSE = 1800          # seconds Claude is skipped after a usage / rate limit
+_LIMIT = re.compile(r"usage limit|session limit|rate limit|limit reached|quota|too many requests|"
+                    r"api status 429|\b429\b", re.I)
+
+
 class Router:
     def __init__(self, cfg: AIConfig):
         self.cfg = cfg
+        self._claude_paused_until = 0.0
         self._claude_slots = asyncio.Semaphore(MAX_CLAUDE_AT_ONCE)
         self._reach: tuple[float, bool] | None = None
 
@@ -381,14 +391,22 @@ class Router:
     async def route_for_text(self) -> dict:
         """Which model would answer a text-only request right now, and Qwen's context size,
         so the app can size a prompt for Qwen (GET /api/ai/route)."""
-        claude = self.cfg.claude_cli and await self.claude_reachable()
-        return {"model": "claude" if claude else "qwen", "num_ctx": self.cfg.num_ctx}
+        paused = self.claude_paused()
+        claude = self.cfg.claude_cli and not paused and await self.claude_reachable()
+        return {"model": "claude" if claude else "qwen", "num_ctx": self.cfg.num_ctx,
+                "claude_paused": paused}
+
+    def claude_paused(self) -> bool:
+        return time.monotonic() < self._claude_paused_until
 
     async def handle(self, body: Any) -> dict:
         msgs, system, max_tokens = parse_request(body)
         _check_blocks(msgs)
         fallback = {}
-        if self.cfg.claude_cli and await self.claude_reachable():
+        if self.claude_paused():
+            fallback = {"fallback_from": "claude",
+                        "fallback_reason": "Claude usage limit reached earlier; using Qwen for now"}
+        elif self.cfg.claude_cli and await self.claude_reachable():
             try:
                 async with self._claude_slots:
                     if has_image(msgs):
@@ -398,6 +416,10 @@ class Router:
                                                    prompt_for_claude(msgs), system)
             except ClaudeFailed as e:
                 log.warning("claude -p failed, retrying on Qwen: %s", e)
+                if _LIMIT.search(str(e)):
+                    self._claude_paused_until = time.monotonic() + CLAUDE_LIMIT_PAUSE
+                    log.warning("Claude usage limit: using Qwen for the next %d minutes",
+                                CLAUDE_LIMIT_PAUSE // 60)
                 fallback = {"fallback_from": "claude", "fallback_reason": str(e)[:300]}
         try:
             reply = await asyncio.to_thread(call_ollama, self.cfg, msgs, system, max_tokens)

@@ -211,8 +211,16 @@ def test_modules_md_generated_in_both_places(client, settings, tmp_path):
     assert "Chance of loss" not in repo_md                     # no study content, names only
 
 
-def test_default_md_paths_are_repo_and_data_dir(settings):
+def test_default_md_paths_scratch_data_dir_never_writes_the_repo(settings):
+    # the tests' DATA_DIR is a scratch folder, not the one in the repo's .env
+    assert modules.default_md_paths(settings) == [settings.data_dir / "MODULES.md"]
+
+
+def test_default_md_paths_are_repo_and_data_dir_for_the_configured_folder(settings, tmp_path, monkeypatch):
     from server.settings import REPO_ROOT
+    env = tmp_path / "repo.env"
+    env.write_text(f"DATA_DIR={settings.data_dir}\n", encoding="utf-8")
+    monkeypatch.setattr(modules, "ENV_FILE", env)
     assert modules.default_md_paths(settings) == [REPO_ROOT / "MODULES.md",
                                                   settings.data_dir / "MODULES.md"]
 

@@ -2,7 +2,7 @@
 
 Records argv, working folder (and what is in it), stdin and whether an API key reached it,
 then prints a result object shaped like `claude -p --output-format json` (Claude Code 2.1.258).
-FAKE_CLAUDE_MODE: ok | max_tokens | no_stop_reason | error | slow
+FAKE_CLAUDE_MODE: ok | max_tokens | no_stop_reason | error | limit | slow
 """
 import json
 import os
@@ -25,6 +25,9 @@ elif mode == "no_stop_reason":
     del res["stop_reason"]
 elif mode == "error":
     res.update(subtype="error_during_execution", is_error=True, result="API error 529")
+elif mode == "limit":
+    res.update(subtype="success", is_error=True, api_error_status=429,
+               result="Claude AI usage limit reached. Your limit will reset at 5pm.")
 log = {"argv": sys.argv[1:], "cwd": os.getcwd(), "cwd_listing": os.listdir("."),
        "stdin": prompt, "has_api_key": "ANTHROPIC_API_KEY" in os.environ,
        "start": start, "end": time.time()}
