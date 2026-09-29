@@ -246,7 +246,7 @@ screen, account & security page)
 - [ ] Elisha signs in with Google and sees exactly her 18 decks; the import verifier still passes
 - [ ] A second approved test account sees an empty library; an unapproved account is refused
 - [ ] Offline within 7 days: the app opens and studies without signing in again
-- [ ] Sessions can be signed out (one, others, all); a sign-out works instantly
+- [x] Sessions can be signed out (one, others, all); a sign-out works instantly — *2026-09-29: account page in headless Edge with a stand-in Google: a revoked session gets 401 at once and lands on the sign-in page; 0 writes*
 - [x] All tests pass; no secrets in the repo or its history — *277 passed; `tools/check_secrets.py` clean (repo + all history)*
 
 ---

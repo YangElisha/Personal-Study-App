@@ -5,6 +5,13 @@ Newest first. Every change gets an entry in the same commit.
 ## [Unreleased]
 
 ### Added
+- Phase 9 (app, marked "LOCAL PORT (Phase 9)"): with AUTH_MODE=google, an account chip (initials,
+  email on hover, no image) opens "Account & security": signed in as / since / ends, active
+  sessions with per-session Sign out and "Sign out all other devices", the last 20 sign-in events,
+  Sign out, and a note on Google 2-Step Verification. Any 401 `auth_required` shows "You've been
+  signed out — sign in again" and loads the sign-in page; a 401 is a read failure, never empty
+  data, and nothing is written. With AUTH_MODE=off nothing changes. Checked offline in headless
+  Edge with a stand-in Google: 24/24 + 3/3 checks, 0 CSP violations, 0 other hosts.
 - Phase 9 (server): Google sign-in, one database per person. `AUTH_MODE=off|google` (default off
   = unchanged). google: every request, this PC included, needs a session; the server refuses to
   start without `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (in `.env` only). OpenID Connect code

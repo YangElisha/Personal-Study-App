@@ -779,6 +779,25 @@ textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var
 .fname .left{align-items:flex-start}                         /* caret/dot level with the first line */
 textarea{font-family:inherit}                                 /* one font in text boxes */
 .face small{text-transform:none;letter-spacing:.02em;font-family:inherit}
+
+/* ---- LOCAL PORT (Phase 9): account chip, Account & security page, "signed out" notice ---- */
+.acctchip{width:36px;height:36px;border-radius:50%;border:1px solid var(--rule);background:var(--surface-2);
+          color:var(--ink);font-family:var(--display);font-weight:600;font-size:.8em;letter-spacing:.02em;
+          cursor:pointer;display:grid;place-items:center;padding:0;transition:.15s}
+.acctchip:hover{border-color:var(--ink-3);background:var(--surface-3)}
+#v-account .card h2{font-family:var(--display);font-weight:600;font-size:1.1em;margin:0}
+.acmeta{color:var(--ink-2);font-size:.9em;margin-top:6px;line-height:1.6}
+.aclist{margin-top:14px}
+.acrow{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+       padding:13px 0;border-top:1px solid var(--rule-2)}
+.acrow:first-child{border-top:0}
+.acrow b{font-weight:500}
+.acrow .m{color:var(--ink-2);font-size:.85em;margin-top:3px;line-height:1.5}
+.acrow .tag{font-family:var(--mono);font-size:.7em;letter-spacing:.08em;text-transform:uppercase;
+            background:var(--live-soft);color:var(--ink);border:1px solid var(--live);border-radius:100px;
+            padding:2px 8px;margin-left:8px;vertical-align:1px}
+.acrow .ok{color:var(--hit)} .acrow .no{color:var(--miss)}
+#authscrim{z-index:199} #authgone{z-index:200}
 </style>
 
 <header class="appbar">
@@ -789,6 +808,7 @@ textarea{font-family:inherit}                                 /* one font in tex
   <button class="brand" id="brand">Drill<i></i></button>
   <span class="crumb" id="crumb"></span>
   <div class="abtools">
+    <button class="acctchip hide" id="acctchip" aria-label="Account &amp; security"></button><!-- LOCAL PORT (Phase 9) -->
     <button class="icon" id="btn-custom" title="Appearance">
       <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
         <circle cx="10" cy="10" r="7"/><path d="M10 3v14" /></svg>
@@ -1478,6 +1498,37 @@ Availability: Information is there when it is needed"></textarea>
     </section>
 
     <!-- ===== REPORT ===== -->
+    <!-- ===== LOCAL PORT (Phase 9): ACCOUNT & SECURITY ===== -->
+    <section id="v-account" class="page hide">
+      <h1>Account &amp; security</h1>
+      <p class="sub">Who is signed in to Drill on this PC, where, and recent sign-ins.</p>
+      <div class="card">
+        <div class="spread">
+          <div>
+            <p class="eyebrow" style="margin-bottom:6px">Signed in as</p>
+            <h2 id="ac-email">—</h2>
+            <div class="acmeta" id="ac-meta">—</div>
+          </div>
+          <button class="btn2" id="ac-signout">Sign out</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="spread">
+          <h2>Active sessions</h2>
+          <button class="btn2" id="ac-others">Sign out all other devices</button>
+        </div>
+        <div class="aclist" id="ac-sessions"></div>
+      </div>
+      <div class="card">
+        <h2>Recent sign-ins</h2>
+        <div class="aclist" id="ac-events"></div>
+      </div>
+      <div class="card">
+        <h2>Security</h2>
+        <p class="acmeta">One-time codes come from your Google account's 2-Step Verification — turn it on at myaccount.google.com/security</p>
+      </div>
+    </section>
+
     <section id="v-report" class="page hide">
       <h1 id="r-head">Session report</h1>
       <p class="sub" id="r-sub">—</p>
@@ -1573,6 +1624,13 @@ Availability: Information is there when it is needed"></textarea>
     <button class="btn2" id="qf-delete">Just delete it</button>
   </div>
   <p class="sub" id="qf-state" style="margin:14px 0 0"></p>
+</div>
+<!-- LOCAL PORT (Phase 9): shown when the server answers 401 auth_required -->
+<div class="mscrim" id="authscrim"></div>
+<div class="modal" id="authgone" role="alertdialog" aria-modal="true" aria-labelledby="authgone-t">
+  <h3 id="authgone-t">You've been signed out — sign in again</h3>
+  <p class="sub" style="margin:0 0 18px">Your sign-in has ended (it lasts 7 days, or it was signed out from another device). Everything already saved is safe. Taking you to the sign-in page…</p>
+  <div class="row"><button class="btn" id="authgone-go">Sign in again</button></div>
 </div>
 <div class="mscrim" id="mscrim"></div>
 <div class="modal" id="modal" role="dialog" aria-modal="true">
@@ -1752,6 +1810,7 @@ const store = {
     for(let i = 0; i < (tries || 1); i++){
       try{
         const r = await fetch(storeUrl(k), {cache:"no-store"});
+        if(r.status === 401 && await authGate(r)) break;   // LOCAL PORT (Phase 9): signed out = a read failure, never "empty"
         if(r.status === 204 || r.status === 404) return null;
         if(r.ok) return JSON.parse(await r.text());
       }catch(e){}
@@ -1765,6 +1824,7 @@ const store = {
     for(let i = 0; i < 4; i++){
       try{
         const r = await fetch(storeUrl(k), {method:"PUT", headers:{"Content-Type":"application/json"}, body:json});
+        if(r.status === 401) await authGate(r);   // LOCAL PORT (Phase 9): signed out → notice + sign-in page
         if(r.status >= 400 && r.status < 500) return false;
         if(r.ok){
           if(!verify) return true;
@@ -1782,9 +1842,131 @@ const store = {
     return false;
   },
   async del(k){
-    try{ await fetch(storeUrl(k), {method:"DELETE"}); }catch(e){}
+    try{ const r = await fetch(storeUrl(k), {method:"DELETE"}); if(r.status === 401) await authGate(r); }catch(e){}   // LOCAL PORT (Phase 9)
   }
 };
+/* LOCAL PORT (Phase 9): sign-in (docs/API.md "Sign-in"). With AUTH_MODE=google any /api/* answer
+   401 auth_required means the session ended (7 days, or signed out elsewhere): say so, then load
+   "/" where the server shows its sign-in page. Never treated as "nothing stored". */
+const AUTH = {user:null, session:null, gone:false};
+async function authGate(r){
+  if(!r || r.status !== 401) return false;
+  let d = null;
+  try{ d = await r.clone().json(); }catch(e){}
+  if(!d || d.error !== "auth_required") return false;
+  signedOut();
+  return true;
+}
+function signedOut(){
+  if(AUTH.gone) return;
+  AUTH.gone = true;
+  const go = () => { location.href = "/"; };
+  $("authgone-go").onclick = go;
+  $("authscrim").classList.add("on"); $("authgone").classList.add("on");
+  setTimeout(go, 2500);
+}
+async function authPost(url){
+  try{
+    const r = await fetch(url, {method:"POST"});
+    if(await authGate(r)) return null;
+    const d = await r.json().catch(() => null);
+    return r.ok && d && d.ok ? d : null;
+  }catch(e){ return null; }
+}
+async function authGet(url){
+  try{
+    const r = await fetch(url, {cache:"no-store"});
+    if(await authGate(r)) return null;
+    return r.ok ? await r.json() : null;
+  }catch(e){ return null; }
+}
+function initials(email){
+  const parts = String(email || "").split("@")[0].split(/[._\-+]+/).filter(Boolean);
+  return ((parts[0] || "?")[0] + (parts[1] ? parts[1][0] : (parts[0] || "")[1] || "")).toUpperCase();
+}
+function when(iso){
+  if(!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d) ? iso : d.toLocaleString(undefined, {dateStyle:"medium", timeStyle:"short"});
+}
+async function authInit(){
+  const me = await authGet("/api/auth/me");
+  if(!me || !me.user) return;                        // AUTH_MODE=off: the app looks exactly as before
+  AUTH.user = me.user; AUTH.session = me.session;
+  const chip = $("acctchip");
+  chip.textContent = initials(me.user.email);
+  chip.title = me.user.email;
+  chip.onclick = openAccount;
+  chip.classList.remove("hide");
+  if(!VIEWS.includes("v-account")) VIEWS.push("v-account");
+  $("ac-signout").onclick = async () => {
+    await authPost("/api/auth/signout");
+    location.href = "/";
+  };
+  $("ac-others").onclick = async () => {
+    const d = await authPost("/api/auth/signout-others");
+    if(d) toast(d.revoked === 1 ? "Signed out 1 other device" : "Signed out " + d.revoked + " other devices");
+    else if(!AUTH.gone) toast("Could not sign the other devices out");
+    renderAccount();
+  };
+}
+async function openAccount(){
+  go("v-account", "Account");
+  await renderAccount();
+}
+async function renderAccount(){
+  const [me, ss, ev] = await Promise.all([authGet("/api/auth/me"), authGet("/api/auth/sessions"),
+                                          authGet("/api/auth/events?limit=20")]);
+  if(AUTH.gone) return;
+  const s = me && me.session;
+  $("ac-email").textContent = me && me.user ? me.user.email : "—";
+  $("ac-meta").textContent = s
+    ? "Signed in since " + when(s.created_at) + " · this sign-in ends " + when(s.expires_at) +
+      " (7 days; signing in again needs the internet)"
+    : "—";
+  const list = $("ac-sessions"); list.innerHTML = "";
+  const sessions = (ss && ss.sessions) || [];
+  if(!sessions.length) list.textContent = "Could not load the sessions.";
+  sessions.forEach(x => {
+    const row = document.createElement("div"); row.className = "acrow";
+    const info = document.createElement("div");
+    const t = document.createElement("b"); t.textContent = x.device || "Unknown browser";
+    if(x.method === "pin") t.textContent += " (phone PIN)";
+    if(x.current){ const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "This device"; t.appendChild(tag); }
+    const m = document.createElement("div"); m.className = "m";
+    m.textContent = (x.client_ip || "—") + " · signed in " + when(x.created_at) + " · last seen " + when(x.last_seen_at);
+    info.append(t, m);
+    const b = document.createElement("button"); b.className = "btn2"; b.textContent = "Sign out";
+    b.onclick = async () => {
+      b.disabled = true;
+      const d = await authPost("/api/auth/sessions/" + encodeURIComponent(x.id) + "/revoke");
+      if(d && d.signed_out_here){ location.href = "/"; return; }
+      if(!d && !AUTH.gone) toast("Could not sign that session out");
+      renderAccount();
+    };
+    row.append(info, b); list.appendChild(row);
+  });
+  $("ac-others").disabled = sessions.filter(x => !x.current).length === 0;
+  const evl = $("ac-events"); evl.innerHTML = "";
+  const events = (ev && ev.events) || [];
+  if(!events.length) evl.textContent = ev ? "No sign-ins recorded yet." : "Could not load the sign-in history.";
+  const WHAT = {signed_in:"Signed in", refused:"Refused", signed_out:"Signed out"};
+  events.forEach(e => {
+    const row = document.createElement("div"); row.className = "acrow";
+    const info = document.createElement("div");
+    const t = document.createElement("b");
+    const res = document.createElement("span");
+    res.className = e.event === "refused" ? "no" : e.event === "signed_in" ? "ok" : "";
+    res.textContent = WHAT[e.event] || e.event;
+    t.append(res, document.createTextNode(" · " + when(e.at)));
+    const m = document.createElement("div"); m.className = "m";
+    m.textContent = [e.method === "pin" ? "phone PIN" : e.method === "cli" ? "on the PC (command line)" : "Google",
+                     e.device, e.client_ip, e.event === "refused" && e.reason ? "reason: " + e.reason : ""]
+                    .filter(Boolean).join(" · ");
+    info.append(t, m); row.appendChild(info); evl.appendChild(row);
+  });
+}
+
 const KEYSTORE = {
   get(){ try{ return LS ? LS.getItem("drill:apikey") || "" : ""; }catch(e){ return ""; } },
   set(v){ try{ if(LS){ v ? LS.setItem("drill:apikey", v) : LS.removeItem("drill:apikey"); } }catch(e){} }
@@ -2026,6 +2208,7 @@ async function claudeRawCall(content, maxTokens){
     let r, d;
     try{ r = await fetch("/api/ai",{method:"POST", headers, body}); }
     catch(e){ lastErr = "Network problem"; await nap(1500 * Math.pow(2, attempt)); continue; }
+    if(r.status === 401 && await authGate(r)) throw new Error("You've been signed out — sign in again");   // LOCAL PORT (Phase 9)
     try{ d = await r.json(); }catch(e){ d = null; }
     const errType = d && d.error && d.error.type;
     const errMsg = (d && d.error && d.error.message) || "";
@@ -2114,6 +2297,7 @@ async function boot(){
   }
   LIB = await store.get("library");
   if((!LIB && store.readFailed) || prefsFailed){      // LOCAL PORT: server down → say so; never write an empty library
+    if(AUTH.gone) return;                              // LOCAL PORT (Phase 9): signed out → the notice is already up
     await confirmDlg("Can't reach the Drill server",
       "Your decks are safe on this PC, but the Drill server isn't answering. Make sure start.bat is " +
       "running, then reload this page.", "OK");
@@ -3717,6 +3901,7 @@ async function moduleCheck(u){
   try{
     const r = await fetch("/api/modules?name=" + encodeURIComponent(u.name),
                           {method:"POST", headers:{"Content-Type":"application/pdf"}, body:u.file});
+    if(await authGate(r)) return {failed:true};   // LOCAL PORT (Phase 9)
     const d = await r.json();
     return r.ok && d.ok ? d : {failed:true};
   }catch(e){ return {failed:true}; }
@@ -3728,6 +3913,7 @@ async function moduleRecord(mod, id){
     if(mod.previous && mod.previous.sha256) body.previous_sha = mod.previous.sha256;
     const r = await fetch("/api/modules/" + mod.sha256 + "/deck",
                           {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    if(await authGate(r)) return;   // LOCAL PORT (Phase 9)
     const d = await r.json();
     if(!r.ok || !d.ok) return plog("Module library: this upload was not recorded (" + (d.message || r.status) + ")");
     const parts = [["added", d.added], ["changed", d.changed], ["removed", d.removed]]
@@ -5623,7 +5809,7 @@ function openChat(focusId){
   setTimeout(() => $("chat-input").focus(), 80);
 }
 async function aiRoute(){
-  try{ const r = await fetch("/api/ai/route", {cache:"no-store"}); return r.ok ? await r.json() : null; }
+  try{ const r = await fetch("/api/ai/route", {cache:"no-store"}); await authGate(r); return r.ok ? await r.json() : null; }   // LOCAL PORT (Phase 9): authGate
   catch(e){ return null; }
 }
 function closeChat(){ $("chatdrawer").classList.remove("on"); $("chatscrim").classList.remove("on"); }
@@ -7527,6 +7713,7 @@ document.addEventListener("keydown", e => {
 });
 
 boot();
+authInit();   // LOCAL PORT (Phase 9): account chip when signed in (nothing with AUTH_MODE=off)
 
 
 </script>
