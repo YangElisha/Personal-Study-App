@@ -4,6 +4,12 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Changed — native app window (2026-09-29)
+- MonoSpace.exe now opens its own native window (pywebview + Microsoft WebView2) instead of an
+  Edge app window, so the taskbar and title bar show MonoSpace and its orb icon (Edge showed its
+  own cached icon). Edge app mode, then the default browser, remain as fallbacks. Downloads
+  (backups) allowed; external links open in the browser. `<link rel="icon">` added.
+
 ### Changed — reorganised app, branding, loading screen (Elisha, 2026-09-29)
 - **Layout:** sidebar = logo, Home (Today), Library, Review (due count), New deck; Subjects
   (folders collapsed except the current one, one line per deck with a due badge, Archive last);

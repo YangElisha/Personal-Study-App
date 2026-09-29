@@ -7,7 +7,9 @@
 2. Starts the server in this process (uvicorn in a thread, 127.0.0.1). If this data folder is
    already served by a MonoSpace server, it just opens another window to it. If the port is
    taken by something else, it uses the next free one and says so.
-3. Opens the app in its own window: Microsoft Edge in app mode with a private profile
+3. Opens the app in its own native window (pywebview + Microsoft WebView2, built into Windows
+   11), so the taskbar shows MonoSpace.exe and its icon. Fallback: Microsoft Edge in app mode
+   with a private profile
    (%LOCALAPPDATA%\\MonoSpace\\window). When the last MonoSpace window closes, the server stops
    cleanly (database checkpointed, the data-folder lock released). No Edge: the default
    browser, and a message box that stops MonoSpace when dismissed.
@@ -240,6 +242,28 @@ def find_edge() -> str | None:
     return None
 
 
+def native_window(url: str, profile: Path) -> bool:
+    """Show the app in a native WebView2 window; blocks until it closes. False = unavailable."""
+    try:
+        import webview
+    except Exception as e:                      # not installed / broken
+        log.warning("native window unavailable: %r", e)
+        return False
+    try:
+        profile.mkdir(parents=True, exist_ok=True)
+        webview.settings["ALLOW_DOWNLOADS"] = True          # "Download backup"
+        webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
+        webview.create_window(APP, url, width=1400, height=900, min_size=(900, 600),
+                              background_color="#000000", text_select=True)
+        log.info("window: native (pywebview %s)", getattr(webview, "__version__", "?"))
+        webview.start(gui="edgechromium", icon=str(ICON), private_mode=False,
+                      storage_path=str(profile))
+        return True
+    except Exception:
+        log.exception("native window failed; falling back to Edge")
+        return False
+
+
 def open_window(url: str, profile: Path) -> bool:
     """Open an app window. True = an Edge app window (with profile), False = default browser."""
     edge = find_edge()
@@ -388,6 +412,8 @@ def run() -> int:
         url = find_running(settings, local)
         if url:
             log.info("already running at %s; opening another window", url)
+            if native_window(url, profile / "native"):
+                return 0
             if not open_window(url, profile):
                 message_box_async(f"MonoSpace is already running at {url}")
                 time.sleep(5)
@@ -410,7 +436,9 @@ def run() -> int:
         if note:
             log.warning(note)
             message_box_async(note, "warning")
-        if open_window(url, profile):
+        if native_window(url, profile / "native"):
+            pass
+        elif open_window(url, profile):
             if not wait_for_window_to_close(profile):
                 log.warning("no Edge window appeared; falling back to the default browser")
                 webbrowser.open(url)
