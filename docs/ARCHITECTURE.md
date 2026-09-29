@@ -123,6 +123,7 @@ Code in `server/`:
 | `app.py` | The FastAPI app: store API, `/api/import`, `/api/ai`, static `app/`. |
 | `ai.py` | The AI router (Phase 5): routing, `claude -p`, Ollama, Anthropic response shape. Contract in `docs/API.md`. |
 | `db.py` | Schema and the one write path (history before every overwrite/delete). |
+| `modules.py` | Module library (Phase 6): `/api/modules` logic, MODULES.md, `python -m server.modules register`. Contract in `docs/API.md`. |
 | `snapshots.py` | Snapshots with SQLite's backup API, pruning. |
 | `importer.py` | `python -m server.importer` — see DATA-MIGRATION.md. |
 | `restore.py` | `python -m server.restore <snapshot>` |

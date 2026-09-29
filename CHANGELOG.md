@@ -5,6 +5,28 @@ Newest first. Every change gets an entry in the same commit.
 ## [Unreleased]
 
 ### Added
+- Phase 6, app side (marked "LOCAL PORT" in app/index.html; PLAN Phase 6 asks for it): a build
+  from exactly one PDF first sends it to `/api/modules`. The same PDF as an existing deck →
+  "No changes: this is the same PDF as your deck “…”" and that deck opens; nothing is built.
+  Otherwise it builds as before, records the deck, and logs "First upload of this module" or
+  "Changes since the last upload: added …; changed …; removed …". If the library can't be
+  reached, it builds anyway. Multi-file or pasted-text builds are not checked or recorded.
+- Phase 6 (server side): module library, `server/modules.py`. `POST /api/modules` takes the
+  raw PDF (streamed to disk, up to 400 MB), fingerprints it with SHA-256 and answers
+  `known:true` + the deck for a file seen before (the app says "no changes" and skips the
+  build), or stores it in `DATA_DIR\modules\` (never overwriting: a different file with the
+  same name gets `-<sha8>`, an identical one is reused). `POST /api/modules/{sha}/deck
+  {deck_id}` records the built deck, reading its terms and coverage from `kv` itself (the
+  app sends only the id), and returns added / changed / removed term names vs the previous
+  version (same file name, else same deck name; names matched with the app's `norm`,
+  content = fact + items + steps). `GET /api/modules` lists them. New tables `modules`,
+  `module_events` (every write logged, replaced values kept, nothing deleted). MODULES.md
+  regenerated after every write, in the repo and in `DATA_DIR`. Backfill CLI:
+  `python -m server.modules register <pdf> --deck <id>`. Contract in `docs/API.md`.
+- Tests: `tests/server/test_modules.py` (18: known = no changes, stored and never
+  overwritten, name-clash suffix, identical file reused, added/changed/removed diff,
+  MODULES.md, Origin refusal, register CLI, 150 MB upload over real HTTP with peak Python
+  memory under 64 MB). Test servers write MODULES.md to the scratch folder, never the repo.
 - AI routing (Elisha, 2026-09-29): **Claude whenever online, Qwen only offline** — pictures
   now go to Claude too when online (image blocks through the official `claude -p
   --input-format stream-json`; real check: Module 2 slide 24's risk matrix transcribed
@@ -223,6 +245,8 @@ Newest first. Every change gets an entry in the same commit.
   answered more questions (Elisha, 2026-09-28; outside the two seams by her decision).
 
 ### Found, not fixed
+- Phase 6: the "changes since the last upload" line is in the build log, which is off-screen once
+  the new deck opens (MODULES.md shows it). The same-PDF check ignores the page range.
 - Legacy boot writes an empty library/default prefs if reading them fails but the next save
   succeeds (recoverable from `kv_history`). Failed saves are silent.
 - The unused "Anthropic API key" card is still shown in Manage; offline/AI help texts still talk

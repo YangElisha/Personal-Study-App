@@ -84,5 +84,6 @@ before it is committed.
   for `yes` before changing any existing key; `--yes` for scripts)
 - Restore a snapshot: `.venv\Scripts\python -m server.restore` (lists) / `... restore <name>` (server stopped; asks for `yes`)
 - Run reader tests: `npm test` (app/index.html) · `npm test -- --html legacy/drill-study-app.html` (frozen reference; fails Module 3 by design — Canva backgrounds)
+- Module library: `.venv\Scripts\python -m server.modules list` · `... register <pdf> --deck <id>` (server stopped)
 - Verify an import: `.venv\Scripts\python tools\verify_import.py` (read-only; exit 0 = every row matches) ·
   Phase 7, after studying locally: `... tools\verify_import.py --after-study`

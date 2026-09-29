@@ -43,6 +43,7 @@ Errors are JSON: `{"ok":false,"error":"<kind>","message":"..."}`.
 |---|---|
 | `GET /api/health` | `{"ok":true,"app":"drill","schema":1}` |
 | `POST /api/import` | Runs the importer inside the server, but **only ever adds keys**. 200 `{"ok":true,"kv_writes":n,"history_rows":n,"added_keys":[...],"undecided":[...],"skipped":[...],"snapshot":name\|null,"report":[lines]}` when it only added (or nothing was to do). **409** `{"ok":false,"error":"confirmation_required","message":...,"plan":[lines]}` when an existing key would change: nothing is written; stop the server and run `python -m server.importer`, which shows the plan and asks for `yes`. 409 `import_stopped` for any other stop (nothing written). Reload the app after an import. |
+| `GET/POST /api/modules`, `POST /api/modules/{sha}/deck` | Module library (Phase 6). See "Modules" below. |
 | `POST /api/ai` | The AI router (Phase 5, `server/ai.py`). See "AI" below. |
 | `GET /api/ai/route` | Which model would answer a text request now, and Qwen's context: `{"model":"qwen"|"claude","num_ctx":8192}`. Used by the teacher chat to size its prompt for Qwen. |
 | `GET /` and other paths | Files from `app/` (Phase 4), with `Cache-Control: no-cache`; `.woff2` fonts as `font/woff2`. If `app/index.html` does not exist when the server starts, `/` shows a placeholder page. |
@@ -89,6 +90,95 @@ of context end with `done_reason:"length"` instead of dropping the prompt's star
 `CLAUDE_CLI_PATH`, `CLAUDE_MODEL` (empty = Claude Code's default), `CLAUDE_TIMEOUT` (600 s),
 `CLAUDE_REACH_HOST` (default `api.anthropic.com:443`; point it at an unreachable address to
 simulate being offline). Read once when the server starts.
+
+## Modules — the module library (Phase 6, `server/modules.py`)
+
+A module PDF is identified by its **SHA-256** (the fingerprint). The flow for the app's
+"build a deck from a PDF":
+
+1. **Before building**, send the PDF: `POST /api/modules?name=<encodeURIComponent(file.name)>`,
+   body = the raw file bytes (`fetch(url, {method:"POST", body: file})` with the `File`/`Blob`;
+   `Content-Type: application/pdf`). Instead of `?name=`, an `X-File-Name` header
+   (percent-encoded) also works. Max 400 MB; streamed to disk, never held in memory.
+2. If the answer has `known: true` and `deck_exists: true`: say **"No changes: this is the
+   same file as <deck_name> (uploaded <uploaded_at>)"**, open `deck_id`, and **do not build**.
+   (`known:true, deck_exists:false`: the deck was deleted from the library since; build
+   again and report as in step 4.)
+3. If `known: false`: build as today. If `previous` is not null, this is a revised version
+   of an earlier upload (same file name).
+4. **After the deck is saved** (`store.set("deck:"+id, ...)` returned true), report it:
+   `POST /api/modules/{sha256}/deck` with `{"deck_id": "<id>"}`. The server reads the deck
+   from the database itself (terms, coverage) and answers with what changed vs the previous
+   version. Show "added / changed / removed" when `first_upload` is false.
+
+### `POST /api/modules`
+
+| Answer | Body |
+|---|---|
+| **200**, same file seen before and a deck recorded | `{"ok":true,"known":true,"sha256","file_name","stored_name","deck_id","deck_name","deck_exists":bool,"pages","terms":n,"uploaded_at"}`. Nothing stored, nothing changed (a `reupload` event is logged and shows in MODULES.md). |
+| **200**, new file | `{"ok":true,"known":false,"sha256","file_name","stored_name","size","resumed":false,"previous":null\|{"sha256","file_name","deck_id","deck_name","uploaded_at","terms":[names]}}` |
+| **200**, same file stored before but no deck ever reported (build interrupted) | as "new file" with `"resumed":true`; nothing stored again |
+| 400 `no_name` | no `?name=` / `X-File-Name` |
+| 413 `too_large` | over 400 MB (Content-Length, or counted while streaming) |
+| 415 `not_pdf` | body does not start with `%PDF-` |
+| 403 `forbidden_origin` | Origin not this server (as for every write) |
+
+**Storage.** `DATA_DIR\modules\<file name>` (folder parts and `<>:"|?*` removed, `.pdf`
+added if missing). An existing file is **never overwritten**: if a *different* file already
+has that name, the new one is stored as `<stem>-<sha8>.pdf`; if an *identical* file is
+already there (same SHA-256), it is reused. Uploads land in `modules\.incoming-*.part` first
+and are moved in only when complete; a failed upload leaves nothing behind.
+
+### `POST /api/modules/{sha256}/deck`
+
+Body `{"deck_id": "<id>"}`; optional `"pages": n` (used only when the deck has no
+`coverage.pages`) and `"previous_sha": "<sha256>"` (compare against that version instead of
+the automatic choice).
+
+The server reads `deck:<id>` from `kv`: deck name (the `library` entry's name, else the
+deck's), `concepts` (the terms), `coverage` (pages, content/empty/skipped slides). Pages =
+`coverage.pages`, else `pages` from the body, else counted from the PDF (best effort).
+
+**Previous version** = the newest other module with a recorded deck and the same file name
+(case-insensitive); if none, the same deck name (compared with `norm`).
+
+**Diff.** Terms are matched by `norm(name)`, the app's own
+`s => (s||"").toLowerCase().replace(/[^a-z0-9]/g,"")`. A matched term is **changed** when its
+content differs: `fact`, `items`, `steps` (runs of whitespace count as one space). Topic and
+pages are not content: moving a term to another section is not a change.
+
+**200** `{"ok":true,"sha256","deck_id","deck_name","pages","terms":n,"status":"recorded"|"unchanged","first_upload":bool,"previous":null|{...as above},"added":[names],"changed":[names],"removed":[names],"unchanged":n}`.
+On a first upload `added` lists every term and `changed`/`removed` are empty. Reporting
+the same deck again is `"unchanged"` (no write). Reporting a different deck for the same PDF
+replaces the record; the replaced values are kept in `module_events`.
+404 `module_not_found` (unknown sha), 404 `deck_not_found` (no `deck:<id>`), 400
+`bad_request` (no `deck_id`), 403 `forbidden_origin`.
+
+### `GET /api/modules`
+
+`{"modules":[{"sha256","file_name","stored_name","size","pages","uploaded_at","deck_id"|null,"deck_name","deck_exists","terms","previous_sha","changes":null|{"added","changed","removed","unchanged"},"coverage":null|{...},"last_reupload_at"|null}]}`, newest upload first.
+
+### MODULES.md
+
+Rewritten after every module write, at the repo root **and** `DATA_DIR\MODULES.md`: a table
+(file, deck, terms, pages, date, short SHA-256, change summary) and a section per upload
+with the deck id, full SHA-256, coverage counts, re-uploads, and the added / changed /
+removed **term names**. No facts or other study content.
+
+### Database
+
+`modules` (one row per distinct PDF, key `sha256`) and `module_events` (every upload,
+re-upload, deck report and register, with replaced values). Nothing is ever deleted.
+
+### Backfill CLI
+
+`python -m server.modules register <pdf> --deck <deck id> [--name <file name>] [--previous <sha256>]`
+records a PDF already on disk against a deck that already exists (Modules 2 and 3, uploaded
+before Phase 6). A PDF inside `DATA_DIR\modules\` is used where it is; one elsewhere is
+copied in (same no-overwrite rule). Refuses while the server runs (instance lock), if the
+deck does not exist, or if the PDF is already registered to another deck. Registering the
+same PDF + deck again changes nothing. `python -m server.modules list` lists what is
+recorded.
 
 ## Safety guards
 

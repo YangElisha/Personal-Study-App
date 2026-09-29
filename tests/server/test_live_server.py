@@ -23,7 +23,8 @@ def live(settings, tmp_path):
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]
-    server = uvicorn.Server(uvicorn.Config(create_app(settings, app_dir=tmp_path / "no-app"),
+    server = uvicorn.Server(uvicorn.Config(create_app(settings, app_dir=tmp_path / "no-app",
+                                                      modules_md_paths=[tmp_path / "MODULES.md"]),
                                            host="127.0.0.1", port=port, log_level="warning"))
     t = threading.Thread(target=server.run, daemon=True)
     t.start()

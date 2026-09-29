@@ -49,6 +49,9 @@ def make_client(settings, tmp_path):
     from server.app import create_app
 
     def make(app_dir=None, **kw):
+        # MODULES.md goes to the scratch folder, never the repo's copy
+        kw.setdefault("modules_md_paths", [tmp_path / "repo-MODULES.md",
+                                           settings.data_dir / "MODULES.md"])
         app = create_app(settings, app_dir=app_dir or (tmp_path / "no-app"), **kw)
         return TestClient(app, base_url="http://127.0.0.1:8765")
     return make

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import mimetypes
@@ -12,7 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import ai, db, snapshots
+from . import ai, db, modules, snapshots
 from .settings import REPO_ROOT, Settings
 
 log = logging.getLogger("drill")
@@ -42,8 +43,11 @@ def _err(status: int, kind: str, message: str, **extra) -> JSONResponse:
 
 def create_app(settings: Settings, app_dir: Path | None = None,
                daily_check_seconds: float = 600.0,
-               ai_config: "ai.AIConfig | None" = None) -> FastAPI:
+               ai_config: "ai.AIConfig | None" = None,
+               modules_md_paths: "list[Path] | None" = None) -> FastAPI:
     app_dir = REPO_ROOT / "app" if app_dir is None else app_dir
+    md_paths = (modules.default_md_paths(settings) if modules_md_paths is None
+                else modules_md_paths)
 
     async def daily_snapshots():
         while True:
@@ -178,6 +182,63 @@ def create_app(settings: Settings, app_dir: Path | None = None,
                 "added_keys": rep.added_keys, "undecided": rep.undecided,
                 "skipped": rep.skipped, "snapshot": rep.snapshot.name if rep.snapshot else None,
                 "report": rep.lines}
+
+    # ---- module library (Phase 6). See server/modules.py ------------------------------
+    @app.get("/api/modules")
+    def modules_list():
+        return {"modules": modules.list_modules(settings)}
+
+    @app.post("/api/modules")
+    async def modules_upload(request: Request, name: str = ""):
+        from urllib.parse import unquote
+        file_name = name or unquote(request.headers.get("x-file-name") or "")
+        if not file_name.strip():
+            return _err(400, "no_name", "Send the file name as ?name= or an X-File-Name header")
+        try:
+            declared = int(request.headers.get("content-length") or 0)
+        except ValueError:
+            declared = 0
+        if declared > modules.MAX_UPLOAD:
+            return _err(413, "too_large", f"Upload is larger than {modules.MAX_UPLOAD} bytes")
+        tmp = modules.new_temp(settings)
+        h, size, head = hashlib.sha256(), 0, b""
+        try:
+            with open(tmp, "wb") as f:
+                async for chunk in request.stream():
+                    if not chunk:
+                        continue
+                    size += len(chunk)
+                    if size > modules.MAX_UPLOAD:
+                        raise modules.ModuleError(413, "too_large",
+                                                  f"Upload is larger than {modules.MAX_UPLOAD} bytes")
+                    if len(head) < 5:
+                        head += chunk[:5 - len(head)]
+                    h.update(chunk)
+                    await asyncio.to_thread(f.write, chunk)
+            if not head.startswith(b"%PDF-"):
+                raise modules.ModuleError(415, "not_pdf", "That file is not a PDF")
+            return await asyncio.to_thread(modules.finish_upload, settings, tmp, h.hexdigest(),
+                                           size, file_name, md_paths)
+        except modules.ModuleError as e:
+            return _err(e.status, e.kind, e.message)
+        finally:
+            tmp.unlink(missing_ok=True)     # our own temp file only (moved away on success)
+
+    @app.post("/api/modules/{sha}/deck")
+    async def modules_deck(sha: str, request: Request):
+        try:
+            body = json.loads((await request.body()).decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            body = None
+        if not isinstance(body, dict) or not isinstance(body.get("deck_id"), str)                 or not body["deck_id"]:
+            return _err(400, "bad_request", 'Body must be {"deck_id": "<id>"}')
+        pages = body.get("pages") if isinstance(body.get("pages"), int) else None
+        prev = body.get("previous_sha") if isinstance(body.get("previous_sha"), str) else None
+        try:
+            return await asyncio.to_thread(modules.record_deck, settings, sha.lower(),
+                                           body["deck_id"], md_paths, pages, prev)
+        except modules.ModuleError as e:
+            return _err(e.status, e.kind, e.message)
 
     # ---- AI (Phase 5): Qwen by default, `claude -p` when online. See server/ai.py --------
     router = ai.Router(ai_config if ai_config is not None else ai.load_ai_config())

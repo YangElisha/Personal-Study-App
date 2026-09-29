@@ -39,6 +39,19 @@ CREATE TABLE IF NOT EXISTS import_notes (
 CREATE TABLE IF NOT EXISTS import_decisions_applied (
   id TEXT PRIMARY KEY, detail TEXT, applied_at TEXT NOT NULL
 );
+-- module library (Phase 6, server/modules.py): one row per distinct PDF (by content)
+CREATE TABLE IF NOT EXISTS modules (
+  sha256 TEXT PRIMARY KEY, file_name TEXT NOT NULL, stored_name TEXT NOT NULL,
+  size INTEGER NOT NULL, uploaded_at TEXT NOT NULL,
+  deck_id TEXT, deck_name TEXT, pages INTEGER, term_count INTEGER,
+  terms_json TEXT, coverage_json TEXT, previous_sha TEXT, diff_json TEXT,
+  deck_recorded_at TEXT
+);
+-- every module write (upload, re-upload, deck report, register); replaced values kept here
+CREATE TABLE IF NOT EXISTS module_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, sha256 TEXT NOT NULL, event TEXT NOT NULL,
+  detail TEXT, at TEXT NOT NULL
+);
 """
 
 # One writer at a time inside this process (the API runs handlers on a thread pool).

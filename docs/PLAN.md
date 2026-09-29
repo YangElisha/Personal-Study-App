@@ -186,9 +186,15 @@ Claude still gets 22,000 characters and 8 messages.
 - App changes are recorded in `CHANGELOG.md`
 
 **Done when:**
-- [ ] Uploading Module 2 again reports "no changes" instead of creating a second deck
-- [ ] Uploading a revised PDF lists exactly which terms were added or changed
-- [ ] `MODULES.md` is readable by Claude Code and by Claude.ai (upload it, or connect the repo)
+- [x] Uploading Module 2 again reports "no changes" instead of creating a second deck — *2026-09-29,
+      offline headless Edge, scratch copy: IA Module 2 opened, 18 decks before and after, 0 deck
+      writes*
+- [x] Uploading a revised PDF lists exactly which terms were added or changed — *2026-09-29:
+      Module 3 first upload → "First upload"; same file again → "No changes"; a revised copy (new
+      SHA-256, same content) built 23 terms → "no term changes". Real added/changed/removed lists
+      are covered by tests/server/test_modules.py; not yet seen with a truly revised module.*
+- [x] `MODULES.md` is readable by Claude Code and by Claude.ai (upload it, or connect the repo) —
+      *2026-09-29: table plus one section per upload, written at the repo root and in DATA_DIR*
 
 ---
 

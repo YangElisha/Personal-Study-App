@@ -2793,6 +2793,7 @@ async function addFiles(list){
   for(const f of [...list]){
     try{
       const u = await readFile(f);
+      if(u.kind === "pdfpages") u.file = f;   // LOCAL PORT (Phase 6): kept for the module library
       uploads.push(u);
       if(!$("n-name").value && u.name) $("n-name").value = u.name.replace(/\.[^.]+$/,"");
     }catch(e){ toast(trimNice(e.message,120)); }
@@ -3681,6 +3682,31 @@ async function completeBuild(material, name, folderId){
   return concepts;
 }
 
+/* LOCAL PORT (Phase 6): the module library on this PC (docs/API.md "Modules"). Only a build
+   from exactly one PDF and nothing else is checked and recorded; the library never blocks a build. */
+async function moduleCheck(u){
+  try{
+    const r = await fetch("/api/modules?name=" + encodeURIComponent(u.name),
+                          {method:"POST", headers:{"Content-Type":"application/pdf"}, body:u.file});
+    const d = await r.json();
+    return r.ok && d.ok ? d : {failed:true};
+  }catch(e){ return {failed:true}; }
+}
+async function moduleRecord(mod, id){
+  if(!mod || !mod.sha256) return;
+  try{
+    const body = {deck_id:id};
+    if(mod.previous && mod.previous.sha256) body.previous_sha = mod.previous.sha256;
+    const r = await fetch("/api/modules/" + mod.sha256 + "/deck",
+                          {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    const d = await r.json();
+    if(!r.ok || !d.ok) return plog("Module library: this upload was not recorded (" + (d.message || r.status) + ")");
+    const parts = [["added", d.added], ["changed", d.changed], ["removed", d.removed]]
+      .filter(([, l]) => l.length).map(([k, l]) => k + " " + l.join(", "));
+    plog(d.first_upload ? "First upload of this module"
+         : "Changes since the last upload: " + (parts.length ? parts.join("; ") : "no term changes"));
+  }catch(e){ plog("Module library: this upload was not recorded (server not reachable)"); }
+}
 async function build(){
   const name = $("n-name").value.trim() || "Untitled deck";
   let folderId = $("n-folder").value;
@@ -3697,6 +3723,18 @@ async function build(){
   pbar(4, "Reading your material…");
   rateNotice = msg => plog(msg);
   try{
+    // LOCAL PORT (Phase 6): the same PDF as an existing deck is not built again
+    const modU = uploads.length === 1 && uploads[0].kind === "pdfpages" && uploads[0].file && !material ? uploads[0] : null;
+    const mod = modU ? await moduleCheck(modU) : null;
+    if(mod && mod.failed) plog("Module library not reachable — building without recording this PDF");
+    if(mod && mod.known && mod.deck_exists){
+      const msg = "No changes: this is the same PDF as your deck “" + mod.deck_name + "” (uploaded " +
+                  new Date(mod.uploaded_at).toLocaleDateString() + ")";
+      pbar(100, "No changes"); plog(msg);
+      $("btn-build").disabled = false;
+      await openDeck(mod.deck_id); toast(msg);
+      return;
+    }
     let fromSlides = [], coverage = null, pictures = [];
     const pdfs = uploads.filter(u => u.kind === "pdfpages" && u.doc);
     const others = uploads.filter(u => !(u.kind === "pdfpages" && u.doc));
@@ -3774,6 +3812,7 @@ async function build(){
       LIB.decks.push({id:idS, name, folderId, created:Date.now(), nCon:concepts.length,
                       nQ:concepts.reduce((a,c)=>a+c.qs.length,0)});
       await store.set("library", LIB);
+      await moduleRecord(mod, idS);   // LOCAL PORT (Phase 6)
       pbar(100, "Done");
       plog("Deck saved · " + concepts.length + " terms · every content slide accounted for" +
            (coverage && coverage.empty.length ? " except " + coverage.empty.length : ""));
@@ -3802,6 +3841,7 @@ async function build(){
       LIB.decks.push({id:id2, name, folderId, created:Date.now(), nCon:concepts.length,
                       nQ:concepts.reduce((a,c)=>a+c.qs.length,0)});
       await store.set("library", LIB);
+      await moduleRecord(mod, id2);   // LOCAL PORT (Phase 6)
       pbar(100, "Done");
       plog("Deck saved · " + concepts.length + " concepts · " +
            concepts.reduce((a,c)=>a+c.qs.length,0) + " questions");
@@ -3891,6 +3931,7 @@ Respond with ONLY a JSON array, no preamble, no markdown fences:
     LIB.decks.push({id, name, folderId, created:Date.now(), nCon:concepts.length,
                     nQ:concepts.reduce((a,c)=>a+c.qs.length,0)});
     await store.set("library", LIB);
+    await moduleRecord(mod, id);   // LOCAL PORT (Phase 6)
     pbar(100,"Done"); toast(concepts.length + " concepts saved");
     $("btn-build").disabled = false;
     await renderNav(); openDeck(id);
