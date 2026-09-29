@@ -13,6 +13,15 @@ Newest first. Every change gets an entry in the same commit.
   Any accounts.db / phone-access.db / users\ left in a DATA_DIR are untouched and not read.
 
 ### Changed
+- App: **MonoSpace** rename and premium redesign (app/index.html + Inter font vendored, OFL).
+  Phase 9 app code removed. Title, wordmark, dialogs and toasts say MonoSpace; new backups
+  download as `monospace-backup-<date>.json`; old Drill backups are still accepted; store keys
+  unchanged. New presets: "MonoSpace" (dark, default), "MonoSpace Light", "Neutral" (old ones
+  kept, plus user-saved presets). Near-black gradient, glass bars, card sheen, 180 ms
+  transitions, visible focus rings. One-time switch on first start: your colours are kept as
+  "Classic (my colours)", MonoSpace is turned on, prefs get `msTheme:1` (written once; never when
+  prefs failed to load). Checked in headless Edge: text and muted text ≥ 4.5:1 in all three new
+  presets, 0 JS errors, 0 non-local requests, reader tests 3/3.
 - Renamed to **MonoSpace** (server side): start.bat, console messages, placeholder page,
   MODULES.md header, the claude -p system prompt, log names, package.json. Unchanged for
   compatibility: store keys, drill.db and its tables, drill-<ts>.db snapshots, DATA_DIR.

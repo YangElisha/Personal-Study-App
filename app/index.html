@@ -1,8 +1,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>Drill — your study board</title>
+<title>MonoSpace — your study board</title>
 <link href="vendor/fonts/fonts.css" rel="stylesheet">
+<link href="vendor/fonts/inter.css" rel="stylesheet"><!-- MonoSpace: Inter (OFL), vendored -->
 <style>
 :root{
   --display:"Space Grotesk",system-ui,sans-serif;
@@ -780,24 +781,83 @@ textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var
 textarea{font-family:inherit}                                 /* one font in text boxes */
 .face small{text-transform:none;letter-spacing:.02em;font-family:inherit}
 
-/* ---- LOCAL PORT (Phase 9): account chip, Account & security page, "signed out" notice ---- */
-.acctchip{width:36px;height:36px;border-radius:50%;border:1px solid var(--rule);background:var(--surface-2);
-          color:var(--ink);font-family:var(--display);font-weight:600;font-size:.8em;letter-spacing:.02em;
-          cursor:pointer;display:grid;place-items:center;padding:0;transition:.15s}
-.acctchip:hover{border-color:var(--ink-3);background:var(--surface-3)}
-#v-account .card h2{font-family:var(--display);font-weight:600;font-size:1.1em;margin:0}
-.acmeta{color:var(--ink-2);font-size:.9em;margin-top:6px;line-height:1.6}
-.aclist{margin-top:14px}
-.acrow{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
-       padding:13px 0;border-top:1px solid var(--rule-2)}
-.acrow:first-child{border-top:0}
-.acrow b{font-weight:500}
-.acrow .m{color:var(--ink-2);font-size:.85em;margin-top:3px;line-height:1.5}
-.acrow .tag{font-family:var(--mono);font-size:.7em;letter-spacing:.08em;text-transform:uppercase;
-            background:var(--live-soft);color:var(--ink);border:1px solid var(--live);border-radius:100px;
-            padding:2px 8px;margin-left:8px;vertical-align:1px}
-.acrow .ok{color:var(--hit)} .acrow .no{color:var(--miss)}
-#authscrim{z-index:199} #authgone{z-index:200}
+/* ---- MonoSpace (Elisha 2026-09-29): premium reskin. Colours still come from Theme / PRESETS;
+        the extra variables (--bg-grad, --glass, --sheen, --hl) are derived in Theme.apply. ---- */
+:root{--display:"Inter","IBM Plex Sans",system-ui,sans-serif;--body:"Inter","IBM Plex Sans",system-ui,sans-serif;
+      --r:14px;--rs:10px;--ease:cubic-bezier(.2,.7,.3,1);--t:.18s}
+body{font-feature-settings:"cv11","ss01","ss03";letter-spacing:-.006em;text-rendering:optimizeLegibility}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:var(--bg-grad,var(--bg));pointer-events:none}
+body.grid-on{background-image:none}
+body.grid-on::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.55;
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+  background-size:28px 28px;-webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000 30%,transparent 85%);
+  mask-image:radial-gradient(ellipse at 50% 0%,#000 30%,transparent 85%)}
+::selection{background:var(--live-soft);color:var(--ink)}
+:focus-visible{outline:2px solid var(--live);outline-offset:2px;box-shadow:var(--glow)}
+h1{font-weight:700;letter-spacing:-.035em}
+h2,.tile h3,.subject b,.dhero h1,.bmodal h3,.explain h3,.qmodal h3,.modal h3,.drawer h3{letter-spacing:-.025em}
+.qtext{letter-spacing:-.02em}
+/* glass chrome */
+.appbar,.studybar,.exambar{background:var(--glass);border-bottom-color:var(--rule-2);
+  -webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%)}
+.nav{background:var(--glass-rail);border-right-color:var(--rule-2);
+  -webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%)}
+.drawer,.chatdrawer,.bmodal,.explain,.qmodal,.modal{background-color:var(--surface);background-image:var(--sheen);border-color:var(--rule)}
+.scrim,.chatscrim,.bscrim,.xscrim,.qscrim,.mscrim{background:rgb(0 0 0 / .55)}
+/* the wordmark */
+.brand{gap:10px;font-weight:650;font-size:1.12em;letter-spacing:-.035em;padding:6px 10px}
+.brand i{width:18px;height:18px;border-radius:6px;box-shadow:var(--hl),0 0 18px -2px var(--live);
+  background:linear-gradient(135deg,var(--ink) 0%,var(--live) 55%,color-mix(in srgb,var(--live) 55%,var(--bg)) 100%)}
+.crumb{border-left-color:var(--rule-2);color:var(--ink-2)}
+/* elevated surfaces: a faint top sheen and hairline highlight */
+.card,.hero,.tile,.dhero,.stat,.qcard,.big div,.sprinttop,.hud,.qitem,.xreview,.unitrow,.lesson,.gitem,.gbar,
+.trow,.face,.mitem,.alien{background-image:var(--sheen)}
+.card,.hero,.dhero{border-radius:calc(var(--r) + 2px)}
+.hero,.dhero{padding:30px}
+.tile,.subject,.unitrow,.lesson,.mitem,.opt,.ostep,.pchip,.chip,.navbtn,.deckbtn,.tab,.seg button,.pnum,.gtopics button,
+.chatquick button,.icon,.btn,.btn2,.link,.fdot,.tiledel,.deckdel{transition:background-color var(--t) var(--ease),
+  border-color var(--t) var(--ease),color var(--t) var(--ease),box-shadow var(--t) var(--ease),
+  transform var(--t) var(--ease),filter var(--t) var(--ease),opacity var(--t) var(--ease)}
+.tile:hover,.subject:hover{border-color:color-mix(in srgb,var(--live) 55%,var(--rule))}
+/* buttons */
+.btn{font-weight:600;letter-spacing:-.01em;border-color:transparent;padding:11px 19px;
+  background-image:linear-gradient(180deg,rgb(255 255 255 / .16),rgb(255 255 255 / 0));
+  box-shadow:var(--hl),0 1px 2px rgb(0 0 0 / .25),0 6px 18px -8px var(--live)}
+.btn:hover{filter:brightness(1.06);box-shadow:var(--hl),0 2px 4px rgb(0 0 0 / .25),0 10px 26px -8px var(--live)}
+.btn:active:not(:disabled),.btn2:active:not(:disabled),.chip:active,.icon:active,.pchip:active,.opt:active:not(:disabled){transform:scale(.98)}
+.btn2{background-color:var(--surface-2);background-image:var(--sheen);box-shadow:var(--hl)}
+.btn2:hover{border-color:color-mix(in srgb,var(--ink) 28%,var(--rule));background-color:var(--surface-3)}
+.icon{background-image:var(--sheen);box-shadow:var(--hl)}
+.icon:hover{border-color:color-mix(in srgb,var(--ink) 28%,var(--rule))}
+.askbtn{background-image:linear-gradient(180deg,rgb(255 255 255 / .16),rgb(255 255 255 / 0));
+  box-shadow:var(--hl),0 12px 30px -8px var(--live),var(--shadow-2)}
+/* sidebar */
+.navbtn{border-radius:var(--rs);font-weight:500}
+.navbtn[aria-current="true"]{background:var(--live-soft);color:var(--rail-ink);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--live) 40%,transparent)}
+.navbtn[aria-current="true"] svg{color:var(--live)}
+.deckbtn[aria-current="true"]{background:var(--rail-2);box-shadow:inset 0 0 0 1px var(--rail-rule)}
+/* inputs */
+textarea,input[type=text],select{background:var(--surface-2);border-color:var(--rule);border-radius:var(--rs)}
+textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
+/* chips, tabs, segmented controls */
+.chip[aria-pressed="true"],.seg button[aria-pressed="true"]{box-shadow:var(--hl)}
+.tab{border-bottom-width:2px;padding:12px 16px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--live)}
+.pchip[aria-pressed="true"]{border-color:var(--live);color:var(--ink);background:var(--live-soft)}
+.pchip.mine{border-style:dashed}
+.pchip i{width:14px;height:14px;border:1px solid var(--rule)}
+/* progress tracks glow a little */
+.tile .track i,.dhero .track i,.studybar .track i,.bar i{box-shadow:0 0 12px -2px var(--hit)}
+/* toast + model badge: glass pills */
+.toast{background:var(--glass);color:var(--ink);border:1px solid var(--rule);box-shadow:var(--shadow-2);
+  -webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);
+  transition:opacity var(--t) var(--ease),transform .24s var(--ease)}
+#modelBadge{background:var(--glass)!important;color:var(--ink-2)!important;opacity:1!important;
+  border-color:var(--rule)!important;padding:4px 10px!important;
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.hovercard{background:var(--ink);color:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--rule);border:3px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background-color:var(--ink-3)}
 </style>
 
 <header class="appbar">
@@ -805,10 +865,9 @@ textarea{font-family:inherit}                                 /* one font in tex
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
       <path d="M3 5h14M3 10h14M3 15h14" stroke-linecap="round"/></svg>
   </button>
-  <button class="brand" id="brand">Drill<i></i></button>
+  <button class="brand" id="brand"><i></i>MonoSpace</button>
   <span class="crumb" id="crumb"></span>
   <div class="abtools">
-    <button class="acctchip hide" id="acctchip" aria-label="Account &amp; security"></button><!-- LOCAL PORT (Phase 9) -->
     <button class="icon" id="btn-custom" title="Appearance">
       <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
         <circle cx="10" cy="10" r="7"/><path d="M10 3v14" /></svg>
@@ -1498,37 +1557,6 @@ Availability: Information is there when it is needed"></textarea>
     </section>
 
     <!-- ===== REPORT ===== -->
-    <!-- ===== LOCAL PORT (Phase 9): ACCOUNT & SECURITY ===== -->
-    <section id="v-account" class="page hide">
-      <h1>Account &amp; security</h1>
-      <p class="sub">Who is signed in to Drill on this PC, where, and recent sign-ins.</p>
-      <div class="card">
-        <div class="spread">
-          <div>
-            <p class="eyebrow" style="margin-bottom:6px">Signed in as</p>
-            <h2 id="ac-email">—</h2>
-            <div class="acmeta" id="ac-meta">—</div>
-          </div>
-          <button class="btn2" id="ac-signout">Sign out</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="spread">
-          <h2>Active sessions</h2>
-          <button class="btn2" id="ac-others">Sign out all other devices</button>
-        </div>
-        <div class="aclist" id="ac-sessions"></div>
-      </div>
-      <div class="card">
-        <h2>Recent sign-ins</h2>
-        <div class="aclist" id="ac-events"></div>
-      </div>
-      <div class="card">
-        <h2>Security</h2>
-        <p class="acmeta">One-time codes come from your Google account's 2-Step Verification — turn it on at myaccount.google.com/security</p>
-      </div>
-    </section>
-
     <section id="v-report" class="page hide">
       <h1 id="r-head">Session report</h1>
       <p class="sub" id="r-sub">—</p>
@@ -1625,13 +1653,6 @@ Availability: Information is there when it is needed"></textarea>
   </div>
   <p class="sub" id="qf-state" style="margin:14px 0 0"></p>
 </div>
-<!-- LOCAL PORT (Phase 9): shown when the server answers 401 auth_required -->
-<div class="mscrim" id="authscrim"></div>
-<div class="modal" id="authgone" role="alertdialog" aria-modal="true" aria-labelledby="authgone-t">
-  <h3 id="authgone-t">You've been signed out — sign in again</h3>
-  <p class="sub" style="margin:0 0 18px">Your sign-in has ended (it lasts 7 days, or it was signed out from another device). Everything already saved is safe. Taking you to the sign-in page…</p>
-  <div class="row"><button class="btn" id="authgone-go">Sign in again</button></div>
-</div>
 <div class="mscrim" id="mscrim"></div>
 <div class="modal" id="modal" role="dialog" aria-modal="true">
   <h3 id="m-title">—</h3>
@@ -1676,19 +1697,22 @@ Availability: Information is there when it is needed"></textarea>
   ];
   const PRESETS = {
     light:{
+      "MonoSpace Light":{bg:"#F2F3F6",surface:"#FFFFFF",ink:"#0C0D12",ink2:"#515564",live:"#4A55D0",hit:"#0A7650",miss:"#C0244B",rail:"#F7F8FA"},
+      "Neutral":{bg:"#E4E0DA",surface:"#F4F1EC",ink:"#1C1A17",ink2:"#57524B",live:"#46557F",hit:"#36703F",miss:"#AC313C",rail:"#ECE8E2"},
       "Default":{bg:"#EDF1F6",surface:"#FFFFFF",ink:"#0B1220",ink2:"#5B6C85",live:"#2447E8",hit:"#07805A",miss:"#C41C48",rail:"#F7F9FC"},
       "Paper":{bg:"#F2EEE5",surface:"#FFFDF8",ink:"#221E17",ink2:"#6B6255",live:"#9A5B2C",hit:"#4A6B2A",miss:"#A32A2A",rail:"#FAF7F0"},
       "Sea":{bg:"#E6EFF1",surface:"#FFFFFF",ink:"#0A2229",ink2:"#4A6B73",live:"#0E7C86",hit:"#1F7A4D",miss:"#B83252",rail:"#F4FAFB"},
       "Rose":{bg:"#F4ECF1",surface:"#FFFFFF",ink:"#20101C",ink2:"#6E5567",live:"#A02E6E",hit:"#2F7A5C",miss:"#C0304A",rail:"#FCF6FA"}
     },
     dark:{
+      "MonoSpace":{bg:"#08080C",surface:"#111117",ink:"#ECEDF3",ink2:"#A3A6B4",live:"#A9B6F8",hit:"#5DD3A0",miss:"#FF7D92",rail:"#0A0A0F"},
       "Midnight":{bg:"#070C14",surface:"#111A26",ink:"#E9EFF7",ink2:"#93A5BC",live:"#6A8BFF",hit:"#3ECB94",miss:"#FF6E8A",rail:"#0B1119"},
       "Carbon":{bg:"#0C0C0E",surface:"#17171B",ink:"#EDEDF0",ink2:"#9A9AA6",live:"#B79CFF",hit:"#5CCB8F",miss:"#FF7A7A",rail:"#101013"},
       "Forest":{bg:"#08110D",surface:"#132019",ink:"#E6F1EA",ink2:"#90A89A",live:"#5FC98A",hit:"#7BD6A0",miss:"#FF8585",rail:"#0B1710"},
       "Amber":{bg:"#100C07",surface:"#1B160F",ink:"#F3E9D9",ink2:"#A99884",live:"#F0A73C",hit:"#8CC152",miss:"#F2665F",rail:"#130E08"}
     }
   };
-  const DEF = {light:"Default", dark:"Midnight"};
+  const DEF = {light:"MonoSpace Light", dark:"MonoSpace"};   // MonoSpace: the new look is the default
   const hex2 = h => { h = h.replace("#",""); if(h.length===3) h = h.split("").map(c=>c+c).join("");
                       return [0,2,4].map(i => parseInt(h.slice(i,i+2),16)); };
   const to2 = r => "#" + r.map(v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
@@ -1700,7 +1724,7 @@ Availability: Information is there when it is needed"></textarea>
   const ok = h => /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h.trim());
 
   const T = window.Theme = {
-    mode:"auto", fs:15, grid:false, custom:{light:{},dark:{}}, KEYS, PRESETS, DEF, onChange:null,
+    mode:"dark", fs:15, grid:false, custom:{light:{},dark:{}}, mine:[], KEYS, PRESETS, DEF, onChange:null,
     resolved(){ return this.mode==="auto"
       ? (window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light") : this.mode; },
     base(){ const m=this.resolved(); return Object.assign({}, PRESETS[m][DEF[m]], this.custom[m]||{}); },
@@ -1721,6 +1745,21 @@ Availability: Information is there when it is needed"></textarea>
       S("--shadow-1","0 1px 2px rgba(0,0,0,"+(dark?".35":".05")+"),0 2px 8px rgba(0,0,0,"+(dark?".3":".05")+")");
       S("--shadow-2","0 4px 10px rgba(0,0,0,"+(dark?".5":".08")+"),0 18px 40px rgba(0,0,0,"+(dark?".45":".1")+")");
       S("--fs",this.fs+"px");
+      /* MonoSpace: gradient backdrop, glass chrome, sheen and softer rules, all derived from the 8 colours */
+      const bgTop = mix(c.bg, c.live, dark?.045:.035), bgEnd = dark ? mix(c.bg,"#000000",.4) : mix(c.bg,c.ink,.035);
+      S("--bg-grad","radial-gradient(1100px 620px at 8% -12%,"+rgba(c.live,dark?.10:.08)+",transparent 62%),"+
+        "radial-gradient(900px 560px at 108% 4%,"+rgba(c.live,dark?.06:.05)+",transparent 60%),"+
+        "linear-gradient(180deg,"+bgTop+" 0%,"+c.bg+" 46%,"+bgEnd+" 100%)");
+      S("--rule",mix(c.surface,c.ink,dark?.12:.14)); S("--rule-2",mix(c.surface,c.ink,dark?.07:.08));
+      S("--glass",rgba(c.surface,dark?.72:.78)); S("--glass-rail",rgba(c.rail,dark?.66:.74));
+      S("--sheen",dark?"linear-gradient(180deg,rgb(255 255 255 / .035),rgb(255 255 255 / 0) 60%)"
+                      :"linear-gradient(180deg,rgb(255 255 255 / .7),rgb(255 255 255 / 0) 60%)");
+      S("--hl",dark?"inset 0 1px 0 rgb(255 255 255 / .05)":"inset 0 1px 0 rgb(255 255 255 / .9)");
+      S("--shadow-1",(dark?"inset 0 1px 0 rgb(255 255 255 / .045),0 1px 2px rgba(0,0,0,.45),0 10px 28px -12px rgba(0,0,0,.6)"
+                           :"0 1px 2px rgba(15,18,30,.05),0 8px 24px -12px rgba(15,18,30,.12)"));
+      S("--shadow-2",(dark?"inset 0 1px 0 rgb(255 255 255 / .06),0 6px 16px rgba(0,0,0,.45),0 24px 60px -12px rgba(0,0,0,.65)"
+                           :"0 4px 12px rgba(15,18,30,.07),0 24px 56px -16px rgba(15,18,30,.18)"));
+      S("--glow","0 0 0 3px "+rgba(c.live,dark?.28:.22));
       document.documentElement.setAttribute("data-theme",m);
       document.body.classList.toggle("grid-on",this.grid);
       document.querySelectorAll("[data-theme-set]").forEach(b=>
@@ -1733,19 +1772,48 @@ Availability: Information is there when it is needed"></textarea>
     reset(){ this.custom[this.resolved()]={}; this.apply(); this.buildUI(); this.save(); },
     load(p){ if(!p) return; if(p.mode) this.mode=p.mode; if(p.fs) this.fs=p.fs;
       if(typeof p.grid==="boolean") this.grid=p.grid;
-      if(p.custom) this.custom={light:p.custom.light||{},dark:p.custom.dark||{}}; this.apply(); },
-    dump(){ return {mode:this.mode,fs:this.fs,grid:this.grid,custom:this.custom}; },
+      if(p.custom) this.custom={light:p.custom.light||{},dark:p.custom.dark||{}};
+      if(Array.isArray(p.mine)) this.mine=p.mine.filter(x=>x&&x.name&&x.custom); this.apply(); },
+    dump(){ return {mode:this.mode,fs:this.fs,grid:this.grid,custom:this.custom,mine:this.mine}; },
+    /* MonoSpace: saved looks of your own ("Classic (my colours)" is made by the one-time switch) */
+    useMine(x){ if(x.mode) this.mode=x.mode;
+      this.custom={light:Object.assign({},(x.custom||{}).light),dark:Object.assign({},(x.custom||{}).dark)};
+      this.apply(); this.buildUI(); this.save(); },
+    /* MonoSpace one-time switch: keep the old colours as a preset of your own, then use the new look.
+       Returns true when there was something to keep. The caller saves prefs (once) with msTheme:1. */
+    switchToMonoSpace(){
+      const has = Object.keys(this.custom.light||{}).length + Object.keys(this.custom.dark||{}).length > 0;
+      if(!has) return false;
+      const NAME = "Classic (my colours)";
+      this.mine = this.mine.filter(x => x.name !== NAME);
+      this.mine.push({name:NAME, mode:this.mode, custom:JSON.parse(JSON.stringify(this.custom))});
+      this.custom = {light:{}, dark:{}}; this.mode = "dark";
+      this.apply(); this.buildUI();
+      return true;
+    },
     save(){ if(this.onChange) this.onChange(); },
     buildUI(){
       const pb=document.getElementById("presets"), sb=document.getElementById("swatches");
       if(!pb||!sb) return;
       pb.innerHTML=""; sb.innerHTML="";
       const m=this.resolved();
+      const cur=JSON.stringify(this.base());
       Object.keys(PRESETS[m]).forEach(n=>{
         const b=document.createElement("button"); b.className="pchip";
         const i=document.createElement("i"); i.style.background=PRESETS[m][n].live;
+        i.style.boxShadow="inset 0 0 0 3px "+PRESETS[m][n].bg;   // MonoSpace: swatch shows accent on background
         const t=document.createElement("span"); t.textContent=n;
+        b.setAttribute("aria-pressed", JSON.stringify(Object.assign({},PRESETS[m][DEF[m]],PRESETS[m][n]))===cur);
         b.append(i,t); b.onclick=()=>this.usePreset(n); pb.appendChild(b);
+      });
+      this.mine.forEach(x=>{   // MonoSpace: your own saved looks, in every mode
+        const b=document.createElement("button"); b.className="pchip mine";
+        const cc=(x.custom||{})[x.mode==="light"?"light":"dark"]||{};
+        const i=document.createElement("i"); i.style.background=cc.live||"var(--ink-3)";
+        if(cc.bg) i.style.boxShadow="inset 0 0 0 3px "+cc.bg;
+        const t=document.createElement("span"); t.textContent=x.name;
+        b.title="Your saved look"+(x.mode?" ("+x.mode+" mode)":"");
+        b.append(i,t); b.onclick=()=>this.useMine(x); pb.appendChild(b);
       });
       KEYS.forEach(({k,n,d})=>{
         const row=document.createElement("div"); row.className="sw";
@@ -1801,7 +1869,7 @@ const STORE_LABEL = {
   server:"Saved on this PC"
 }[STORE_MODE];
 const STORE_DETAIL = {
-  server:"Your decks and progress are stored in the Drill database on this PC (your DrillData folder), kept by the Drill server running here. They survive closing the browser and restarting your PC, and need no internet. Every change keeps the previous version, and the server snapshots the database each time it starts and once a day. Download a backup regularly."
+  server:"Your decks and progress are stored in the MonoSpace database on this PC (your DrillData folder), kept by the MonoSpace server running here. They survive closing the browser and restarting your PC, and need no internet. Every change keeps the previous version, and the server snapshots the database each time it starts and once a day. Download a backup regularly."
 }[STORE_MODE];
 const storeUrl = k => "/api/store/" + encodeURIComponent(k);
 const store = {
@@ -1810,7 +1878,6 @@ const store = {
     for(let i = 0; i < (tries || 1); i++){
       try{
         const r = await fetch(storeUrl(k), {cache:"no-store"});
-        if(r.status === 401 && await authGate(r)) break;   // LOCAL PORT (Phase 9): signed out = a read failure, never "empty"
         if(r.status === 204 || r.status === 404) return null;
         if(r.ok) return JSON.parse(await r.text());
       }catch(e){}
@@ -1824,7 +1891,6 @@ const store = {
     for(let i = 0; i < 4; i++){
       try{
         const r = await fetch(storeUrl(k), {method:"PUT", headers:{"Content-Type":"application/json"}, body:json});
-        if(r.status === 401) await authGate(r);   // LOCAL PORT (Phase 9): signed out → notice + sign-in page
         if(r.status >= 400 && r.status < 500) return false;
         if(r.ok){
           if(!verify) return true;
@@ -1837,136 +1903,14 @@ const store = {
     // LOCAL PORT: never fail silently
     if(!this._warned || Date.now() - this._warned > 10000){
       this._warned = Date.now();
-      toast("Not saved — the Drill server isn't answering. Check that start.bat is still running.");
+      toast("Not saved — the MonoSpace server isn't answering. Check that start.bat is still running.");
     }
     return false;
   },
   async del(k){
-    try{ const r = await fetch(storeUrl(k), {method:"DELETE"}); if(r.status === 401) await authGate(r); }catch(e){}   // LOCAL PORT (Phase 9)
+    try{ await fetch(storeUrl(k), {method:"DELETE"}); }catch(e){}
   }
 };
-/* LOCAL PORT (Phase 9): sign-in (docs/API.md "Sign-in"). With AUTH_MODE=google any /api/* answer
-   401 auth_required means the session ended (7 days, or signed out elsewhere): say so, then load
-   "/" where the server shows its sign-in page. Never treated as "nothing stored". */
-const AUTH = {user:null, session:null, gone:false};
-async function authGate(r){
-  if(!r || r.status !== 401) return false;
-  let d = null;
-  try{ d = await r.clone().json(); }catch(e){}
-  if(!d || d.error !== "auth_required") return false;
-  signedOut();
-  return true;
-}
-function signedOut(){
-  if(AUTH.gone) return;
-  AUTH.gone = true;
-  const go = () => { location.href = "/"; };
-  $("authgone-go").onclick = go;
-  $("authscrim").classList.add("on"); $("authgone").classList.add("on");
-  setTimeout(go, 2500);
-}
-async function authPost(url){
-  try{
-    const r = await fetch(url, {method:"POST"});
-    if(await authGate(r)) return null;
-    const d = await r.json().catch(() => null);
-    return r.ok && d && d.ok ? d : null;
-  }catch(e){ return null; }
-}
-async function authGet(url){
-  try{
-    const r = await fetch(url, {cache:"no-store"});
-    if(await authGate(r)) return null;
-    return r.ok ? await r.json() : null;
-  }catch(e){ return null; }
-}
-function initials(email){
-  const parts = String(email || "").split("@")[0].split(/[._\-+]+/).filter(Boolean);
-  return ((parts[0] || "?")[0] + (parts[1] ? parts[1][0] : (parts[0] || "")[1] || "")).toUpperCase();
-}
-function when(iso){
-  if(!iso) return "—";
-  const d = new Date(iso);
-  return isNaN(d) ? iso : d.toLocaleString(undefined, {dateStyle:"medium", timeStyle:"short"});
-}
-async function authInit(){
-  const me = await authGet("/api/auth/me");
-  if(!me || !me.user) return;                        // AUTH_MODE=off: the app looks exactly as before
-  AUTH.user = me.user; AUTH.session = me.session;
-  const chip = $("acctchip");
-  chip.textContent = initials(me.user.email);
-  chip.title = me.user.email;
-  chip.onclick = openAccount;
-  chip.classList.remove("hide");
-  if(!VIEWS.includes("v-account")) VIEWS.push("v-account");
-  $("ac-signout").onclick = async () => {
-    await authPost("/api/auth/signout");
-    location.href = "/";
-  };
-  $("ac-others").onclick = async () => {
-    const d = await authPost("/api/auth/signout-others");
-    if(d) toast(d.revoked === 1 ? "Signed out 1 other device" : "Signed out " + d.revoked + " other devices");
-    else if(!AUTH.gone) toast("Could not sign the other devices out");
-    renderAccount();
-  };
-}
-async function openAccount(){
-  go("v-account", "Account");
-  await renderAccount();
-}
-async function renderAccount(){
-  const [me, ss, ev] = await Promise.all([authGet("/api/auth/me"), authGet("/api/auth/sessions"),
-                                          authGet("/api/auth/events?limit=20")]);
-  if(AUTH.gone) return;
-  const s = me && me.session;
-  $("ac-email").textContent = me && me.user ? me.user.email : "—";
-  $("ac-meta").textContent = s
-    ? "Signed in since " + when(s.created_at) + " · this sign-in ends " + when(s.expires_at) +
-      " (7 days; signing in again needs the internet)"
-    : "—";
-  const list = $("ac-sessions"); list.innerHTML = "";
-  const sessions = (ss && ss.sessions) || [];
-  if(!sessions.length) list.textContent = "Could not load the sessions.";
-  sessions.forEach(x => {
-    const row = document.createElement("div"); row.className = "acrow";
-    const info = document.createElement("div");
-    const t = document.createElement("b"); t.textContent = x.device || "Unknown browser";
-    if(x.method === "pin") t.textContent += " (phone PIN)";
-    if(x.current){ const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "This device"; t.appendChild(tag); }
-    const m = document.createElement("div"); m.className = "m";
-    m.textContent = (x.client_ip || "—") + " · signed in " + when(x.created_at) + " · last seen " + when(x.last_seen_at);
-    info.append(t, m);
-    const b = document.createElement("button"); b.className = "btn2"; b.textContent = "Sign out";
-    b.onclick = async () => {
-      b.disabled = true;
-      const d = await authPost("/api/auth/sessions/" + encodeURIComponent(x.id) + "/revoke");
-      if(d && d.signed_out_here){ location.href = "/"; return; }
-      if(!d && !AUTH.gone) toast("Could not sign that session out");
-      renderAccount();
-    };
-    row.append(info, b); list.appendChild(row);
-  });
-  $("ac-others").disabled = sessions.filter(x => !x.current).length === 0;
-  const evl = $("ac-events"); evl.innerHTML = "";
-  const events = (ev && ev.events) || [];
-  if(!events.length) evl.textContent = ev ? "No sign-ins recorded yet." : "Could not load the sign-in history.";
-  const WHAT = {signed_in:"Signed in", refused:"Refused", signed_out:"Signed out"};
-  events.forEach(e => {
-    const row = document.createElement("div"); row.className = "acrow";
-    const info = document.createElement("div");
-    const t = document.createElement("b");
-    const res = document.createElement("span");
-    res.className = e.event === "refused" ? "no" : e.event === "signed_in" ? "ok" : "";
-    res.textContent = WHAT[e.event] || e.event;
-    t.append(res, document.createTextNode(" · " + when(e.at)));
-    const m = document.createElement("div"); m.className = "m";
-    m.textContent = [e.method === "pin" ? "phone PIN" : e.method === "cli" ? "on the PC (command line)" : "Google",
-                     e.device, e.client_ip, e.event === "refused" && e.reason ? "reason: " + e.reason : ""]
-                    .filter(Boolean).join(" · ");
-    info.append(t, m); row.appendChild(info); evl.appendChild(row);
-  });
-}
-
 const KEYSTORE = {
   get(){ try{ return LS ? LS.getItem("drill:apikey") || "" : ""; }catch(e){ return ""; } },
   set(v){ try{ if(LS){ v ? LS.setItem("drill:apikey", v) : LS.removeItem("drill:apikey"); } }catch(e){} }
@@ -2158,7 +2102,8 @@ let OPT = {adaptive:true, ai:true, shuffle:true, timer:false, instant:true, test
 
 async function savePrefs(){
   await store.set("prefs", {theme:Theme.dump(), scope, viewMode, density, opt:OPT, clozePurge:2, gameSpeed,
-                            focusFolder, shut:Object.keys(shutFolders).filter(k => shutFolders[k])});
+                            focusFolder, shut:Object.keys(shutFolders).filter(k => shutFolders[k]),
+                            msTheme:1});   // MonoSpace: the one-time switch to the new look has been done
 }
 Theme.onChange = () => savePrefs();
 
@@ -2208,7 +2153,6 @@ async function claudeRawCall(content, maxTokens){
     let r, d;
     try{ r = await fetch("/api/ai",{method:"POST", headers, body}); }
     catch(e){ lastErr = "Network problem"; await nap(1500 * Math.pow(2, attempt)); continue; }
-    if(r.status === 401 && await authGate(r)) throw new Error("You've been signed out — sign in again");   // LOCAL PORT (Phase 9)
     try{ d = await r.json(); }catch(e){ d = null; }
     const errType = d && d.error && d.error.type;
     const errMsg = (d && d.error && d.error.message) || "";
@@ -2242,7 +2186,7 @@ async function claudeRawCall(content, maxTokens){
     ? "Still rate limited after several tries. Wait a minute, then start the build again — anything already saved is safe."
     : lastErr.startsWith("Server error")
       ? lastErr + ". This is usually an oversized upload — try one file at a time, or a smaller image."
-      : "Could not reach the Drill server (" + lastErr + "). Make sure start.bat is still running, then try again.");
+      : "Could not reach the MonoSpace server (" + lastErr + "). Make sure start.bat is still running, then try again.");
 }
 /* LOCAL PORT: a small badge showing which model answered the last AI request. */
 function modelBadge(d){
@@ -2297,9 +2241,8 @@ async function boot(){
   }
   LIB = await store.get("library");
   if((!LIB && store.readFailed) || prefsFailed){      // LOCAL PORT: server down → say so; never write an empty library
-    if(AUTH.gone) return;                              // LOCAL PORT (Phase 9): signed out → the notice is already up
-    await confirmDlg("Can't reach the Drill server",
-      "Your decks are safe on this PC, but the Drill server isn't answering. Make sure start.bat is " +
+    await confirmDlg("Can't reach the MonoSpace server",
+      "Your decks are safe on this PC, but the MonoSpace server isn't answering. Make sure start.bat is " +
       "running, then reload this page.", "OK");
     return;
   }
@@ -2307,6 +2250,11 @@ async function boot(){
     LIB = {folders:[{id:"f-main", name:"My subjects"}], decks:[]};
     await store.set("library", LIB);
   }
+  /* MonoSpace one-time switch (Elisha 2026-09-29): own colours are kept as the preset
+     "Classic (my colours)", the MonoSpace look is switched on, and prefs are written once with
+     msTheme:1 so this never runs again. Not reached when prefs failed to load (guard above). */
+  const msSwitch = !!prefs && !prefs.msTheme;
+  if(msSwitch) Theme.switchToMonoSpace();
   // one-off cleanup: older builds saved fill-in-the-blanks that blanked only part of a term
   if(!prefs || prefs.clozePurge !== 2){
     for(const meta of LIB.decks){
@@ -2317,7 +2265,9 @@ async function boot(){
       if(dirty) await store.set("deck:"+meta.id, dk);
     }
     await store.set("prefs", Object.assign({}, prefs || {}, {theme:Theme.dump(), scope, viewMode, density,
-      opt:OPT, clozePurge:2}));
+      opt:OPT, clozePurge:2, msTheme:1}));
+  } else if(msSwitch){
+    await store.set("prefs", Object.assign({}, prefs, {theme:Theme.dump(), msTheme:1}));   // only the look changes
   }
   $("storenote").textContent = STORE_LABEL;
   $("storefull").textContent = STORE_DETAIL;
@@ -2570,7 +2520,7 @@ async function openDeck(id){
     const meta = LIB.decks.find(d => d.id === id);
     await renderHome();
     await confirmDlg("“" + (meta ? meta.name : "That deck") + "” did not load",
-      "Its questions are not in the Drill database — usually because a restore was interrupted partway. " +
+      "Its questions are not in the MonoSpace database — usually because a restore was interrupted partway. " +
       "Nothing has been deleted. Restore your backup again and it will come back.", "OK");
     return;
   }
@@ -3901,7 +3851,6 @@ async function moduleCheck(u){
   try{
     const r = await fetch("/api/modules?name=" + encodeURIComponent(u.name),
                           {method:"POST", headers:{"Content-Type":"application/pdf"}, body:u.file});
-    if(await authGate(r)) return {failed:true};   // LOCAL PORT (Phase 9)
     const d = await r.json();
     return r.ok && d.ok ? d : {failed:true};
   }catch(e){ return {failed:true}; }
@@ -3913,7 +3862,6 @@ async function moduleRecord(mod, id){
     if(mod.previous && mod.previous.sha256) body.previous_sha = mod.previous.sha256;
     const r = await fetch("/api/modules/" + mod.sha256 + "/deck",
                           {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
-    if(await authGate(r)) return;   // LOCAL PORT (Phase 9)
     const d = await r.json();
     if(!r.ok || !d.ok) return plog("Module library: this upload was not recorded (" + (d.message || r.status) + ")");
     const parts = [["added", d.added], ["changed", d.changed], ["removed", d.removed]]
@@ -5809,7 +5757,7 @@ function openChat(focusId){
   setTimeout(() => $("chat-input").focus(), 80);
 }
 async function aiRoute(){
-  try{ const r = await fetch("/api/ai/route", {cache:"no-store"}); await authGate(r); return r.ok ? await r.json() : null; }   // LOCAL PORT (Phase 9): authGate
+  try{ const r = await fetch("/api/ai/route", {cache:"no-store"}); return r.ok ? await r.json() : null; }
   catch(e){ return null; }
 }
 function closeChat(){ $("chatdrawer").classList.remove("on"); $("chatscrim").classList.remove("on"); }
@@ -7095,7 +7043,7 @@ function openBackup(mode){
   const restore = mode === "restore";
   $("bk-title").textContent = restore ? "Restore a backup" : "Your backup";
   $("bk-note").textContent = restore
-    ? "Paste a backup below, or choose the file you saved earlier."
+    ? "Paste a backup below, or choose the file you saved earlier. Older Drill backups work too."
     : "Everything you have made, as text. Copy it somewhere safe — a note, an email to yourself, a file.";
   $("bk-hint").textContent = restore
     ? "Decks and concepts are only added, never removed. For a deck you already have, its progress is taken as a whole from whichever copy has answered more questions (the backup's if equal)."
@@ -7165,7 +7113,7 @@ function downloadBackup(){
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "drill-backup-" + new Date().toISOString().slice(0,10) + ".json";
+    a.download = "monospace-backup-" + new Date().toISOString().slice(0,10) + ".json";
     a.rel = "noopener";
     document.body.appendChild(a);
     a.click();
@@ -7713,7 +7661,6 @@ document.addEventListener("keydown", e => {
 });
 
 boot();
-authInit();   // LOCAL PORT (Phase 9): account chip when signed in (nothing with AUTH_MODE=off)
 
 
 </script>
