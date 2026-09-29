@@ -251,12 +251,22 @@ Newest first. Every change gets an entry in the same commit.
   deck content is only added to, and progress is taken per deck from whichever side has
   answered more questions (Elisha, 2026-09-28; outside the two seams by her decision).
 
+### Fixed (usability pass, Elisha 2026-09-29; app/index.html, marked "LOCAL PORT")
+- Server unreachable at startup: the app says "Can't reach the Drill server" and writes nothing,
+  instead of opening an empty library and saving it (or default settings) over the real ones;
+  a restore no longer treats an unanswered settings read as "no settings".
+- A failed save now shows "Not saved — the Drill server isn't answering…" (was silent).
+- The unused "Anthropic API key" card is hidden (no key is ever used).
+- Online/offline text says where AI answers come from (Claude online, Qwen on this PC offline);
+  messages no longer talk about "this browser's storage" or "your connection".
+- After a revised module is built, the "changes since the last upload" summary also shows as a
+  toast (the build log is off-screen once the deck opens).
+- Checked in headless Edge on a scratch copy: normal start, a 503 on `library` at start (dialog,
+  0 writes), and a save with the server down (toast).
+- Phone layout (Phase 8 mobile part) stopped at Elisha's request; the phone-access server
+  remains, off by default.
+
 ### Found, not fixed
-- Phase 6: the "changes since the last upload" line is in the build log, which is off-screen once
-  the new deck opens (MODULES.md shows it). The same-PDF check ignores the page range.
-- Legacy boot writes an empty library/default prefs if reading them fails but the next save
-  succeeds (recoverable from `kv_history`). Failed saves are silent.
-- The unused "Anthropic API key" card is still shown in Manage; offline/AI help texts still talk
-  about "this browser" and "your connection".
+- The same-PDF check ignores the page range.
 - Deleting a key that was never stored (e.g. `prog:` of a never-studied deck) logs a 404 line
   in the browser console; harmless.

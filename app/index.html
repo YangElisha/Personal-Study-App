@@ -1733,6 +1733,7 @@ const STORE_DETAIL = {
 const storeUrl = k => "/api/store/" + encodeURIComponent(k);
 const store = {
   async get(k, tries){
+    this.readFailed = false;
     for(let i = 0; i < (tries || 1); i++){
       try{
         const r = await fetch(storeUrl(k), {cache:"no-store"});
@@ -1741,6 +1742,7 @@ const store = {
       }catch(e){}
       if(i + 1 < (tries || 1)) await new Promise(r => setTimeout(r, 250 * (i + 1)));
     }
+    this.readFailed = true;          // LOCAL PORT: null because the server did not answer, not "nothing stored"
     return null;
   },
   async set(k,v,verify){
@@ -1756,6 +1758,11 @@ const store = {
         }
       }catch(e){}
       await new Promise(r => setTimeout(r, 300 * (i + 1)));
+    }
+    // LOCAL PORT: never fail silently
+    if(!this._warned || Date.now() - this._warned > 10000){
+      this._warned = Date.now();
+      toast("Not saved — the Drill server isn't answering. Check that start.bat is still running.");
     }
     return false;
   },
@@ -2037,7 +2044,7 @@ async function claudeRawCall(content, maxTokens){
     ? "Still rate limited after several tries. Wait a minute, then start the build again — anything already saved is safe."
     : lastErr.startsWith("Server error")
       ? lastErr + ". This is usually an oversized upload — try one file at a time, or a smaller image."
-      : "Could not reach the API (" + lastErr + "). Check your connection and try again.");
+      : "Could not reach the Drill server (" + lastErr + "). Make sure start.bat is still running, then try again.");
 }
 /* LOCAL PORT: a small badge showing which model answered the last AI request. */
 function modelBadge(d){
@@ -2079,6 +2086,7 @@ function closeNav(){ $("nav").classList.remove("on"); $("scrim").classList.remov
 
 async function boot(){
   const prefs = await store.get("prefs");
+  const prefsFailed = store.readFailed;   // LOCAL PORT: see the guard below
   if(prefs){
     if(prefs.theme){ Theme.load(prefs.theme); Theme.buildUI(); }
     if(prefs.scope) scope = prefs.scope;
@@ -2090,6 +2098,12 @@ async function boot(){
     if(Array.isArray(prefs.shut)) prefs.shut.forEach(id => shutFolders[id] = true);
   }
   LIB = await store.get("library");
+  if((!LIB && store.readFailed) || prefsFailed){      // LOCAL PORT: server down → say so; never write an empty library
+    await confirmDlg("Can't reach the Drill server",
+      "Your decks are safe on this PC, but the Drill server isn't answering. Make sure start.bat is " +
+      "running, then reload this page.", "OK");
+    return;
+  }
   if(!LIB){
     LIB = {folders:[{id:"f-main", name:"My subjects"}], decks:[]};
     await store.set("library", LIB);
@@ -2108,13 +2122,13 @@ async function boot(){
   }
   $("storenote").textContent = STORE_LABEL;
   $("storefull").textContent = STORE_DETAIL;
-  $("keycard").classList.toggle("hide", HOSTED);
+  $("keycard").classList.add("hide");   // LOCAL PORT: no API key is ever used (AI runs through this PC)
   $("keystate").textContent = KEYSTORE.get() ? "A key is saved in this browser." : "";
   const off = () => {
     const on = navigator.onLine !== false;
     $("netstate").textContent = on
-      ? "Online. Everything is available."
-      : "Offline. Studying, flashcards, matching, tests, editing and PowerPoint/Word imports all work. Only writing new questions with AI is paused.";
+      ? "Online. Everything is available. AI answers come from Claude (Qwen on this PC if Claude can't answer)."
+      : "Offline. Everything still works. AI answers come from Qwen on this PC.";
   };
   off(); window.addEventListener("online", off); window.addEventListener("offline", off);
   if(STORE_MODE === "none") toast("This browser is not saving data — back up before closing");
@@ -2357,7 +2371,7 @@ async function openDeck(id){
     const meta = LIB.decks.find(d => d.id === id);
     await renderHome();
     await confirmDlg("“" + (meta ? meta.name : "That deck") + "” did not load",
-      "Its questions are not in this browser's storage — usually because a restore was interrupted partway. " +
+      "Its questions are not in the Drill database — usually because a restore was interrupted partway. " +
       "Nothing has been deleted. Restore your backup again and it will come back.", "OK");
     return;
   }
@@ -2694,7 +2708,7 @@ async function loadPdfJs(){
     await new Promise((res, rej) => {
       const sc = document.createElement("script");
       sc.src = PDF_CDN; sc.onload = res;
-      sc.onerror = () => rej(new Error("Could not load the PDF reader — check your connection."));
+      sc.onerror = () => rej(new Error("Could not load the PDF reader from this PC — restart start.bat and try again."));
       document.head.appendChild(sc);
     });
   }
@@ -3703,8 +3717,10 @@ async function moduleRecord(mod, id){
     if(!r.ok || !d.ok) return plog("Module library: this upload was not recorded (" + (d.message || r.status) + ")");
     const parts = [["added", d.added], ["changed", d.changed], ["removed", d.removed]]
       .filter(([, l]) => l.length).map(([k, l]) => k + " " + l.join(", "));
-    plog(d.first_upload ? "First upload of this module"
-         : "Changes since the last upload: " + (parts.length ? parts.join("; ") : "no term changes"));
+    const note = d.first_upload ? "First upload of this module"
+         : "Changes since the last upload: " + (parts.length ? parts.join("; ") : "no term changes");
+    plog(note);
+    if(!d.first_upload) setTimeout(() => toast(note), 2500);   // the log is off-screen once the deck opens
   }catch(e){ plog("Module library: this upload was not recorded (server not reachable)"); }
 }
 async function build(){
@@ -7007,7 +7023,7 @@ async function applyBackup(raw){
       await new Promise(r => setTimeout(r, 120));
     }
     // settings only fill an empty app — they never overwrite the ones in use
-    if(data.prefs && !(await store.get("prefs"))){ await store.set("prefs", data.prefs); }
+    if(data.prefs && !(await store.get("prefs")) && !store.readFailed){ await store.set("prefs", data.prefs); }
     for(const [id, draft] of Object.entries(data.exams || {})){
       if(!(await store.get("exam:"+id))) await store.set("exam:"+id, draft);
     }
