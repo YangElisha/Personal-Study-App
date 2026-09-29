@@ -24,6 +24,11 @@ def no_real_ai(monkeypatch):
     monkeypatch.setenv("CLAUDE_CLI", "off")
     monkeypatch.setenv("CLAUDE_CLI_PATH", "drill-no-such-claude-program")
     monkeypatch.setenv("CLAUDE_REACH_HOST", "127.0.0.1:9")
+    # Phase 9: the CLIs under test see sign-in off unless a test turns it on, whatever the
+    # real .env says; never the real Google client values.
+    monkeypatch.setenv("AUTH_MODE", "off")
+    monkeypatch.setenv("GOOGLE_CLIENT_ID", "test-client.apps.googleusercontent.com")
+    monkeypatch.setenv("GOOGLE_CLIENT_SECRET", "test-secret-not-real")
 
 
 @pytest.fixture

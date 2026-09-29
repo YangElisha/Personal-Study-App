@@ -13,6 +13,7 @@ import logging
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
 import webbrowser
 
@@ -28,6 +29,10 @@ def _open_when_ready(url: str, timeout: float = 20.0) -> None:
                 if r.status == 200:
                     webbrowser.open(url)
                     return
+        except urllib.error.HTTPError:
+            # AUTH_MODE=google answers 401 without a session: the server is up
+            webbrowser.open(url)
+            return
         except OSError:
             time.sleep(0.3)
 
@@ -75,6 +80,12 @@ def main(argv=None) -> int:
         from .app import create_app
         print(f"Drill server: {url}   data: {settings.data_dir}   (Ctrl+C to stop)", flush=True)
         app = create_app(settings)
+        if settings.auth_mode == "google":
+            users = [u for u in app.state.accounts.users() if u.allowed]
+            print(f"SIGN-IN is ON (Google). Approved accounts: {len(users)}", flush=True)
+            if not users:
+                print("  Nobody can sign in yet. Run: python -m server.accounts allow <email> "
+                      "[--existing-data]", flush=True)
         bind = "127.0.0.1"
         if settings.phone_access:
             bind = "0.0.0.0"

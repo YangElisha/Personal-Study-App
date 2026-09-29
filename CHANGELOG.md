@@ -5,6 +5,19 @@ Newest first. Every change gets an entry in the same commit.
 ## [Unreleased]
 
 ### Added
+- Phase 9 (server): Google sign-in, one database per person. `AUTH_MODE=off|google` (default off
+  = unchanged). google: every request, this PC included, needs a session; the server refuses to
+  start without `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (in `.env` only). OpenID Connect code
+  flow + PKCE, state bound to the browser, nonce, id_token claims checked, approved emails only,
+  Google account id pinned per email; standard library only. Sessions in `DATA_DIR\accounts.db`
+  (hashed), HttpOnly SameSite=Strict cookie, exactly 7 days, checked locally (works offline),
+  revocable instantly; sign-in events logged; rate limits per IP. The `--existing-data` account
+  (Elisha) uses DATA_DIR's existing drill.db/modules/backups in place; others get
+  `DATA_DIR\users\<id>\`. `python -m server.accounts allow|disallow|list|sessions|revoke-all|events`;
+  `/api/auth/*` for the account page; `--user` on importer/restore/modules/verify_import; phone PIN
+  bound to an account. Security headers on every response (CSP, nosniff, no-referrer, DENY),
+  checked in headless Edge with the real app and pdf.js (0 violations). `tools/check_secrets.py`
+  scans the repo and git history: no secrets found. 277 tests.
 - Phase 8 (server): phone access over Tailscale. `PHONE_ACCESS=off|on` (default off = this PC
   only, as before). On: only this PC and Tailscale addresses are answered (`PHONE_ALLOW_LAN=on`
   adds home Wi-Fi); everyone else gets 403 first. The PC's Tailscale names are detected

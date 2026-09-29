@@ -235,6 +235,9 @@ def _connect(path: Path) -> sqlite3.Connection:
     c = sqlite3.connect(str(path), timeout=10, isolation_level=None, check_same_thread=False)
     c.execute("PRAGMA busy_timeout=10000")
     c.executescript(SCHEMA)
+    # Phase 9: a PIN is bound to one account (AUTH_MODE=google). Older PIN rows have none.
+    if "email" not in {r[1] for r in c.execute("PRAGMA table_info(pin)")}:
+        c.execute("ALTER TABLE pin ADD COLUMN email TEXT")
     return c
 
 
@@ -278,8 +281,20 @@ class PhoneAuth:
         finally:
             c.close()
 
-    def set_pin(self, pin: str) -> int:
+    def pin_email(self) -> str | None:
+        """The account the current PIN signs in as (AUTH_MODE=google), or None."""
+        if not self.db_path.is_file():
+            return None
+        c = self.conn()
+        try:
+            row = c.execute("SELECT email FROM pin ORDER BY id DESC LIMIT 1").fetchone()
+        finally:
+            c.close()
+        return row[0] if row else None
+
+    def set_pin(self, pin: str, email: str | None = None) -> int:
         """Store a new PIN (the old row is kept, the newest wins) and revoke every session.
+        email: the account PIN sessions act as when AUTH_MODE=google.
         Returns the number of sessions revoked."""
         if not valid_pin_format(pin):
             raise ValueError(f"The PIN must be at least {MIN_PIN_DIGITS} digits (0-9 only).")
@@ -288,12 +303,14 @@ class PhoneAuth:
         c = self.conn()
         try:
             c.execute("BEGIN IMMEDIATE")
-            c.execute("INSERT INTO pin(salt, hash, params, set_at) VALUES (?,?,?,?)",
-                      (salt.hex(), h.hex(), json.dumps({"alg": "scrypt", **SCRYPT}), now_iso()))
+            c.execute("INSERT INTO pin(salt, hash, params, set_at, email) VALUES (?,?,?,?,?)",
+                      (salt.hex(), h.hex(), json.dumps({"alg": "scrypt", **SCRYPT}), now_iso(),
+                       email.strip().lower() if email else None))
             n = c.execute("UPDATE sessions SET revoked_at=? WHERE revoked_at IS NULL",
                           (now_iso(),)).rowcount
             c.execute("INSERT INTO auth_events(at, client_ip, event) VALUES (?,?,?)",
-                      (now_iso(), None, f"pin set; {n} session(s) revoked"))
+                      (now_iso(), None, f"pin set{' for ' + email if email else ''}; "
+                                        f"{n} session(s) revoked"))
             c.execute("COMMIT")
         except BaseException:
             c.execute("ROLLBACK")
@@ -450,7 +467,11 @@ def login_page(message: str = "", locked: bool = False) -> str:
     return _page(f"<h1>Drill</h1>{msg}{form}")
 
 
-def no_pin_page() -> str:
+def no_pin_page(bound: bool = False) -> str:
+    if bound:     # AUTH_MODE=google: the PIN must belong to an approved account
+        return _page("<h1>Drill</h1><p><b>Set a PIN for your account on the PC first.</b></p>"
+                     "<p>On the PC, in the Drill folder, run:<br><code>python -m server.pin set "
+                     "--email you@gmail.com</code></p><p>Then reload this page.</p>")
     return _page("<h1>Drill</h1><p><b>Set a PIN on the PC first.</b></p>"
                     "<p>On the PC, in the Drill folder, run:<br><code>python -m server.pin set</code>"
                     "</p><p>Then reload this page.</p>")

@@ -64,6 +64,22 @@ def read_env_data_dir() -> str | None:
     return None
 
 
+def user_data_dir(data_dir: Path, email: str) -> Path | None:
+    """Phase 9: the folder holding an account's drill.db (read-only lookup)."""
+    acc = data_dir / "accounts.db"
+    if not acc.is_file():
+        return None
+    conn = sqlite3.connect(f"file:{acc.as_posix()}?mode=ro", uri=True)
+    try:
+        row = conn.execute("SELECT id, existing_data FROM users WHERE email=?",
+                           (email.strip().lower(),)).fetchone()
+    finally:
+        conn.close()
+    if row is None:
+        return None
+    return data_dir if row[1] else data_dir / "users" / row[0]
+
+
 def sha256_file(p: Path) -> str:
     h = hashlib.sha256()
     with open(p, "rb") as fh:
@@ -435,6 +451,9 @@ def main(argv=None) -> int:
         pass
     ap = argparse.ArgumentParser(description="Verify the Drill import (read-only).")
     ap.add_argument("--data-dir", help="DATA_DIR (default: DATA_DIR env var, then .env)")
+    ap.add_argument("--user", metavar="EMAIL",
+                    help="check this account's own database (Phase 9; looked up read-only in "
+                         "DATA_DIR/accounts.db). Default: DATA_DIR itself")
     ap.add_argument("--after-study", action="store_true",
                     help="Phase 7: allow more than the backups hold, require nothing lost")
     ap.add_argument("--no-inventory", action="store_true",
@@ -448,6 +467,11 @@ def main(argv=None) -> int:
         print("CANNOT RUN: DATA_DIR not given and not in .env")
         return 2
     data_dir = Path(dd)
+    if args.user:
+        data_dir = user_data_dir(data_dir, args.user)
+        if data_dir is None:
+            print(f"CANNOT RUN: {args.user} is not an account in {Path(dd) / 'accounts.db'}")
+            return 2
     db_path, import_dir = data_dir / "drill.db", data_dir / "import"
     dec_path = data_dir / "import-decisions.json"
     names = sorted(glob.glob(str(import_dir / "drill-backup-*.json")))

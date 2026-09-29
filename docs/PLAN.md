@@ -227,6 +227,30 @@ Claude still gets 22,000 characters and 8 messages.
 
 ---
 
+## Phase 9 — Google sign-in, one database per person (Elisha, 2026-09-29)
+
+**Owner:** `backend-builder` (sign-in, accounts, per-user databases) · `frontend-porter` (sign-in
+screen, account & security page)
+
+- Everyone signs in with Google (OpenID Connect, authorization code + PKCE, no extra
+  dependencies). One-time codes come from the person's own Google 2-Step Verification.
+- Only approved emails can sign in (`yang.elishalee@gmail.com` first). Anyone else is refused.
+- Each person has their own database. Elisha's account uses the **existing** `DATA_DIR\drill.db`
+  where it is (nothing copied, moved or changed); new people get `DATA_DIR\users\<id>\`.
+- A sign-in lasts **7 days** and keeps working offline; signing in again needs internet.
+- The Google client ID/secret live only in `.env` (never committed). No other keys anywhere.
+- Account & security page: who is signed in, active sessions (sign out others), recent sign-ins.
+
+**Done when:**
+- [x] With sign-in on, nothing (app, API, AI, modules) answers without a valid session — *2026-09-29: tests + live 401 check*
+- [ ] Elisha signs in with Google and sees exactly her 18 decks; the import verifier still passes
+- [ ] A second approved test account sees an empty library; an unapproved account is refused
+- [ ] Offline within 7 days: the app opens and studies without signing in again
+- [ ] Sessions can be signed out (one, others, all); a sign-out works instantly
+- [x] All tests pass; no secrets in the repo or its history — *277 passed; `tools/check_secrets.py` clean (repo + all history)*
+
+---
+
 ## Later (optional)
 
 - Per-account sync (the ScholarSync stack: Supabase)
