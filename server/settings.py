@@ -12,7 +12,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ENV_FILE = REPO_ROOT / ".env"
 
-DEFAULTS = {"BACKUP_KEEP": "30", "PORT": "8765"}
+DEFAULTS = {"BACKUP_KEEP": "30", "PORT": "8765", "PHONE_ACCESS": "off",
+            "PHONE_ALLOW_LAN": "off", "PHONE_HOSTS": ""}
+ENV_KEYS = ("DATA_DIR", "BACKUP_KEEP", "PORT", "PHONE_ACCESS", "PHONE_ALLOW_LAN", "PHONE_HOSTS")
 
 
 class SettingsError(Exception):
@@ -24,6 +26,16 @@ class Settings:
     data_dir: Path
     backup_keep: int
     port: int
+    # Phase 8 (server/phone.py): phone access over Tailscale, off by default
+    phone_access: bool = False
+    phone_allow_lan: bool = False
+    phone_hosts: tuple = ()
+
+    @property
+    def phone_db(self) -> Path:
+        """PIN hash and phone sessions. Separate from drill.db so a snapshot restore can
+        never bring back an old PIN or revoked sessions."""
+        return self.data_dir / "phone-access.db"
 
     @property
     def db_path(self) -> Path:
@@ -80,7 +92,7 @@ def load_settings(env_file: Path | None = None, environ: dict | None = None,
 
     values = dict(DEFAULTS)
     values.update(read_env_file(env_file))
-    for k in ("DATA_DIR", "BACKUP_KEEP", "PORT"):
+    for k in ENV_KEYS:
         if environ.get(k):
             values[k] = environ[k]
 
@@ -106,4 +118,17 @@ def load_settings(env_file: Path | None = None, environ: dict | None = None,
         raise SettingsError(f"BACKUP_KEEP and PORT must be whole numbers ({e}).") from None
     if keep < 1:
         raise SettingsError("BACKUP_KEEP must be at least 1.")
-    return Settings(data_dir=data_dir, backup_keep=keep, port=port)
+    flags = {}
+    for k in ("PHONE_ACCESS", "PHONE_ALLOW_LAN"):
+        v = values[k].strip().lower()
+        if v in ("on", "1", "true", "yes"):
+            flags[k] = True
+        elif v in ("off", "0", "false", "no", ""):
+            flags[k] = False
+        else:
+            raise SettingsError(f"{k} must be on or off, got {values[k]!r}.")
+    hosts = tuple(h.strip().lower().rstrip(".") for h in values["PHONE_HOSTS"].replace(";", ",")
+                  .split(",") if h.strip())
+    return Settings(data_dir=data_dir, backup_keep=keep, port=port,
+                    phone_access=flags["PHONE_ACCESS"], phone_allow_lan=flags["PHONE_ALLOW_LAN"],
+                    phone_hosts=hosts)

@@ -48,12 +48,17 @@ def make_client(settings, tmp_path):
     from fastapi.testclient import TestClient
     from server.app import create_app
 
-    def make(app_dir=None, **kw):
+    def make(app_dir=None, client_ip="127.0.0.1", base_url="http://127.0.0.1:8765",
+             app_settings=None, **kw):
         # MODULES.md goes to the scratch folder, never the repo's copy
         kw.setdefault("modules_md_paths", [tmp_path / "repo-MODULES.md",
                                            settings.data_dir / "MODULES.md"])
-        app = create_app(settings, app_dir=app_dir or (tmp_path / "no-app"), **kw)
-        return TestClient(app, base_url="http://127.0.0.1:8765")
+        kw.setdefault("detect_tailscale", False)     # never run the real tailscale CLI
+        app = create_app(app_settings or settings, app_dir=app_dir or (tmp_path / "no-app"), **kw)
+        # the client address is simulated: the server only answers loopback when phone
+        # access is off, and Tailscale (or LAN) addresses only when it is on
+        return TestClient(app, base_url=base_url, client=(client_ip, 50000),
+                          follow_redirects=False)
     return make
 
 

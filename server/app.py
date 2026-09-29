@@ -8,12 +8,13 @@ import logging
 import mimetypes
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import parse_qs
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import ai, db, modules, snapshots
+from . import ai, db, modules, phone, snapshots
 from .settings import REPO_ROOT, Settings
 
 log = logging.getLogger("drill")
@@ -23,7 +24,7 @@ log = logging.getLogger("drill")
 mimetypes.add_type("font/woff2", ".woff2")
 mimetypes.add_type("font/woff", ".woff")
 
-ALLOWED_HOSTS = {"localhost", "127.0.0.1"}
+ALLOWED_HOSTS = phone.LOCAL_HOSTS   # plus Tailscale names when PHONE_ACCESS=on
 
 PLACEHOLDER = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <title>Drill</title></head><body style="font-family:system-ui,sans-serif;max-width:40em;
@@ -44,7 +45,8 @@ def _err(status: int, kind: str, message: str, **extra) -> JSONResponse:
 def create_app(settings: Settings, app_dir: Path | None = None,
                daily_check_seconds: float = 600.0,
                ai_config: "ai.AIConfig | None" = None,
-               modules_md_paths: "list[Path] | None" = None) -> FastAPI:
+               modules_md_paths: "list[Path] | None" = None,
+               detect_tailscale: bool = True) -> FastAPI:
     app_dir = REPO_ROOT / "app" if app_dir is None else app_dir
     md_paths = (modules.default_md_paths(settings) if modules_md_paths is None
                 else modules_md_paths)
@@ -78,23 +80,101 @@ def create_app(settings: Settings, app_dir: Path | None = None,
                   redoc_url=None, openapi_url=None)
     app.state.settings = settings
 
+    # ---- access guard (Phase 8 adds phone access; see server/phone.py) ----------------
+    hosts = phone.HostList(settings.phone_access, settings.phone_allow_lan,
+                           tuple(settings.phone_hosts), detect=detect_tailscale)
+    hosts.refresh()
+    auth = phone.PhoneAuth(settings.phone_db)
+    app.state.phone_hosts, app.state.phone_auth = hosts, auth
+    safe_methods = ("GET", "HEAD", "OPTIONS")
+
+    def html(text: str, status: int = 200) -> HTMLResponse:
+        return HTMLResponse(text, status_code=status,
+                            headers={"X-Frame-Options": "DENY", "Cache-Control": "no-store"})
+
+    async def phone_login(request: Request, ip: str):
+        left = auth.locked_for(ip)
+        if left:
+            return html(phone.login_page(
+                f"Too many wrong PINs. Locked for {(left + 59) // 60} more minute(s).",
+                locked=True), 429)
+        if not await asyncio.to_thread(auth.pin_is_set):
+            return html(phone.no_pin_page(), 403)
+        raw = (await request.body())[:4096].decode("utf-8", "replace")
+        pin = ""
+        if raw.lstrip().startswith("{"):
+            try:
+                v = json.loads(raw).get("pin")
+                pin = v if isinstance(v, str) else ""
+            except (ValueError, AttributeError):
+                pin = ""
+        else:
+            pin = (parse_qs(raw).get("pin") or [""])[0]
+        pin = pin.strip()
+        if phone.valid_pin_format(pin) and await asyncio.to_thread(auth.check_pin, pin):
+            auth.clear_failures(ip)
+            token = await asyncio.to_thread(auth.new_session, ip,
+                                            request.headers.get("user-agent"))
+            await asyncio.to_thread(auth.event, ip, "signed in")
+            log.info("phone access: %s signed in", ip)
+            resp = RedirectResponse("/", status_code=303)
+            resp.set_cookie(phone.COOKIE, token, max_age=phone.SESSION_DAYS * 86400,
+                            path="/", httponly=True, samesite="strict")
+            return resp
+        locked = await asyncio.to_thread(auth.record_failure, ip)
+        if locked:
+            return html(phone.login_page(
+                "Too many wrong PINs. Locked for 15 minutes.", locked=True), 429)
+        return html(phone.login_page("Wrong PIN."), 401)
+
     @app.middleware("http")
     async def guard(request: Request, call_next):
-        # DNS-rebinding guard: only answer requests addressed to this PC by name.
-        host_header = (request.headers.get("host") or "").strip().lower()
-        host, _, port = host_header.partition(":")
-        if host not in ALLOWED_HOSTS:
-            return _err(403, "forbidden_host", f"Host {host_header!r} is not allowed")
-        # Only the app's own page may change anything. A state-changing request that carries
+        # 1. Who is asking. Off: this PC only. On: this PC, Tailscale, (LAN if allowed).
+        #    Everyone else is refused before anything else happens.
+        ip = phone.client_ip(request.client.host if request.client else None)
+        if not phone.client_allowed(ip, settings.phone_access, settings.phone_allow_lan):
+            return _err(403, "forbidden_client", "This device is not allowed to use Drill")
+        # 2. DNS-rebinding guard: only answer requests addressed to this PC by a known name.
+        host, port = phone.split_host(request.headers.get("host") or "")
+        if host not in hosts.allowed() and hosts.stale():
+            await asyncio.to_thread(hosts.refresh)   # Tailscale may have started after us
+        if host not in hosts.allowed():
+            return _err(403, "forbidden_host", f"Host {request.headers.get('host')!r} is not allowed")
+        # 3. Only the app's own page may change anything. A state-changing request that carries
         # an Origin header (browsers always send one on cross-site requests, and "null" from
-        # sandboxed frames and file:// pages) must come from this server's own origin.
+        # sandboxed frames and file:// pages) must come from this server's own origin, built
+        # from the Host the request was addressed to (the local names are interchangeable).
         # Requests with no Origin (curl, the CLI tools, same-origin navigation) are allowed.
-        if request.method not in ("GET", "HEAD", "OPTIONS"):
+        if request.method not in safe_methods:
             origin = request.headers.get("origin")
             if origin is not None:
-                own = {f"http://{h}" + (f":{port}" if port else "") for h in ALLOWED_HOSTS}
+                names = phone.LOCAL_HOSTS if host in phone.LOCAL_HOSTS else {host}
+                own = {phone.origin_for(h, port) for h in names}
                 if origin.strip().lower().rstrip("/") not in own:
                     return _err(403, "forbidden_origin", f"Origin {origin!r} may not write here")
+        # 4. PIN: every client other than this PC needs a session.
+        if not phone.is_local(ip):
+            path, ips = request.url.path, str(ip)
+            if path == phone.LOGIN_PATH and request.method == "POST":
+                return await phone_login(request, ips)
+            token = request.cookies.get(phone.COOKIE)
+            if path == phone.LOGOUT_PATH and request.method == "POST":
+                await asyncio.to_thread(auth.revoke, token)
+                resp = RedirectResponse("/", status_code=303)
+                resp.delete_cookie(phone.COOKIE, path="/", httponly=True, samesite="strict")
+                return resp
+            if not await asyncio.to_thread(auth.session_valid, token):
+                api = path.startswith("/api/") or request.method not in ("GET", "HEAD")
+                if not await asyncio.to_thread(auth.pin_is_set):
+                    if api:
+                        return _err(401, "pin_not_set", "Set a PIN on the PC first "
+                                    "(python -m server.pin set)")
+                    return html(phone.no_pin_page(), 403)
+                if api:
+                    return _err(401, "pin_required", "Sign in with the PIN first")
+                if path != "/":
+                    return RedirectResponse("/", status_code=303)
+                return html(phone.login_page())
         resp = await call_next(request)
         if request.url.path.startswith("/api/"):
             resp.headers["Cache-Control"] = "no-store"      # data: never from a cache

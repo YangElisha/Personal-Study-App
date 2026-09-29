@@ -128,6 +128,8 @@ Code in `server/`:
 | `importer.py` | `python -m server.importer` — see DATA-MIGRATION.md. |
 | `restore.py` | `python -m server.restore <snapshot>` |
 | `instance_lock.py` | One process owns `DATA_DIR` at a time. |
+| `phone.py` | Phone access (Phase 8): which clients and Host names are admitted, Tailscale detection, PIN hash, sessions, lockout, sign-in page. Contract in `docs/API.md`. |
+| `pin.py` | `python -m server.pin set / revoke-all / status` |
 | `__main__.py` | `python -m server [--open]`; `start.bat` runs it with `--open`. |
 
 **Snapshots.** On every start, and every 24 hours while running (checked every 10
@@ -144,6 +146,23 @@ refuses while the server runs, shows what would be replaced (key and deck differ
 asks you to type `yes`, snapshots the current database as `...-pre-restore.db`, then copies
 the snapshot in with the backup API. Restoring the pre-restore file undoes a restore.
 
+## Phone access (Phase 8)
+
+```
+Phone (Tailscale app) --WireGuard tunnel--> PC 100.x.y.z:PORT --> same server, same drill.db
+```
+
+The phone does not get its own copy of anything: it opens the app served by the PC, so
+there is nothing to sync, and Qwen/Claude run on the PC as usual. `PHONE_ACCESS=off`
+(default) keeps the server on 127.0.0.1. `on` binds 0.0.0.0, and three layers keep
+everyone else out: the Windows Firewall rule (`tools\phone-firewall.ps1`, Tailscale
+addresses only), the server's client-address check (loopback + Tailscale, 403 otherwise),
+and a PIN for every device other than the PC (session cookie, 30 days, revocable from the
+PC). Host and Origin checks still apply, with this PC's Tailscale names added. The PC
+itself stays PIN-free. Nothing is exposed to the internet: Tailscale addresses are only
+reachable from devices signed in to Elisha's tailnet. Details: `docs/API.md`
+"Phone access".
+
 ## Where the data lives
 
 Everything personal lives in `DATA_DIR` — by default `C:\Users\Elish\OneDrive\DrillData` —
@@ -155,6 +174,7 @@ DrillData\
   backups\        automatic snapshots: on every start and once a day, newest 30 kept
   import-decisions.json   Elisha's import decisions, read by the importer (Phase 3)
   drill-server.lock       empty file the running server locks (one process at a time)
+  phone-access.db         phone PIN hash + phone sessions (Phase 8; only if a PIN was set)
   import\         backup files exported from Drill (read only)
   modules\        your module PDFs
 ```

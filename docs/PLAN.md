@@ -206,7 +206,27 @@ Claude still gets 22,000 characters and 8 messages.
 
 ---
 
+## Phase 8 — Phone access (Elisha, 2026-09-29)
+
+**Owner:** `backend-builder` (access + PIN) · `frontend-porter` (mobile layout)
+
+- The phone uses the app running on the PC (same database, same Qwen/Claude, nothing to sync),
+  over **Tailscale** (private network, works at home and away; nothing opened to the internet).
+- A **PIN** is required for any device other than the PC itself. The PC stays PIN-free.
+- Every screen works at phone size (360–430 px wide, touch). The desktop layout is unchanged.
+
+**Done when:**
+- [ ] With `PHONE_ACCESS=off` (default) the server is reachable from this PC only, as before
+- [ ] With it on, a phone on the tailnet opens the app, asks for the PIN once, and studies;
+      wrong PINs are rate-limited; other networks/devices are refused
+- [ ] Every screen (home, deck, study modes, flashcards, study guide, teacher chat, new deck,
+      test paper, manage) has no sideways scrolling and usable tap targets at 360 and 390 px
+      wide, checked with screenshots
+- [ ] Reader tests and server tests still pass; the desktop layout is unchanged
+- [ ] Elisha: installs Tailscale on the PC and the phone, runs the firewall step, sets the PIN
+
+---
+
 ## Later (optional)
 
-- Phone access (GitHub Pages or local network)
 - Per-account sync (the ScholarSync stack: Supabase)

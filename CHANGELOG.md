@@ -5,6 +5,13 @@ Newest first. Every change gets an entry in the same commit.
 ## [Unreleased]
 
 ### Added
+- Phase 8 (server): phone access over Tailscale. `PHONE_ACCESS=off|on` (default off = this PC
+  only, as before). On: only this PC and Tailscale addresses are answered (`PHONE_ALLOW_LAN=on`
+  adds home Wi-Fi); everyone else gets 403 first. The PC's Tailscale names are detected
+  automatically (+ `PHONE_HOSTS`). Every other device needs a PIN: `python -m server.pin
+  set|revoke-all|status`; scrypt hash and hashed 30-day sessions in `DATA_DIR\phone-access.db`;
+  5 wrong PINs → 15-minute lockout; changing the PIN signs every phone out. Offline sign-in page
+  served by the server. `tools\phone-firewall.ps1` adds a Tailscale-only firewall rule.
 - Phase 6, app side (marked "LOCAL PORT" in app/index.html; PLAN Phase 6 asks for it): a build
   from exactly one PDF first sends it to `/api/modules`. The same PDF as an existing deck →
   "No changes: this is the same PDF as your deck “…”" and that deck opens; nothing is built.

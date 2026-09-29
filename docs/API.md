@@ -1,6 +1,7 @@
 # API — the local server's contract
 
-Server: `http://localhost:8765` (PORT from `.env`), bound to 127.0.0.1 only. Code: `server/`.
+Server: `http://localhost:8765` (PORT from `.env`), bound to 127.0.0.1 only, unless
+`PHONE_ACCESS=on` (see "Phone access" below). Code: `server/`.
 Tests: `tests/server/`.
 
 ## Store — the storage seam
@@ -182,14 +183,78 @@ recorded.
 
 ## Safety guards
 
-- Requests must be addressed to `localhost` or `127.0.0.1` (the `Host` header). This blocks
-  DNS-rebinding tricks from websites.
-- A `PUT`, `DELETE` or `POST` that carries an `Origin` header gets 403 unless that origin is
-  the server's own (`http://localhost:<port>` or `http://127.0.0.1:<port>`, the port the
-  request was sent to). That includes `Origin: null` (sandboxed frames, `file://` pages)
-  and an empty Origin, so no other web page open in the browser can change Drill's data.
-  Requests without an Origin header (curl, scripts) are allowed; they cannot come from
-  another website, because browsers always send Origin on cross-site writes.
+Checked in this order, for every request, before anything else happens:
+
+1. **Client address.** `PHONE_ACCESS=off`: only loopback (`127.0.0.1`, `::1`). `on`: also
+   Tailscale (`100.64.0.0/10`, `fd7a:115c:a1e0::/48`), and with `PHONE_ALLOW_LAN=on` the
+   private ranges (`10/8`, `172.16/12`, `192.168/16`, `fe80::/10`, `fc00::/7`). Anyone else:
+   **403** `forbidden_client`. The address is the socket's peer (uvicorn runs with
+   `proxy_headers=False`, so `X-Forwarded-For` cannot fake it).
+2. **Host.** The `Host` header must be `localhost`, `127.0.0.1` or `[::1]`; with phone access
+   on, also this PC's Tailscale IPs and MagicDNS names (full and short, detected with the
+   `tailscale` CLI at start and re-checked at most every 30 s when an unknown Host arrives),
+   the PC's own private IPs when `PHONE_ALLOW_LAN=on`, and the names in `PHONE_HOSTS`.
+   Anything else: **403** `forbidden_host`. This blocks DNS-rebinding tricks from websites.
+3. **Origin.** A `PUT`, `DELETE` or `POST` that carries an `Origin` header gets **403**
+   `forbidden_origin` unless it is the server's own origin, built from the Host the request
+   was addressed to: `http://<that host>:<that port>`. The local names are interchangeable
+   (a page on `localhost:8765` may write to `127.0.0.1:8765`, as before); a Tailscale name
+   only accepts its own origin. That includes `Origin: null` (sandboxed frames, `file://`
+   pages) and an empty Origin, so no other web page open in the browser can change Drill's
+   data. Requests without an Origin header (curl, scripts) are allowed; they cannot come
+   from another website, because browsers always send Origin on cross-site writes.
+4. **PIN** (non-loopback clients only; see "Phone access").
 - One process owns `DATA_DIR` at a time (an OS lock on `DATA_DIR\drill-server.lock`, released
   automatically when the process ends). A second server, the import CLI and the restore
   CLI all refuse while the server runs.
+
+## Phone access (Phase 8, `server/phone.py`, `server/pin.py`)
+
+**Warning:** never put `tailscale serve` or any other proxy/forwarder on this PC in front of Drill.
+The PC itself is trusted without a PIN, so forwarded phone requests would arrive as "this PC"
+and skip the PIN.
+
+The phone uses the app running on the PC over Tailscale. Settings in `.env`:
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `PHONE_ACCESS` | `off` | `off`: bind 127.0.0.1, this PC only (as before). `on`: bind 0.0.0.0; the guards above admit loopback + Tailscale only. |
+| `PHONE_ALLOW_LAN` | `off` | `on`: also admit the home network's private addresses (still with the PIN). |
+| `PHONE_HOSTS` | empty | Extra Host names to accept, comma-separated. |
+
+With `PHONE_ACCESS=on`, `python -m server` (and so `start.bat`) prints the URL(s) to open on
+the phone, whether Tailscale is installed/connected, and whether a PIN is set.
+
+**PIN.** Loopback clients (this PC) never need one. Every other client needs a session:
+
+| Request (non-loopback, no valid session) | Answer |
+|---|---|
+| no PIN set yet, any page | **403** HTML page "Set a PIN on the PC first" |
+| no PIN set yet, `/api/*` or any non-GET | **401** `{"ok":false,"error":"pin_not_set",...}` |
+| `GET /` | **200** the sign-in page (inline HTML/CSS, no external files, works offline) |
+| `GET` any other page | **303** to `/` |
+| `/api/*` or any non-GET | **401** `{"ok":false,"error":"pin_required",...}` |
+| `POST /api/phone/login`, body `pin=<digits>` (form) or `{"pin":"..."}` | right PIN: **303** to `/` + cookie. Wrong: **401** sign-in page "Wrong PIN." 5th wrong in a row from one IP, or any attempt while locked: **429**, locked 15 minutes (logged to the console and to `auth_events`). A correct PIN resets the count. Lockouts are in memory: a server restart clears them. |
+| `POST /api/phone/logout` | revokes this session, clears the cookie, **303** to `/` |
+
+The cookie `drill_session` is a random 256-bit token, `HttpOnly; SameSite=Strict; Path=/;
+Max-Age=2592000` (30 days, not sliding). Not `Secure`: the connection is plain HTTP inside
+Tailscale's encrypted tunnel. Only its SHA-256 is stored.
+
+**Storage.** `DATA_DIR\phone-access.db` (not the repo, not `drill.db`, so a snapshot restore
+can never bring back an old PIN or revoked sessions): `pin` (salted scrypt, n=2^14 r=8 p=1;
+a new PIN adds a row, the newest wins), `sessions` (token hash, created/expires, client IP,
+user agent, `revoked_at`; revoking marks, never deletes), `auth_events`.
+
+**CLI** (works while the server runs):
+
+- `python -m server.pin set` — asks twice, 6+ digits. Setting or changing it signs every
+  phone out.
+- `python -m server.pin revoke-all` — sign every phone out now.
+- `python -m server.pin status` — PIN set or not, signed-in phones.
+
+**Firewall.** `tools\phone-firewall.ps1` (run once as administrator) adds one inbound
+Windows Firewall rule "Drill phone access (Tailscale)": TCP `PORT` from `100.64.0.0/10` and
+`fd7a:115c:a1e0::/48` only. `-Remove` removes it. It also lists any inbound block rules
+for Python (Windows block rules win over allow rules) without changing them. With
+`PHONE_ALLOW_LAN=on` the home network is not covered by this rule.
