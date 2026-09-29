@@ -4,6 +4,25 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed — decks were raw slide text with template questions (2026-09-29)
+- A slide PDF the reader could read fully was saved with **no AI at all**: slide titles as terms,
+  bullets pasted as definitions, template questions. Pasted/Word material was extracted word for
+  word, also with template questions.
+- New **teaching pass** at the end of every material build (Claude online, Qwen offline): the
+  proper term, a clear definition and example (`fact`), a plain-words explanation and "don't mix
+  this up" (`guide`), items/steps where the source has them, 3 real questions with reasons, plus
+  the key terms hidden inside a slide. The recall questions (term ↔ definition) are kept, built
+  from the clean definitions. No new data fields.
+- A **tidy step** folds duplicates and fragments into the concept they belong to (their questions
+  move with them); every slide keeps at least one concept of its own.
+- Qwen: one concept per request and replies that stop early are kept (it often ended after the
+  first item of a list, and the whole batch was thrown away); one retry per batch. A batch that
+  still fails keeps its concepts as read, bullets tidied.
+- Uploading a PDF that already has a deck now offers "Build a fresh deck" (the old deck stays).
+- Checked on copies of the real database: the 8-slide "What is machine learning" PDF → 10 taught
+  concepts with Claude (~90 s), 10 with Qwen (9/10 taught before the retry was added); 7 lines of
+  pasted notes → 15 concepts, 13 fragments folded. 0 JS errors. Reader tests 3/3.
+
 - Loading screen tagline: "Study smarter. Remember longer." (was "Spatial study & concept horizons").
 
 ### Added — build queue (2026-09-29)

@@ -4503,6 +4503,175 @@ async function moduleRecord(mod, id){
     if(!d.first_upload) setTimeout(() => toast(note), 2500);   // the log is off-screen once the deck opens
   }catch(e){ plog("Module library: this upload was not recorded (server not reachable)"); }
 }
+/* TEACHING PASS (MonoSpace 2026-09-29). Every material build ends here. Extraction keeps the
+   module's own words; on its own that gave decks of raw slide bullets and template questions.
+   This asks the AI (Claude when online, Qwen offline) to turn each concept into something you
+   can study: the proper term, a clear definition with its example, a plain-words explanation
+   with the usual confusion, the key terms hidden inside it, and real questions with reasons.
+   Stored in the existing fields (name, fact, guide, items, steps, qs) — no new data shape.
+   Nothing is dropped: a batch the AI cannot do keeps its concepts as read, tidied. */
+function bulletParts(t){
+  return String(t || "").split(/\s*[•▪▫◦●○■□◆◇►▸‣➢➤✓✔]\s+|\s*\n\s*[-*]\s+/).map(x => x.trim()).filter(Boolean);
+}
+function tidyFact(c){
+  const parts = bulletParts(c.fact);
+  if(parts.length < 2) return c;
+  const fact = parts.map(x => /[.!?:]$/.test(x) ? x : x + ".").join(" ");
+  return Object.assign({}, c, {fact});
+}
+const TEACH_RULES = `You turn a university module into study notes a student can actually learn from.
+Use ONLY the source text given for each concept (and your general knowledge only to explain it more clearly, never to add new facts the module does not support).
+
+For EACH numbered concept return:
+- "i": its number
+- "name": the exact term a student must recall (e.g. "Supervised learning", "K-fold cross-validation"). If the given name is a slide title or a question rather than a term ("Why use it?", "Train/Test in Practice", "Model"), name the idea the slide actually teaches. Keep the module's spelling for real terms.
+- "definition": ONE clear sentence saying what it is. If the source gives a definition, keep its wording; otherwise write a precise one from the source. Never start with a bullet, "This slide", or "The concept".
+- "example": the module's example in one sentence, or "" if it has none.
+- "explain": 2-3 plain-language sentences: how it works / why it matters, as a tutor would say it.
+- "confuse": one sentence starting "Students often confuse this with" naming the nearest confusable idea and how to tell them apart, or "".
+- "items": ONLY if it is an unordered list or set in the source — the members as short strings. Omit otherwise.
+- "steps": ONLY if it is an ordered procedure in the source — the steps in order. Omit otherwise.
+- "qs": 3 questions testing understanding, not wording: one multiple choice (4 options, exactly one right, plausible distractors from real confusions), one true/false, one short type-in answer of 1-3 words. Each with "why": 1-2 sentences of reasoning.
+- "also": distinct key terms the source defines or uses inside this concept that a student would be examined on (e.g. "Latent variable", "Overfitting", "Training set") — each with "name", "definition", "example", "explain", "qs" as above. NEVER a part, restatement or narrower version of this concept or of anything in ALREADY IN THE DECK (not "Public key encrypts" when the concept is asymmetric encryption). At most 3; usually 0-1; [] if none.
+
+Respond with ONLY a JSON array, no preamble, no markdown fences:
+[{"i":1,"name":"...","definition":"...","example":"...","explain":"...","confuse":"...","qs":[
+{"t":"mcq","q":"...","o":["a","b","c","d"],"a":0,"why":"..."},
+{"t":"tf","q":"...","a":true,"why":"..."},
+{"t":"txt","q":"...","accept":["answer","alt"],"why":"..."}],"also":[]}]`;
+/* Every complete {...} in a reply, even when the model stopped before closing the list
+   (Qwen sometimes ends after the first item) — what did come back is kept. */
+function jsonObjects(t){
+  t = String(t || "").replace(/```json|```/g, "");
+  const out = []; let depth = 0, start = -1, inStr = false, esc = false;
+  for(let i = 0; i < t.length; i++){
+    const ch = t[i];
+    if(inStr){ if(esc) esc = false; else if(ch === "\\") esc = true; else if(ch === '"') inStr = false; continue; }
+    if(ch === '"'){ inStr = true; continue; }
+    if(ch === "{"){ if(depth === 0) start = i; depth++; }
+    else if(ch === "}" && depth > 0){ depth--; if(depth === 0 && start >= 0){ try{ out.push(JSON.parse(t.slice(start, i + 1))); }catch(e){} start = -1; } }
+  }
+  return out;
+}
+function goodQs(qs){
+  return (Array.isArray(qs) ? qs : []).filter(q => q && typeof q.q === "string" && q.q.trim() && (
+    (q.t === "mcq" && Array.isArray(q.o) && q.o.length === 4 && Number.isInteger(q.a) && q.a >= 0 && q.a < 4) ||
+    (q.t === "tf" && typeof q.a === "boolean") ||
+    (q.t === "txt" && Array.isArray(q.accept) && q.accept.length)))
+    .map(q => Object.assign({}, q, {why:String(q.why || "")}));
+}
+function taughtConcept(base, r){
+  const str = v => typeof v === "string" ? v.trim() : "";
+  const def = str(r.definition).replace(/^[•▪◦●\-*]\s*/, "");
+  const ex = str(r.example);
+  const c = Object.assign({}, base);
+  c.name = tidyName(str(r.name)) || str(r.name) || base.name;
+  if(def) c.fact = def + (ex ? " Example: " + ex.replace(/^(for )?example:?\s*/i, "") : "");
+  const guide = [str(r.explain), str(r.confuse)].filter(Boolean).join(" ");
+  if(guide) c.guide = guide;
+  if(Array.isArray(r.items) && r.items.length >= 2) c.items = r.items.map(String);
+  if(Array.isArray(r.steps) && r.steps.length >= 2) c.steps = r.steps.map(String);
+  c.aiQs = goodQs(r.qs);
+  return c;
+}
+async function teachConcepts(list, log){
+  if(!list.length) return list;
+  const route = await aiRoute();
+  const who = !route ? "the AI" : route.model === "claude" ? "Claude" : "Qwen (offline)";
+  log("Teaching pass with " + who + ": definitions, explanations and questions for " + plural(list.length, "concept"));
+  const B = route && route.model !== "claude" ? 1 : 3;      // Qwen: one at a time — it tends to stop after the first item
+  const starts = []; for(let i = 0; i < list.length; i += B) starts.push(i);
+  const taught = list.map(tidyFact), extras = list.map(() => []);
+  let done = 0, failed = 0;
+  const deckNames = trimNice(list.map(c => c.name).join("; "), 1500);
+  const run = async start => {
+    const part = list.slice(start, start + B);
+    const body = part.map((c, k) => (k + 1) + ". " + c.name + " (topic: " + (c.topic || "General") + ")\nSOURCE: " +
+      String(c.fact || "").slice(0, 2500) +
+      (c.items && c.items.length ? "\nLISTED: " + c.items.join("; ") : "") +
+      (c.steps && c.steps.length ? "\nSTEPS: " + c.steps.join(" -> ") : "")).join("\n\n");
+    try{
+      let res = [];
+      for(let attempt = 0; attempt < 2 && !res.length; attempt++){     // one retry: a bad reply is usually a one-off
+        try{ res = jsonObjects(await claude(TEACH_RULES + "\n\nALREADY IN THE DECK: " + deckNames + "\n\nCONCEPTS:\n\n" + body, 4000)); }
+        catch(e){ if(attempt) throw e; }
+      }
+      if(!res.length) throw new Error("the reply had no usable entries");
+      let got = 0;
+      res.forEach(r => {
+        const k = (parseInt(r && r.i, 10) || 0) - 1;
+        if(k < 0 || k >= part.length) return;
+        taught[start + k] = taughtConcept(taught[start + k], r); got++;
+        (Array.isArray(r.also) ? r.also : []).slice(0, 2).forEach(a => {
+          if(a && typeof a.name === "string" && typeof a.definition === "string" && a.definition.trim())
+            extras[start + k].push(taughtConcept({id:uid(), topic:part[k].topic, pages:part[k].pages, star:false, qs:[]}, a));
+        });
+      });
+      if(got < part.length){ failed += part.length - got; log("Teaching pass: " + (part.length - got) + " concept(s) came back empty — kept as read", true); }
+    }catch(e){
+      failed += part.length;
+      log("Teaching pass: " + trimNice(e.message, 70) + " — kept " + plural(part.length, "concept") + " as read", true);
+    }
+    done++;
+    pbar(82 + done / starts.length * 16, "Teaching… " + Math.min(list.length, done * B) + " of " + list.length + " concepts");
+  };
+  for(let i = 0; i < starts.length; i += 2) await Promise.all(starts.slice(i, i + 2).map(run));
+  // concepts in module order, each followed by the key terms found inside it; no duplicate names
+  const seen = new Set(), out = [];
+  taught.forEach((c, k) => {
+    [c].concat(extras[k]).forEach(x => {
+      const key = norm(x.name);
+      if(!key || seen.has(key)) return;
+      seen.add(key); out.push(x);
+    });
+  });
+  // fold duplicates and fragments ("Public key encrypts" beside "Asymmetric encryption") into
+  // the concept they belong to; their questions move with them, nothing else is lost
+  if(out.length >= 6){
+    pbar(98, "Tidying the list…");
+    try{
+      const list2 = out.map((c, i) => (i + 1) + ". " + c.name + " — " + trimNice(c.fact || "", 110)).join("\n");
+      const res = jsonObjects(await claude(
+`These are the concepts of one study deck. Find entries that are the SAME idea as another entry, or only a fragment / restatement of another entry (e.g. "Public key encrypts" when "Asymmetric encryption" or "Public key" is there; "Hashing for integrity verification" when "Hashing" says the same). Keep distinct terms a student is examined on, even small ones (e.g. "Plaintext", "AES", "Latent variable") — only fold true duplicates and fragments. When in doubt, keep it.
+
+${list2}
+
+Respond with ONLY a JSON array, [] if nothing to fold:
+[{"drop":7,"into":3}]`, 800));
+      const drop = new Map();
+      res.forEach(r => {
+        const d = (parseInt(r && r.drop, 10) || 0) - 1, t = (parseInt(r && r.into, 10) || 0) - 1;
+        if(d >= 0 && t >= 0 && d < out.length && t < out.length && d !== t && !drop.has(t)) drop.set(d, t);
+      });
+      for(const [d, t] of [...drop]) if(drop.has(t)) drop.delete(d);     // never fold into something that goes
+      // every slide keeps at least one concept of its own ("every content slide accounted for")
+      for(const d of [...drop.keys()]){
+        const pg = out[d].pages || [];
+        if(pg.length && !pg.some(n => out.some((c, i) => i !== d && !drop.has(i) && (c.pages || []).includes(n)))) drop.delete(d);
+      }
+      if(drop.size && drop.size <= Math.floor(out.length / 2)){
+        drop.forEach((t, d) => { if(out[d].aiQs) out[t].aiQs = (out[t].aiQs || []).concat(out[d].aiQs.slice(0, 2)); });
+        const names = [...drop.keys()].map(d => out[d].name);
+        const kept = out.filter((_, i) => !drop.has(i));
+        out.length = 0; out.push(...kept);
+        log("Folded " + plural(names.length, "duplicate") + " into the concepts they belong to: " + names.join(", "));
+      }
+    }catch(e){ /* tidying is optional — keep everything */ }
+  }
+  // every concept keeps the recall questions too (term ↔ definition), now from clean definitions
+  const pairs = out.map(c => ({term:c.name, def:c.fact}));
+  out.forEach((c, i) => {
+    const recall = questionsFromTerms(pairs, i).filter(q => q.t === "txt" || /Which term is this\?$/.test(q.q));
+    c.qs = (c.aiQs && c.aiQs.length) ? c.aiQs.concat(recall) : questionsFromTerms(pairs, i);
+    delete c.aiQs;
+    if(!c.id) c.id = uid();
+  });
+  const added = out.length - list.length;
+  log("Taught " + (list.length - failed) + " of " + plural(list.length, "concept") +
+      (added > 0 ? " · found " + plural(added, "more key term") : "") +
+      (failed ? " · " + failed + " kept as read (use “Explain this one” later)" : ""), !!failed);
+  return out;
+}
 /* Builds one queued job (runQueue). Returns the new (or existing) deck id, or null if it stopped. */
 async function build(job){
   const {name, folderId} = job;
@@ -4516,11 +4685,16 @@ async function build(job){
     const mod = modU ? await moduleCheck(modU) : null;
     if(mod && mod.failed) plog("Module library not reachable — building without recording this PDF");
     if(mod && mod.known && mod.deck_exists){
-      const msg = "No changes: this is the same PDF as your deck “" + mod.deck_name + "” (uploaded " +
-                  new Date(mod.uploaded_at).toLocaleDateString() + ")";
-      pbar(100, "No changes"); plog(msg);
-      toast(msg);
-      return jobDone(mod.deck_id);
+      const fresh = await choiceDlg("You already have this module",
+        "“" + mod.deck_name + "” was built from this same PDF (uploaded " + new Date(mod.uploaded_at).toLocaleDateString() +
+        "). Build a fresh deck from it? The old deck stays until you delete it.", "Build a fresh deck", "Open the existing deck");
+      if(!fresh){
+        const msg = "No changes: this is the same PDF as your deck “" + mod.deck_name + "”";
+        pbar(100, "No changes"); plog(msg);
+        toast(msg);
+        return jobDone(mod.deck_id);
+      }
+      plog("Same PDF as “" + mod.deck_name + "” — building a fresh deck; the old one is kept");
     }
     let fromSlides = [], coverage = null, pictures = [];
     const pdfs = uploads.filter(u => u.kind === "pdfpages" && u.doc);
@@ -4589,8 +4763,10 @@ async function build(job){
     if(fromSlides.length && !material.trim()){
       // everything came from the slides themselves — nothing for the AI to guess
       const pairs = fromSlides.map(c => ({term:c.name, def:c.fact}));
-      const concepts = fromSlides.map((c,i) => ({id:uid(), name:c.name, topic:c.topic, fact:c.fact,
+      let concepts = fromSlides.map((c,i) => ({id:uid(), name:c.name, topic:c.topic, fact:c.fact,
         items:c.items, steps:c.steps, pages:c.pages, star:false, qs:questionsFromTerms(pairs, i)}));
+      pbar(82, "Teaching…");
+      concepts = await teachConcepts(concepts, (m,e) => plog(m,e));
       const idS = uid();
       const okS = await store.set("deck:"+idS, {id:idS, name, concepts, cards:
         job.makeCards ? concepts.map(c => ({id:uid(), front:c.name, back:c.fact})) : [],
@@ -4601,9 +4777,9 @@ async function build(job){
       await store.set("library", LIB);
       await moduleRecord(mod, idS);   // LOCAL PORT (Phase 6)
       pbar(100, "Done");
-      plog("Deck saved · " + concepts.length + " terms · every content slide accounted for" +
+      plog("Deck saved · " + concepts.length + " concepts · every content slide accounted for" +
            (coverage && coverage.empty.length ? " except " + coverage.empty.length : ""));
-      toast(concepts.length + " terms read from the slides");
+      toast(concepts.length + " concepts ready to study");
       return jobDone(idS);
     }
     if(material) plog("Material ready · " + material.length + " characters, nothing summarised");
@@ -4616,6 +4792,8 @@ async function build(job){
         concepts = merged.map((c,i) => ({id:uid(), name:c.name, topic:c.topic, fact:c.fact,
           items:c.items, steps:c.steps, star:false, qs:questionsFromTerms(pairs, i)}));
       }
+      pbar(82, "Teaching…");
+      concepts = await teachConcepts(concepts, (m,e) => plog(m,e));
       const cards = job.makeCards
         ? concepts.filter(c => (c.fact||"").length > 10).map(c => ({id:uid(), front:c.name, back:c.fact}))
         : [];
