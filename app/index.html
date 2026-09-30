@@ -5905,6 +5905,7 @@ function termChip(word, mode){
     e.stopPropagation(); e.preventDefault();
     step = Math.min(step + 1, mode === "gap" ? 1 : 2);
     s.textContent = step === 1 ? hint : w;
+    if(step === 2) s.dispatchEvent(new CustomEvent("termreveal", {bubbles:true}));   // the answer was seen
     s.classList.toggle("hinted", step === 1); s.classList.toggle("shown", step === 2);
   };
   s.onclick = tap;
@@ -6108,6 +6109,7 @@ function renderCard(card){
   const c = con(card.cid), q = Object.assign({}, card.q, {q:questionText(card.q, card.cid)});
   const el = document.createElement("div");
   el.className = "qcard" + (card.fresh ? " fresh" : "");
+  el.addEventListener("termreveal", () => { card.revealed = true; });
   const head = document.createElement("div"); head.className = "qhead";
   const a = document.createElement("span"); a.textContent = c.topic;
   const b = document.createElement("span");
@@ -6195,6 +6197,8 @@ function renderCard(card){
 }
 function resolve(card, ok, btn){
   if(!card.open) return;
+  // the hint was tapped twice and showed the answer: a right choice after that counts as not known yet
+  if(ok && card.revealed){ ok = false; card._revealed = true; }
   card.open = false; card.el.classList.remove("fresh","hot");
   const cid = card.cid, st = S.m[cid], q = card.q, life = PROG.m[cid];
   if(!ok) card._before = {st:JSON.parse(JSON.stringify(st)), life:JSON.parse(JSON.stringify(migrate(life))),
@@ -6241,6 +6245,7 @@ function resolve(card, ok, btn){
   const why = document.createElement("div"); why.className = "why";
   const h = document.createElement("b");
   h.textContent = ok ? (st.done ? "Correct — mastered" : "Correct — one more to lock it")
+                     : card._revealed ? "You saw the answer — counted as not known yet"
                      : card._partial ? "Almost — you need the whole term" : "Not quite";
   let text = q.why || con(cid).fact || "";
   if(!ok && card._partial)
@@ -6255,7 +6260,7 @@ function resolve(card, ok, btn){
   card.el.appendChild(why);
   card.whyEl = why;
   // a typed answer marked wrong: you can overrule it, and the AI checks the wording meanwhile
-  if(!ok && (q.t === "txt" || q.t === "cloze") && !card._partial && givenText.trim() && !nonAnswer(givenText)){
+  if(!ok && (q.t === "txt" || q.t === "cloze") && !card._partial && !card._revealed && givenText.trim() && !nonAnswer(givenText)){
     const mk = document.createElement("button"); mk.className = "btn2 sm markok"; mk.textContent = "I was right — mark as correct";
     mk.onclick = () => markCorrect(card, "Marked correct by you");
     why.appendChild(mk); card.markBtn = mk;
@@ -8556,6 +8561,8 @@ function nextSprint(){
     {text: askTerm ? c.name : short(maskTerm(c.fact, c.name)), ok:true},
     ...others.map(o => ({text: askTerm ? o.name : short(maskTerm(o.fact, o.name)), ok:false}))
   ]);
+  SP.revealed = false;
+  if(!$("sp-q")._rv){ $("sp-q")._rv = true; $("sp-q").addEventListener("termreveal", () => { if(SP) SP.revealed = true; }); }
   fillMasked($("sp-q"), askTerm ? short(maskTerm(c.fact, c.name)) : c.name, "peek");
   const box = $("sp-opts"); box.innerHTML = "";
   opts.forEach((o,i) => {
@@ -8568,7 +8575,13 @@ function nextSprint(){
       SP.asked++;
       const life = migrate(PROG.m[c.id] || fresh());
       life.seen++;
-      if(o.ok){
+      if(o.ok && SP.revealed){           // right, but only after the hint showed the answer
+        SP.wrong++; life.wrong++;
+        SP.combo = 1;
+        if(!SP.missed.includes(c)) SP.missed.push(c);
+        b.dataset.r = "hit";
+        toast("You saw the answer — counted as a miss");
+      } else if(o.ok){
         SP.right++; life.right++;
         SP.score += 10 * SP.combo;
         SP.combo = Math.min(5, SP.combo + 1);

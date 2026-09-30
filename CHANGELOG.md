@@ -4,6 +4,12 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed — seeing the answer through the hint no longer counts as knowing it (2026-10-01)
+- Tapping a hidden-term chip twice shows the whole answer. Choosing or typing that answer
+  afterwards now counts as not known yet ("You saw the answer — counted as not known yet"), in
+  study sessions and in Sprint ("counted as a miss"). One tap (first letter and length) is a hint
+  and still counts as right. No "I was right" button or AI check after a full reveal.
+
 ### Added — pick Claude or Qwen in Ask the teacher; signed-out Claude handled; every log entry named (2026-10-01)
 - **Ask the teacher: Claude | Qwen.** A switch at the top of the chat (Claude each time the app
   opens). Claude: Claude answers, Qwen if Claude can't. Qwen: Qwen answers on this PC and Claude
