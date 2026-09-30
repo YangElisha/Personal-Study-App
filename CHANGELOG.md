@@ -4,6 +4,14 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed — Settings layout (2026-10-01)
+- "Layout and length" and "Appearance" touched with no gap (a card after the study-options block
+  got no spacing). Checked at 780, 1000 and 1100 px wide and at the largest text size: nothing
+  runs off the page.
+- The AI box no longer says "there is nothing to set here": it says Claude or Qwen, why Qwen is
+  answering (Claude Code signed out / usage limit), how to get Claude back, and that Ask the
+  teacher has its own Claude/Qwen switch.
+
 ### Fixed — seeing the answer through the hint no longer counts as knowing it (2026-10-01)
 - Tapping a hidden-term chip twice shows the whole answer. Choosing or typing that answer
   afterwards now counts as not known yet ("You saw the answer — counted as not known yet"), in

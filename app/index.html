@@ -1090,6 +1090,8 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
 .kv span{color:var(--ink-2)}
 .kv b{font-weight:600;text-align:right}
 .setsec{margin:36px 0 12px}
+#set-study + .card{margin-top:var(--s4)}
+#v-settings .kv b{min-width:0;overflow-wrap:anywhere}
 /* deck page */
 .dhero{padding:28px 30px 22px}
 .dtop{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,380px);gap:var(--s6);align-items:end}
@@ -1269,7 +1271,8 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
         <h2>AI</h2>
         <div class="kv"><span>Answering right now</span><b id="ai-now">Checking…</b></div>
         <div class="kv"><span>Internet</span><b id="netstate">—</b></div>
-        <p class="sub" style="margin:12px 0 0">Claude answers when you are online and it is switched on; otherwise Qwen on this PC answers. This is automatic; there is nothing to set here.</p>
+        <p class="sub hide" id="ai-fix" style="margin:12px 0 0;color:var(--ink)">To use Claude again: open a terminal, run <b>claude</b>, then type <b>/login</b> — or tap the AI badge (bottom left) and choose <b>Try Claude again</b>.</p>
+        <p class="sub" style="margin:12px 0 0">Claude answers when you are online; otherwise Qwen answers on this PC. This is automatic. In <b>Ask the teacher</b> you can pick Claude or Qwen yourself.</p>
       </div>
       <div id="set-study">
         <p class="eyebrow setsec">Study options</p>
@@ -3622,7 +3625,10 @@ async function renderSettings(){
   const [route, health] = await Promise.all([aiRoute(),
     fetch("/api/health", {cache:"no-store"}).then(r => r.ok ? r.json() : null).catch(() => null)]);
   $("ai-now").textContent = !route ? "Unknown — the server isn't answering"
-    : route.model === "claude" ? "Claude" : "Qwen, on this PC";
+    : route.model === "claude" ? "Claude"
+    : route.pause_reason === "signin" ? "Qwen — Claude Code is signed out"
+    : route.claude_paused ? "Qwen — Claude is paused (usage limit)" : "Qwen, on this PC";
+  $("ai-fix").classList.toggle("hide", !(route && route.claude_paused));
   $("about-ver").textContent = "MonoSpace" + (health && health.version ? " " + health.version : "");
 }
 
