@@ -77,7 +77,7 @@ before it is committed.
 ## Commands (fill in as they are created)
 
 - Start the app (desktop): `MonoSpace.exe` (installed), or from source `.venv\Scripts\python -m server.launcher`; developer server: `start.bat`
-- Build the Windows downloads: `powershell -ExecutionPolicy Bypass -File packaging\build.ps1` → `dist\` (set `MONOSPACE_HOME=<scratch>` to test without touching real settings)
+- Build the Windows downloads: `powershell -ExecutionPolicy Bypass -File packaging\build.ps1` → `dist\` (set `MONOSPACE_HOME=<scratch>` to test without touching real settings). Each build is stamped; the installed app then shows "Update ready" and installs it in one click (server/update.py)
 - Start the app: double-click `start.bat`, or `.venv\Scripts\python -m server`
   (first time only, needs internet once: `python -m venv .venv` then
   `.venv\Scripts\python -m pip install -r requirements.txt`; after that everything runs offline)
