@@ -4,6 +4,23 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed — fair marking of typed answers; questions never show their own answer; layout (2026-09-30)
+- **Typed answers in your own words.** An answer holding every meaningful word of the expected
+  one, in any order and with more around it, is right ("Playing games on work laptop" for "game
+  playing"). When a typed answer is still marked wrong, the AI checks whether it means the same
+  (Claude online, Qwen offline) and counts it right if so; either way "I was right — mark as
+  correct" is there. Marking it correct undoes the wrong grade exactly (streak, progress, the
+  extra questions queued) and adds your wording to the question's accepted answers.
+- **"Which term does this describe?" no longer shows the term.** Questions saved by earlier
+  builds carried the plain definition ("Computer misuse is the improper use…"). The answer is
+  now hidden whenever a question is shown, so every existing deck is fixed without rebuilding.
+  The feedback no longer repeats the term three times.
+- **Sidebar.** The "Subjects" heading stays above the list instead of sliding over it while
+  scrolling; the AI badge sits in the sidebar under Settings instead of floating over the page.
+- `npm test` now also checks that every inline script in app/index.html parses
+  (`tests/check-app-syntax.js`) — a syntax error anywhere leaves the app blank, and the reader
+  tests only load the reader.
+
 ### Fixed — Module 2's garbled terms and the Gospel slide; simpler Activity log; remove while learning (2026-09-30)
 - **Garbled term names.** On slides built from two-column boxes, the slide reader ran titles and
   text together, so "terms" came out as whole sentences in Title Case ("Incremental Development

@@ -864,10 +864,10 @@ textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
 .toast{background:var(--glass);color:var(--ink);border:1px solid var(--rule);box-shadow:var(--shadow-2);
   -webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);
   transition:opacity var(--t) var(--ease),transform .24s var(--ease)}
-#modelBadge{background:var(--glass)!important;color:var(--ink-2)!important;opacity:1!important;
-  border-color:var(--rule)!important;padding:4px 10px!important;
-  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+
 .hovercard{background:var(--ink);color:var(--surface)}
+.why .markok{display:block;margin-top:12px}
+.why .aijudge{display:block;margin-top:8px;color:var(--ink-3);font-size:.82em}
 .linkbtn{background:none;border:0;color:var(--ink-3);cursor:pointer;font:inherit;font-size:.88em;margin-left:auto;
          padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
 .linkbtn:hover{color:var(--miss)}
@@ -910,7 +910,7 @@ textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
 .bdot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--ink-3);flex:none}
 .bdot.ok{background:#9d8bff}.bdot.local{background:#3fc4a6}.bdot.warn{background:#f0a040}
 .berr{background:var(--miss);color:#fff;border-radius:999px;padding:0 6px;font-size:10px;line-height:15px}
-#modelBadge:hover{color:var(--ink)!important;border-color:var(--live)!important}
+
 /* a hidden term inside a sentence: a soft chip, not a row of underscores */
 .hterm{display:inline-block;padding:0 .5em;margin:0 .1em;border-radius:7px;line-height:1.5;
   font-size:.9em;font-weight:500;color:var(--live);background:color-mix(in srgb,var(--live) 13%,transparent);
@@ -942,9 +942,10 @@ textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
 .navbtn span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .navcount{font-style:normal;font-family:var(--mono);font-size:max(11px,.72em);font-weight:500;line-height:1;
      padding:4px 7px;border-radius:100px;background:color-mix(in srgb,var(--miss) 20%,transparent);color:var(--rail-ink)}
-.navsubj{flex:1;min-height:0;overflow-y:auto;margin:var(--s5) -4px 0;padding:0 4px}
+.navsubj{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;margin:var(--s5) -4px 0;padding:0 4px}
 .navsec{display:flex;align-items:center;justify-content:space-between;font-size:max(11px,.7em);margin:0 0 6px;
-     padding:0 6px 0 10px;position:sticky;top:0;background:transparent}
+     padding:0 6px 0 10px;flex:none}
+.navsubj #library{flex:1;min-height:0;overflow-y:auto;margin:0 -4px;padding:0 4px 8px}
 .navplus{width:24px;height:24px;border-radius:7px;border:0;background:none;color:var(--rail-ink-2);cursor:pointer;
      font-size:17px;line-height:1;display:grid;place-items:center}
 .navplus:hover{background:var(--rail-2);color:var(--rail-ink)}
@@ -970,13 +971,15 @@ textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
 .navrule{height:1px;background:var(--rail-rule);margin:10px 10px}
 .folder.archive .fname{color:var(--rail-ink-2)}
 .navfoot{border-top:1px solid var(--rail-rule);padding-top:10px;margin-top:10px}
-#modelBadge{left:calc(var(--nav) + 12px)!important}
+.navbadge{display:flex;align-items:center;gap:7px;margin:8px 0 0 6px;padding:5px 11px;border-radius:999px;
+  font:500 11px var(--mono);color:var(--rail-ink-2);background:none;border:1px solid var(--rail-rule);cursor:pointer;
+  justify-self:start;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.navbadge:hover{color:var(--rail-ink);border-color:var(--live)}
 @media(max-width:900px){
   :root{--bar:56px}
   .appbar{display:flex;left:0}
   .shell{padding-top:var(--bar)}
   .nav{z-index:55;width:min(300px,86vw)}
-  #modelBadge{left:10px!important}
 }
 @media(min-width:901px){.exambar{left:var(--nav)}}
 .crumb{font-family:var(--body);font-size:.86em;letter-spacing:0;text-transform:none;border-left:0;padding-left:0;color:var(--ink-2)}
@@ -2381,6 +2384,10 @@ function answerCheck(given, accepts, strict){
     if(gw.length === aw.length && gw.length && gw.every((w,i) => closeWord(w, aw[i]))) return {exact:false};
     // whole-string typo tolerance
     if(near(stemAll(given).replace(/ /g,""), stemAll(acc).replace(/ /g,""))) return {exact:false};
+    // the same words in another order, with more around them: "playing games on a work laptop"
+    // for "game playing" (every meaningful word of the answer is there)
+    const key = aw.filter(w => w.length > 2 && !FILLER.has(w));
+    if(key.length >= 2 && gw.length <= key.length + 6 && key.every(w => gw.some(x => closeWord(x, w)))) return {exact:false};
   }
   // only part of a multi-word term, e.g. "information" for "information security"
   for(const acc of accepts){
@@ -2681,7 +2688,9 @@ function modelBadge(d){
       "align-items:center;gap:6px;border-radius:999px;font:500 11px var(--mono);background:var(--surface);" +
       "color:var(--ink-2);border:1px solid var(--rule);cursor:pointer";
     b.onclick = openLog;
-    document.body.appendChild(b);
+    const foot = document.querySelector(".navfoot");
+    if(foot){ b.style.cssText = ""; b.className = "navbadge"; foot.appendChild(b); }
+    else document.body.appendChild(b);
   }
   const r = BADGE.route, model = BADGE.model || (r ? r.model : null);
   const name = model === "claude" ? "Claude" : model === "qwen" ? "Qwen" : "…";
@@ -6014,8 +6023,19 @@ function addCard(force, fresh){
   S.cards.push(card);
   return true;
 }
+/* "Which term does this describe?" questions saved by older builds carry the plain definition,
+   which usually names the term itself ("Computer misuse is the improper use…"). Whatever a deck
+   has stored, the answer is hidden when the question is shown. */
+function questionText(q, cid){
+  const text = String(q.q || "");
+  if(!/which term (does this describe|is this)|name the term|what term/i.test(text)) return text;
+  const names = [q.t === "mcq" && Array.isArray(q.o) ? q.o[q.a] : null, ...(q.accept || []), (con(cid) || {}).name]
+                  .filter((x, i, a) => x && a.indexOf(x) === i);
+  return text.split(/\n\n+/).map(part => /which term|name the term|what term/i.test(part) ? part
+           : names.reduce((t, n) => maskTerm(t, n), part)).join("\n\n");
+}
 function renderCard(card){
-  const c = con(card.cid), q = card.q;
+  const c = con(card.cid), q = Object.assign({}, card.q, {q:questionText(card.q, card.cid)});
   const el = document.createElement("div");
   el.className = "qcard" + (card.fresh ? " fresh" : "");
   const head = document.createElement("div"); head.className = "qhead";
@@ -6107,6 +6127,9 @@ function resolve(card, ok, btn){
   if(!card.open) return;
   card.open = false; card.el.classList.remove("fresh","hot");
   const cid = card.cid, st = S.m[cid], q = card.q, life = PROG.m[cid];
+  if(!ok) card._before = {st:JSON.parse(JSON.stringify(st)), life:JSON.parse(JSON.stringify(migrate(life))),
+                          right:S.right, streak:S.streak, best:S.best, progRight:PROG.right,
+                          queue:S.queue.slice(), promoted:S.promoted.slice()};
   S.asked++; PROG.asked++;
   migrate(life); life.seen++;
   if(ok){
@@ -6152,10 +6175,22 @@ function resolve(card, ok, btn){
   let text = q.why || con(cid).fact || "";
   if(!ok && card._partial)
     text = "That is only part of it — the full term is “" + card._partial + "”. " + text;
-  else if(!ok) text = "Answer: " + answerText + ". " + text;
+  else if(!ok){
+    const lead = answerText + " — ";
+    if(text.startsWith(lead)) text = text.slice(lead.length);
+    text = "Answer: " + answerText + ". " + text;
+  }
   else if(card._near) text = "Counted as correct — the deck writes it as “" + card._near + "”. " + text;
   why.append(h, document.createTextNode(text));
   card.el.appendChild(why);
+  card.whyEl = why;
+  // a typed answer marked wrong: you can overrule it, and the AI checks the wording meanwhile
+  if(!ok && (q.t === "txt" || q.t === "cloze") && !card._partial && givenText.trim()){
+    const mk = document.createElement("button"); mk.className = "btn2 sm markok"; mk.textContent = "I was right — mark as correct";
+    mk.onclick = () => markCorrect(card, "Marked correct by you");
+    why.appendChild(mk); card.markBtn = mk;
+    if(OPT.ai) aiJudge(card, givenText, answerText);
+  }
   CHAT.focus = cid;
   card._exp = {ok, given:givenText, answer:answerText,
                why:(card._near ? "Counted as correct — the deck writes it as “" + card._near + "”. " : "")
@@ -6203,6 +6238,60 @@ function resolve(card, ok, btn){
   }
   paint(); saveProg();
   if(viewMode === "board" && S.pool.every(id => S.m[id].done)) setTimeout(report, 900);
+}
+/* Turns a wrong grade into a right one: the concept's state goes back to exactly what it was
+   before the answer, then counts it correct. The wording is added to the question's accepted
+   answers, so it is right next time too. */
+async function markCorrect(card, how){
+  const b = card._before;
+  if(!b || card._overridden || !S) return;
+  card._overridden = true;
+  const cid = card.cid, st = S.m[cid], life = PROG.m[cid];
+  Object.keys(st).forEach(k => delete st[k]); Object.assign(st, b.st);
+  Object.keys(life).forEach(k => delete life[k]); Object.assign(life, b.life);
+  S.right = b.right; S.streak = b.streak; S.best = b.best; PROG.right = b.progRight;
+  S.queue = b.queue; S.promoted = b.promoted;
+  S.right++; PROG.right++; S.streak++; S.best = Math.max(S.best, S.streak);
+  st.right++; st.run++; life.right++;
+  if(st.run >= (st.needed || MASTER_AT)){
+    if(!st.done){ promote(life); S.promoted.push({id:cid, due:life.due, box:life.box}); }
+    st.done = true;
+  }
+  life.run = st.run;
+  card.el.dataset.r = "hit";
+  const given = card.input ? card.input.value.trim() : "";
+  if(card.whyEl){
+    const h = card.whyEl.querySelector("b");
+    if(h) h.textContent = how + (st.done ? " — mastered" : " — one more to lock it");
+  }
+  if(card.markBtn) card.markBtn.remove();
+  card.el.querySelectorAll(".spawn, .aijudge").forEach(x => x.remove());
+  if(card._exp) card._exp.ok = true;
+  const q = card.q;
+  if(given && Array.isArray(q.accept) && !q.accept.some(a => norm(a) === norm(given)) && given.length <= 80){
+    q.accept.push(given);
+    if(!q.gen) await store.set("deck:" + DECK.id, DECK);
+  }
+  paint(); saveProg();
+}
+/* Asks the AI whether a typed answer that didn't match means the same as the expected one. */
+async function aiJudge(card, given, expected){
+  const note = document.createElement("small"); note.className = "aijudge"; note.textContent = "Checking your wording with the AI…";
+  card.whyEl.appendChild(note);
+  try{
+    const reply = await claude(
+`A student answered a study question in their own words. Decide if their answer is correct: it means the same as the expected answer (different wording, word order, or a more specific correct example is fine). It is NOT correct if it names a different thing, is only partly right, or is too vague.
+
+QUESTION: ${unmask(card.q.q)}
+EXPECTED ANSWER: ${expected}
+ALSO ACCEPTED: ${(card.q.accept || []).slice(1, 6).join("; ") || "-"}
+STUDENT ANSWERED: ${given}
+
+Reply with exactly one word: YES or NO.`, 20);
+    if(card._overridden) return;
+    if(/^\W*yes\b/i.test(String(reply).trim())) return markCorrect(card, "Correct — worded differently (checked by AI)");
+    note.textContent = "The AI agrees it's not the same — but if you're sure, mark it correct.";
+  }catch(e){ note.remove(); }
 }
 function advance(card){
   if(S.pool.every(id => S.m[id].done)) return report();

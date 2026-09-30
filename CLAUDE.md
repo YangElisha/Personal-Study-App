@@ -85,7 +85,7 @@ before it is committed.
 - Import backups: `.venv\Scripts\python -m server.importer` (server stopped; shows a plan and asks
   for `yes` before changing any existing key; `--yes` for scripts)
 - Restore a snapshot: `.venv\Scripts\python -m server.restore` (lists) / `... restore <name>` (server stopped; asks for `yes`)
-- Run reader tests: `npm test` (app/index.html) · `npm test -- --html legacy/drill-study-app.html` (frozen reference; fails Module 3 by design — Canva backgrounds)
+- Run reader tests: `npm test` (checks every inline script in app/index.html parses, then the reader against the golden files) · `npm test -- --html legacy/drill-study-app.html` (frozen reference; fails Module 3 by design — Canva backgrounds)
 - Module library: `.venv\Scripts\python -m server.modules list` · `... register <pdf> --deck <id>` (server stopped)
 - Public copy (open source): `python tools/export_public.py <new empty folder>` (leaves out personal/course files, then scans)
 - Check for secrets: `.venv\Scripts\python tools\check_secrets.py`
