@@ -22,7 +22,10 @@ a = Analysis(
         (str(ROOT / "app"), "app"),                           # index.html + vendor/ (pdf.js, fonts)
         (str(ROOT / "assets" / "monospace.ico"), "assets"),
         (str(ROOT / "LICENSE"), "."),
-    ] + wv_datas,
+    ] + wv_datas
+      # the build stamp (packaging/build.ps1) — how the app knows an update is newer
+      + ([(str(ROOT / "packaging" / "build-info.json"), ".")]
+         if (ROOT / "packaging" / "build-info.json").is_file() else []),
     binaries=wv_bins,
     hiddenimports=hidden,
     excludes=["PIL", "pytest", "httpx", "httpx2", "PyInstaller", "setuptools", "pip"],

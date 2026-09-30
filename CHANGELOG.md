@@ -4,6 +4,21 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — update from inside MonoSpace (2026-10-01)
+- Every build is stamped (`build-info.json` inside the program; `dist\MonoSpace-Setup.json`
+  beside the installer, with its sha256). When a newer build is in the project's dist folder,
+  **Update ready** appears in the sidebar and **Update now** in Settings → About.
+- Updating: refuses while a deck is building; checks the installer matches its record (not
+  half-copied); copies it out of dist; takes a `pre-update` database snapshot; closes MonoSpace;
+  a hidden helper waits for it to exit, installs silently over the old version (the old
+  program files are removed first — `[InstallDelete] {app}\_internal`) and opens the new one
+  (`/RELAUNCH=1`). The data folder, settings and logs are never touched.
+- Tested: the update decision (newer / same / older build, record with a BOM, half-copied
+  installer refused) and the hand-off with real processes (the helper outlives MonoSpace, waits
+  for it to close, then runs the installer with /VERYSILENT … /RELAUNCH=1).
+- The copy installed before this change has no stamp, so it is updated once by hand; every
+  update after that is one click.
+
 ### Fixed — "Mark as correct" after "Almost — you need the whole term" (2026-10-01)
 - A partial answer ("Customized" for "Customized products") now has "I was right — mark as
   correct" too; marking it right means that wording is accepted from then on. No AI check there

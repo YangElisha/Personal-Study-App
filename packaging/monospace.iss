@@ -51,6 +51,11 @@ ConfirmUninstall=This removes the MonoSpace program from this PC.%n%nYour decks,
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"
 
+[InstallDelete]
+; the previous version's program files go first, so nothing stale is left behind ({app} only:
+; never the data folder, settings or logs)
+Type: filesandordirs; Name: "{app}\_internal"
+
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
@@ -60,11 +65,18 @@ Name: "{userdesktop}\MonoSpace"; Filename: "{app}\MonoSpace.exe"; WorkingDir: "{
 
 [Run]
 Filename: "{app}\MonoSpace.exe"; Description: "Start MonoSpace now"; Flags: nowait postinstall skipifsilent
+; an update from inside MonoSpace runs silently with /RELAUNCH=1: open the new version afterwards
+Filename: "{app}\MonoSpace.exe"; Flags: nowait; Check: RelaunchAfterUpdate
 
 ; Only the program's own files are removed ({app} as installed). Nothing under [UninstallDelete]:
 ; the data folder, settings.env and %LOCALAPPDATA%\MonoSpace stay.
 
 [Code]
+function RelaunchAfterUpdate: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if (CurUninstallStep = usPostUninstall) and (not UninstallSilent) then

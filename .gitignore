@@ -25,4 +25,5 @@ Thumbs.db
 
 # Desktop build output (packaging/build.ps1)
 dist/
+packaging/build-info.json
 build/

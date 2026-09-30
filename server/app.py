@@ -17,7 +17,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import ai, db, modules, snapshots
+from . import ai, db, modules, snapshots, update
 from .settings import BUNDLE_ROOT, Settings
 
 log = logging.getLogger("monospace")
@@ -427,6 +427,22 @@ def create_app(settings: Settings, app_dir: Path | None = None,
     @app.get("/api/builds")
     async def builds_active():
         return {"active": sum(builds.values())}
+
+    # ---- in-app update (server/update.py) -----------------------------------------------
+    @app.get("/api/update")
+    async def update_check():
+        return await asyncio.to_thread(update.check)
+
+    @app.post("/api/update/install")
+    async def update_install():
+        if sum(builds.values()):
+            return _err(409, "busy", "A deck is still being built — update when it has finished.")
+        try:
+            r = await asyncio.to_thread(update.install, settings)
+        except update.UpdateError as e:
+            return _err(409, "no_update", str(e))
+        update.quit_soon()           # the window closes; the helper installs and reopens MonoSpace
+        return r
 
     # ---- AI (Phase 5): Qwen by default, `claude -p` when online. See server/ai.py --------
     router = ai.Router(ai_config if ai_config is not None else ai.load_ai_config())

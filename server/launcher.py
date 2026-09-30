@@ -287,6 +287,8 @@ def native_window(url: str, profile: Path) -> bool:
         win = webview.create_window(APP, url, width=1400, height=900, min_size=(900, 600),
                                     background_color="#000000", text_select=True)
         win.events.closing += lambda: ok_to_close(url)      # False keeps the window open
+        from server import update
+        update.QUIT_HOOK = win.destroy                       # an update closes the window, then installs
         log.info("window: native (pywebview %s)", package_version("pywebview"))
         webview.start(gui="edgechromium", icon=str(ICON), private_mode=False,
                       storage_path=str(profile))
@@ -522,6 +524,8 @@ def run() -> int:
         if native_window(url, profile / "native"):
             pass
         elif open_window(url, profile):
+            from server import update
+            update.QUIT_HOOK = lambda: [p.terminate() for p in window_processes(profile)]
             if not wait_for_window_to_close(profile):
                 log.warning("no Edge window appeared; falling back to the default browser")
                 webbrowser.open(url)

@@ -29,6 +29,15 @@ $Out = Join-Path $Stage "out"
 $Dist = Join-Path $Root "dist"
 Write-Host "MonoSpace $Version  (staging: $Stage)"
 
+# 0. build stamp (build-info.json inside the program; MonoSpace-Setup.json beside the installer)
+$Commit = (git -C $Root rev-parse --short HEAD 2>$null)
+$Now = (Get-Date).ToUniversalTime()
+$BuildId = $Now.ToString("yyyyMMdd-HHmmss") + "-" + $Commit
+$Info = [ordered]@{version=$Version; build=$BuildId; built_at=$Now.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                   commit=$Commit; update_dir=(Join-Path $Root "dist")}
+$InfoFile = Join-Path $PSScriptRoot "build-info.json"
+[IO.File]::WriteAllText($InfoFile, ($Info | ConvertTo-Json))
+
 # 1. icon
 & $Py (Join-Path $PSScriptRoot "make_icon.py")
 if ($LASTEXITCODE -ne 0) { throw "make_icon.py failed" }
@@ -64,9 +73,14 @@ $Zip = Join-Path $Out "MonoSpace-$Version-portable.zip"
 & $Py -c "import shutil, sys; shutil.make_archive(sys.argv[1][:-4], 'zip', sys.argv[2], 'MonoSpace')" $Zip (Join-Path $Stage "pyi-dist")
 if ($LASTEXITCODE -ne 0) { throw "zip failed" }
 
-# 5. into dist\
+# 5. into dist\ - the record last, so an update never sees a half-copied installer
 New-Item -ItemType Directory -Force $Dist | Out-Null
 Copy-Item (Join-Path $Out "*") $Dist -Force
+if (-not $SkipInstaller) {
+    $Info.sha256 = (Get-FileHash (Join-Path $Dist "MonoSpace-Setup.exe") -Algorithm SHA256).Hash.ToLower()
+    [IO.File]::WriteAllText((Join-Path $Dist "MonoSpace-Setup.json"), ($Info | ConvertTo-Json))
+    Write-Host "Build $BuildId - MonoSpace shows 'Update ready' for it"
+}
 Write-Host ""
 Write-Host "Built (in $Dist):"
 Get-ChildItem $Out | ForEach-Object {
