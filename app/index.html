@@ -608,11 +608,20 @@ textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var
 .fileitem .sz{color:var(--ink-3);font-size:.85em}
 .fileitem button{background:none;border:0;color:var(--ink-3);cursor:pointer;font-size:1.2em;line-height:1}
 .fileitem button:hover{color:var(--miss)}
-.cardrow{display:grid;grid-template-columns:1fr 1.3fr auto;gap:10px;align-items:start;padding:10px 0;
-         border-bottom:1px solid var(--rule-2)}
-@media(max-width:700px){.cardrow{grid-template-columns:1fr}}
-.cardrow textarea{min-height:64px;font-family:var(--body);font-size:.92em;line-height:1.45;resize:vertical}
-.cardrow .del{background:none;border:0;color:var(--ink-3);cursor:pointer;font-size:1.25em;padding:8px}
+/* Flashcards (2026-09-30): each card is a tile whose boxes grow with their text — no inner
+   scrollbars. The boxes look like text until you point at or edit them. */
+.cardrow{display:grid;grid-template-columns:minmax(150px,1fr) minmax(220px,1.8fr) auto;gap:14px;
+         align-items:start;background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);
+         padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow-1)}
+.cardrow:first-child{background:none;border:0;box-shadow:none;padding:0 14px;margin-bottom:4px}
+@media(max-width:700px){.cardrow{grid-template-columns:1fr auto}.cardrow textarea:nth-of-type(2){grid-column:1/-1;grid-row:2}}
+.cardrow textarea{min-height:0;font-family:var(--body);font-size:.95em;line-height:1.55;resize:none;
+                  overflow:hidden;field-sizing:content;background:transparent;border:1px solid transparent;
+                  border-radius:10px;padding:6px 9px;color:var(--ink);width:100%;box-sizing:border-box}
+.cardrow textarea:hover{border-color:var(--rule)}
+.cardrow textarea:focus{border-color:var(--live);background:var(--surface-2);outline:none}
+.cardrow textarea:first-of-type{font-family:var(--display);font-weight:600;font-size:1.02em}
+.cardrow .del{background:none;border:0;color:var(--ink-3);cursor:pointer;font-size:1.25em;padding:6px 8px;border-radius:8px}
 .cardrow .del:hover{color:var(--miss)}
 .cardhint{font-family:var(--mono);font-size:.66em;letter-spacing:.13em;text-transform:uppercase;
           color:var(--ink-3);margin-bottom:6px}
@@ -670,7 +679,8 @@ textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var
       align-items:start;background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);
       padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow-1)}
 @media(max-width:720px){.trow{grid-template-columns:1fr}}
-.trow textarea{min-height:52px;font-family:var(--body);font-size:.93em;line-height:1.45;resize:vertical;
+.trow textarea{min-height:0;font-family:var(--body);font-size:.93em;line-height:1.55;resize:none;
+               overflow:hidden;field-sizing:content;
                background:transparent;border-color:transparent;padding:6px 8px}
 .trow textarea:hover{border-color:var(--rule)}
 .trow textarea.term{font-family:var(--display);font-weight:600}
@@ -858,6 +868,51 @@ textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
   border-color:var(--rule)!important;padding:4px 10px!important;
   -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 .hovercard{background:var(--ink);color:var(--surface)}
+/* AI activity drawer and badge */
+.logdrawer{width:min(640px,96vw)}
+.logstatus{padding:14px 20px;border-bottom:1px solid var(--rule);font-size:.86em;line-height:1.55;color:var(--ink-2)}
+.logstatus p{margin:0 0 8px}.logstatus b{color:var(--ink)}
+.logstatus small{display:block;color:var(--ink-3);font-size:.85em;margin:6px 0 4px}
+.logstatus .counts{display:flex;flex-wrap:wrap;gap:6px}
+.crashes{margin-top:10px}
+.crashrow{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px solid var(--rule-2)}
+.lpill{font:600 10.5px var(--mono);letter-spacing:.03em;padding:2px 8px;border-radius:999px;border:1px solid var(--rule);
+       color:var(--ink-2);white-space:nowrap;flex:none}
+.lpill.claude{color:#b9a8ff;border-color:#b9a8ff55}.lpill.qwen{color:#4fd1b5;border-color:#4fd1b555}
+.lpill.warn{color:#f0a040;border-color:#f0a04055}.lpill.bad{color:var(--miss);border-color:var(--miss)}
+.lpill.sup{color:var(--live);border-color:var(--live)}.lpill.build{color:var(--ink-2)}
+.logfilters{display:flex;gap:6px;flex-wrap:wrap;padding:10px 20px;border-bottom:1px solid var(--rule)}
+.loglist{flex:1;overflow-y:auto;padding:6px 12px 12px}
+.logday{font:600 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);padding:12px 8px 4px}
+.logempty{color:var(--ink-3);padding:18px 8px}
+.logrow{border-radius:10px;padding:7px 8px;font-size:.86em}
+.logrow:hover{background:var(--surface-2)}
+.logrow .lh{display:flex;gap:8px;align-items:baseline}
+.logrow time{font:500 11px var(--mono);color:var(--ink-3);flex:none}
+.logrow .lt{flex:1;min-width:0;color:var(--ink);overflow-wrap:anywhere;line-height:1.45}
+.logrow .lt small{color:var(--ink-3)}
+.logrow .lm{font:500 11px var(--mono);color:var(--ink-3);flex:none}
+.logrow.bad .lt{color:var(--miss)}
+.logrow details{margin:4px 0 2px 64px;font-size:.95em}
+.logrow summary{cursor:pointer;color:var(--ink-3);font-size:.9em}
+.logrow details b{display:block;margin-top:8px;font-size:.85em;color:var(--ink-2)}
+.logrow pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 var(--mono);background:var(--surface-2);
+            border-radius:8px;padding:8px 10px;margin:4px 0;max-height:260px;overflow:auto;color:var(--ink-2)}
+.logfoot{display:flex;gap:8px;padding:12px 20px 6px;border-top:1px solid var(--rule);flex-wrap:wrap}
+#log-folder{display:block;padding:0 20px 14px;color:var(--ink-3);font-size:.75em;overflow-wrap:anywhere}
+.bdot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--ink-3);flex:none}
+.bdot.ok{background:#9d8bff}.bdot.local{background:#3fc4a6}.bdot.warn{background:#f0a040}
+.berr{background:var(--miss);color:#fff;border-radius:999px;padding:0 6px;font-size:10px;line-height:15px}
+#modelBadge:hover{color:var(--ink)!important;border-color:var(--live)!important}
+/* a hidden term inside a sentence: a soft chip, not a row of underscores */
+.hterm{display:inline-block;padding:0 .5em;margin:0 .1em;border-radius:7px;line-height:1.5;
+  font-size:.9em;font-weight:500;color:var(--live);background:color-mix(in srgb,var(--live) 13%,transparent);
+  border:1px dashed color-mix(in srgb,var(--live) 45%,transparent);vertical-align:baseline;white-space:nowrap}
+.hterm.gap{min-width:4.5em;text-align:center;border-style:solid;border-width:0 0 2px;border-radius:6px 6px 2px 2px}
+.hterm.peek{cursor:pointer;transition:background .15s}
+.hterm.peek:hover{background:color-mix(in srgb,var(--live) 22%,transparent)}
+.hterm.hinted{font-style:italic}
+.hterm.shown{border-style:solid;color:var(--ink);font-weight:600}
 ::-webkit-scrollbar-thumb{background:var(--rule);border:3px solid transparent;background-clip:padding-box}
 ::-webkit-scrollbar-thumb:hover{background-color:var(--ink-3)}
 
@@ -1360,6 +1415,11 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
           <div class="stat"><b>Learning</b><s id="k-learn">0</s></div>
           <div class="stat"><b>Long-term</b><s id="k-mast">0</s></div>
           <div class="stat"><b>Lifetime correct</b><s id="k-acc">—</s></div>
+        </div>
+        <div class="card hide" id="sup-card" style="margin-bottom:18px">
+          <p class="eyebrow">Supervisor · Claude checks what Qwen wrote</p>
+          <p class="sub" id="sup-text" style="margin:0 0 12px">—</p>
+          <button class="btn2" id="btn-sup">Have Claude check them</button>
         </div>
         <div class="card hide" id="cov-card" style="margin-bottom:18px">
           <p class="eyebrow">What was read from your material</p>
@@ -1984,6 +2044,27 @@ Availability: Information is there when it is needed"></textarea>
     <button class="btn" id="chat-send">Send</button>
   </div>
 </aside>
+<div class="chatscrim" id="logscrim"></div>
+<aside class="chatdrawer logdrawer" id="logdrawer" aria-label="AI activity">
+  <div class="chathead">
+    <div><b>AI activity</b><small>Every request, build step and error — kept on this PC</small></div>
+    <button class="x" id="log-close" aria-label="Close">&times;</button>
+  </div>
+  <div class="logstatus" id="log-status"></div>
+  <div class="logfilters" id="log-filters">
+    <button class="chip" data-f="all" aria-pressed="true">All</button>
+    <button class="chip" data-f="ai" aria-pressed="false">AI requests</button>
+    <button class="chip" data-f="build" aria-pressed="false">Builds</button>
+    <button class="chip" data-f="sup" aria-pressed="false">Supervisor</button>
+    <button class="chip" data-f="bad" aria-pressed="false">Problems</button>
+  </div>
+  <div class="loglist" id="log-list"></div>
+  <div class="logfoot">
+    <button class="btn" id="log-copy">Copy report for AI</button>
+    <button class="btn2" id="log-older">Earlier sessions</button>
+  </div>
+  <small id="log-folder"></small>
+</aside>
 <div class="hovercard" id="hovercard"></div>
 <div class="swatchpop" id="swatchpop"></div>
 <div class="popmenu" id="popmenu" role="menu"></div>
@@ -2450,12 +2531,35 @@ async function claudeFull(content, maxTokens, tier){
   try{ return await claudeRawCall(content, maxTokens, tier); }
   finally{ release(); }
 }
-async function claudeRawCall(content, maxTokens, tier){
+/* Same, and says which model answered — the teaching pass marks what Qwen wrote so Claude can
+   supervise it. only = "claude": never answered by Qwen (the supervisor's own checks). */
+async function claudeWho(content, maxTokens, only){
+  await slot();
+  try{ return await claudeRawCall(content, maxTokens, undefined, only); }
+  finally{ release(); }
+}
+/* Every AI request goes into the activity log: step, model, fallback, time, tokens, and a short
+   preview of what was asked and answered (pictures are listed by size, not stored). */
+async function claudeRawCall(content, maxTokens, tier, only){
+  const t0 = performance.now(), kind = aiKind(content);
+  try{
+    const r = await aiRequest(content, maxTokens, tier, only);
+    actLog({type:"ai", ok:true, kind, model:r.model, fallback:r.fallback, ms:r.ms || Math.round(performance.now() - t0),
+            tin:r.tin, tout:r.tout, stop:r.stop, only:only || undefined,
+            prompt:previewContent(content), reply:trimNice(r.text, 900)});
+    return r;
+  }catch(e){
+    actLog({type:"ai", ok:false, kind, ms:Math.round(performance.now() - t0), error:e.message, only:only || undefined,
+            prompt:previewContent(content)});
+    throw e;
+  }
+}
+async function aiRequest(content, maxTokens, tier, only){
   /* LOCAL PORT: the Drill server on this PC answers (docs/API.md). No API key, and no
      offline check here: the server picks the model, and Qwen works offline. */
   const headers = {"Content-Type":"application/json"};
   const body = JSON.stringify(Object.assign({model:"claude-sonnet-4-6", max_tokens:maxTokens||1000,
-                               messages:[{role:"user", content}]}, tier ? {tier} : {}));
+                               messages:[{role:"user", content}]}, tier ? {tier} : {}, only ? {only} : {}));
   let lastErr = "";
   for(let attempt = 0; attempt < 4; attempt++){
     let r, d;
@@ -2464,6 +2568,8 @@ async function claudeRawCall(content, maxTokens, tier){
     try{ d = await r.json(); }catch(e){ d = null; }
     const errType = d && d.error && d.error.type;
     const errMsg = (d && d.error && d.error.message) || "";
+    if(errType === "claude_unavailable")
+      throw new Error("Claude is not available: " + trimNice(errMsg, 140));
     if(errType === "ai_not_configured")
       throw new Error("AI isn't set up yet on this PC. Studying, flashcards and editing all work — only writing new questions with AI is unavailable.");
     if(r.status === 413 || /too large|request entity/i.test(errMsg))
@@ -2479,6 +2585,7 @@ async function claudeRawCall(content, maxTokens, tier){
       lastErr = limited ? "Rate limited" : "Server error " + r.status + (errMsg ? " · " + trimNice(errMsg,60) : "");
       const secs = Math.round(wait/1000);
       const note = (limited ? "Rate limited" : lastErr) + " — pausing " + secs + "s, then retrying";
+      actLog({type:"retry", kind:aiKind(content), note});
       if(rateNotice) rateNotice(note); else toast(trimNice(note, 90));
       await nap(wait);
       continue;
@@ -2488,7 +2595,9 @@ async function claudeRawCall(content, maxTokens, tier){
     lastStop = d.stop_reason || null;
     modelBadge(d);
     return {text: d.content.filter(b => b.type === "text").map(b => b.text).join(""),
-            stop: d.stop_reason || null};
+            stop: d.stop_reason || null, model: d.model_used || null,
+            fallback: d.fallback_from ? (d.fallback_reason || "Claude failed") : null, ms: d.elapsed_ms || null,
+            tin: (d.usage && d.usage.input_tokens) || 0, tout: (d.usage && d.usage.output_tokens) || 0};
   }
   throw new Error(lastErr === "Rate limited"
     ? "Still rate limited after several tries. Wait a minute, then start the build again — anything already saved is safe."
@@ -2496,20 +2605,403 @@ async function claudeRawCall(content, maxTokens, tier){
       ? lastErr + ". This is usually an oversized upload — try one file at a time, or a smaller image."
       : "Could not reach the MonoSpace server (" + lastErr + "). Make sure start.bat is still running, then try again.");
 }
-/* LOCAL PORT: a small badge showing which model answered the last AI request. */
+/* ============================================================
+   AI ACTIVITY LOG, SUPERVISOR AND CRASH REPORTS (MonoSpace 2026-09-30)
+   The badge (bottom left) says which model answered last; tapping it opens the log: every AI
+   request (step, model, fallback, time, tokens, a preview of prompt and reply), every build
+   step, every error. Events are kept on this PC in DATA_DIR\logs (one JSON-lines file a day),
+   so earlier sessions can be looked at too. A build that stops on an error, or an error
+   nobody caught, saves a crash report (Markdown, made to paste into an AI chat).
+   ============================================================ */
+const ACT = {events:[], unsent:[], older:[], crashes:[], saved:[], filter:"all", folder:""};
+let BADGE = {model:null, fallback:null, route:null, errs:0};
+function actLog(ev){
+  let job; try{ job = JOB ? JOB.name : undefined; }catch(e){}      // JOB is declared further down
+  ev = Object.assign({id:uid(), at:Date.now(), job}, ev);
+  ACT.events.push(ev); if(ACT.events.length > 800) ACT.events.shift();
+  ACT.unsent.push(ev); if(ACT.unsent.length > 1000) ACT.unsent.shift();
+  actFlushSoon();
+  if(isProblem(ev) && !logOpen()){ BADGE.errs++; modelBadge(); }
+  if(logOpen()) renderLogSoon();
+  return ev;
+}
+function isProblem(e){
+  return (e.type === "ai" && (!e.ok || e.fallback)) || e.err || e.type === "crash" || e.type === "error" || e.type === "retry";
+}
+let actTimer = null;
+function actFlushSoon(){ if(!actTimer) actTimer = setTimeout(actFlush, 2500); }
+async function actFlush(){
+  actTimer = null;
+  if(!ACT.unsent.length) return;
+  const batch = ACT.unsent.splice(0, 300);
+  try{
+    const r = await fetch("/api/logs", {method:"POST", headers:{"Content-Type":"application/json"},
+                                        body:JSON.stringify({events:batch})});
+    if(!r.ok) throw new Error(r.status);
+  }catch(e){ ACT.unsent.unshift(...batch); setTimeout(actFlushSoon, 15000); return; }
+  if(ACT.unsent.length) actFlushSoon();
+}
+window.addEventListener("pagehide", () => {
+  if(ACT.unsent.length) navigator.sendBeacon("/api/logs",
+    new Blob([JSON.stringify({events:ACT.unsent.splice(0)})], {type:"application/json"}));
+});
+function previewContent(content){
+  if(typeof content === "string") return trimNice(content, 700);
+  return (content || []).map(b => b.type === "image"
+    ? "[picture · " + Math.round(String(b.source && b.source.data || "").length * 0.75 / 1024) + " KB]"
+    : trimNice(String(b.text || ""), 700)).join("\n");
+}
+function aiKind(content){
+  const img = Array.isArray(content) && content.some(b => b.type === "image");
+  const t = typeof content === "string" ? content : (content || []).filter(b => b.type === "text").map(b => b.text).join(" ");
+  if(img) return "Read page picture";
+  if(t.startsWith("List the concepts a student must learn")) return "Outline";
+  if(t.startsWith("You turn a university module into study notes")) return "Teach";
+  if(t.startsWith("You are the supervisor")) return "Supervisor check";
+  if(t.startsWith("These are the concepts of one study deck")) return "Tidy duplicates";
+  if(t.startsWith("You are this student's tutor")) return "Teacher chat";
+  if(/multiple-choice questions/.test(t.slice(0, 200))) return "More questions";
+  return "Other";
+}
+/* The badge: which model answered last, and a count of problems since the log was last opened. */
 function modelBadge(d){
-  if(!d.model_used) return;
+  if(d && d.model_used){
+    BADGE.model = d.model_used;
+    BADGE.fallback = d.fallback_from ? (d.fallback_reason || "Claude failed") : null;
+  }
   let b = document.getElementById("modelBadge");
   if(!b){
-    b = document.createElement("div"); b.id = "modelBadge";
-    b.style.cssText = "position:fixed;left:10px;bottom:10px;z-index:50;padding:3px 9px;" +
-      "border-radius:999px;font:500 11px var(--mono);background:var(--surface);" +
-      "color:var(--ink-2);border:1px solid var(--rule);pointer-events:none;opacity:.9";
+    b = document.createElement("button"); b.id = "modelBadge"; b.type = "button";
+    b.style.cssText = "position:fixed;left:10px;bottom:10px;z-index:50;padding:3px 9px;display:flex;" +
+      "align-items:center;gap:6px;border-radius:999px;font:500 11px var(--mono);background:var(--surface);" +
+      "color:var(--ink-2);border:1px solid var(--rule);cursor:pointer";
+    b.onclick = openLog;
     document.body.appendChild(b);
   }
-  b.textContent = "AI: " + (d.model_used === "claude" ? "Claude" : "Qwen") +
-                  (d.fallback_from ? " (Claude failed)" : "");
-  b.title = d.fallback_reason || "";
+  const r = BADGE.route, model = BADGE.model || (r ? r.model : null);
+  const name = model === "claude" ? "Claude" : model === "qwen" ? "Qwen" : "…";
+  const why = BADGE.fallback ? " (Claude failed)"
+            : model === "qwen" && r && r.model === "qwen" ? (r.claude_paused ? " · Claude paused" : " · offline") : "";
+  const dot = el("i", "bdot " + (BADGE.fallback ? "warn" : model === "claude" ? "ok" : "local"));
+  b.replaceChildren(dot, "AI: " + name + why);
+  if(BADGE.errs) b.append(el("span", "berr", String(BADGE.errs)));
+  b.title = (BADGE.fallback ? BADGE.fallback + "\n\n" : "") + "Tap to see the AI activity log";
+}
+async function refreshRoute(){
+  BADGE.route = await aiRoute();
+  modelBadge();
+  if(logOpen()) renderLog();
+}
+setTimeout(refreshRoute, 1200);
+setInterval(refreshRoute, 60000);
+
+function logOpen(){ return $("logdrawer").classList.contains("on"); }
+async function openLog(){
+  BADGE.errs = 0; modelBadge();
+  $("logdrawer").classList.add("on"); $("logscrim").classList.add("on");
+  renderLog();
+  refreshRoute();
+  try{
+    const r = await (await fetch("/api/logs/crashes", {cache:"no-store"})).json();
+    ACT.saved = r.crashes || []; ACT.folder = r.folder || "";
+    renderLog();
+  }catch(e){}
+}
+function closeLog(){ $("logdrawer").classList.remove("on"); $("logscrim").classList.remove("on"); }
+let logTimer = null;
+function renderLogSoon(){ if(!logTimer) logTimer = setTimeout(() => { logTimer = null; renderLog(); }, 300); }
+const hhmmss = t => new Date(t).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"});
+function logEvents(){
+  const seen = new Set(ACT.events.map(e => e.id));
+  return ACT.older.filter(e => !seen.has(e.id)).concat(ACT.events).sort((a, b) => (a.at || 0) - (b.at || 0));
+}
+function logFilterOk(e, f){
+  if(f === "ai") return e.type === "ai" || e.type === "retry";
+  if(f === "build") return e.type === "build";
+  if(f === "sup") return e.type === "sup" || (e.type === "build" && /^Supervisor/.test(e.msg || "")) || (e.type === "ai" && e.kind === "Supervisor check");
+  if(f === "bad") return isProblem(e);
+  return true;
+}
+function renderLog(){
+  const r = BADGE.route, evs = logEvents(), here = ACT.events;
+  // where things stand
+  const st = $("log-status"); st.replaceChildren();
+  const line = el("p");
+  const claudeOn = r && r.model === "claude";
+  line.append(el("b", "", !r ? "Checking the AI…" : claudeOn ? "Claude is answering" : r.claude_paused ? "Qwen is answering — Claude is paused after a usage limit" : "Qwen is answering — Claude is offline"));
+  line.append(el("span", "", claudeOn
+    ? " · it also supervises: anything Qwen wrote while Claude was unavailable is checked by Claude."
+    : " · the supervisor is away, so what Qwen writes is marked “not checked by Claude yet”. Claude checks it when it is back (deck Overview)."));
+  st.appendChild(line);
+  const ai = here.filter(e => e.type === "ai");
+  const counts = el("div", "counts");
+  [["Claude", ai.filter(e => e.ok && e.model === "claude").length, "claude"],
+   ["Qwen", ai.filter(e => e.ok && e.model === "qwen").length, "qwen"],
+   ["fell back to Qwen", ai.filter(e => e.fallback).length, "warn"],
+   ["failed", ai.filter(e => !e.ok).length, "bad"],
+   ["supervisor checks", ai.filter(e => e.kind === "Supervisor check" && e.ok).length, "sup"]]
+    .forEach(([t, n, c]) => counts.appendChild(el("span", "lpill " + c, n + " " + t)));
+  st.appendChild(el("small", "", "This session:"));
+  st.appendChild(counts);
+  // crash reports: this session's first, then saved ones
+  const crashes = ACT.crashes.map(c => ({title:c.title, at:c.at, md:c.md, file:c.file}))
+    .concat(ACT.saved.filter(x => !ACT.crashes.some(c => c.file === x.file)).map(x => ({title:x.title, file:x.file})));
+  if(crashes.length){
+    const box = el("div", "crashes");
+    box.appendChild(el("small", "", "Crash reports (" + crashes.length + ")"));
+    crashes.slice(0, 6).forEach(c => {
+      const row = el("div", "crashrow");
+      row.appendChild(el("span", "", (c.at ? hhmmss(c.at) + " · " : "") + trimNice(c.title, 90)));
+      const b = el("button", "btn2 sm", "Copy for AI");
+      b.onclick = async () => {
+        let md = c.md;
+        if(!md && c.file){ try{ md = await (await fetch("/api/logs/crashes/" + encodeURIComponent(c.file))).text(); }catch(e){} }
+        toast(md && await copyText(md) ? "Crash report copied — paste it into an AI chat" : "Could not copy the report");
+      };
+      row.appendChild(b); box.appendChild(row);
+    });
+    st.appendChild(box);
+  }
+  // the list, newest first
+  document.querySelectorAll("#log-filters .chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.f === ACT.filter));
+  const list = $("log-list"); list.replaceChildren();
+  const shown = evs.filter(e => logFilterOk(e, ACT.filter)).reverse().slice(0, 400);
+  if(!shown.length) list.appendChild(el("p", "logempty", ACT.filter === "bad" ? "No problems logged." : "Nothing logged yet."));
+  let day = "";
+  shown.forEach(e => {
+    const d = new Date(e.at || 0).toDateString();
+    if(d !== day){ day = d; list.appendChild(el("div", "logday", d === new Date().toDateString() ? "Today" : d)); }
+    list.appendChild(logRow(e));
+  });
+  $("log-folder").textContent = ACT.folder ? "Saved in " + ACT.folder : "";
+}
+function logRow(e){
+  const row = el("div", "logrow" + (isProblem(e) ? " bad" : ""));
+  const h = el("div", "lh");
+  h.appendChild(el("time", "", hhmmss(e.at || 0)));
+  let pill = "", pcls = "", title = "", meta = "";
+  if(e.type === "ai"){
+    pill = !e.ok ? "Failed" : e.model === "claude" ? "Claude" : e.fallback ? "Qwen ← Claude failed" : "Qwen";
+    pcls = !e.ok ? "bad" : e.model === "claude" ? "claude" : e.fallback ? "warn" : "qwen";
+    title = e.kind + (e.only ? " (Claude only)" : "") + (e.stop === "max_tokens" ? " · cut off at the length limit" : "");
+    meta = (e.ms ? (e.ms / 1000).toFixed(1) + " s" : "") + (e.tout ? " · " + e.tout + " tok" : "");
+  } else if(e.type === "retry"){ pill = "Retry"; pcls = "warn"; title = e.note; }
+  else if(e.type === "build"){ pill = "Build"; pcls = e.err ? "bad" : "build"; title = e.msg; }
+  else if(e.type === "sup"){ pill = "Supervisor"; pcls = e.err ? "bad" : "sup"; title = e.msg; }
+  else if(e.type === "crash"){ pill = "Crash"; pcls = "bad"; title = e.title + (e.file ? " · saved as " + e.file : ""); }
+  else if(e.type === "error"){ pill = "Error"; pcls = "bad"; title = e.error; }
+  else { pill = e.type || "?"; title = e.msg || e.note || ""; }
+  h.appendChild(el("span", "lpill " + pcls, pill));
+  const t = el("span", "lt", title || "");
+  if(e.job) t.appendChild(el("small", "", " · " + e.job));
+  h.appendChild(t);
+  if(meta) h.appendChild(el("span", "lm", meta));
+  row.appendChild(h);
+  const parts = [];
+  if(e.fallback) parts.push(["Why Claude didn't answer", e.fallback]);
+  if(e.error) parts.push(["Error", e.error]);
+  if(e.stack) parts.push(["Stack", e.stack]);
+  if(e.before) parts.push(["Qwen wrote", e.before]);
+  if(e.after) parts.push(["Claude corrected it to", e.after]);
+  if(e.prompt) parts.push(["Asked (preview)", e.prompt]);
+  if(e.reply) parts.push(["Answer (preview)", e.reply]);
+  if(parts.length){
+    const det = el("details"); det.appendChild(el("summary", "", "Details"));
+    parts.forEach(([k, v]) => { det.appendChild(el("b", "", k)); det.appendChild(el("pre", "", String(v))); });
+    row.appendChild(det);
+  }
+  return row;
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }catch(e){}
+  try{
+    const ta = document.createElement("textarea"); ta.value = t; ta.style.cssText = "position:fixed;left:-9999px;opacity:0";
+    document.body.appendChild(ta); ta.select(); const ok = document.execCommand("copy"); ta.remove(); return ok;
+  }catch(e){ return false; }
+}
+/* A report made to paste into an AI chat: what happened, the error, the steps before it, and
+   the AI requests with previews of what was asked and answered. */
+function reportMarkdown(title, err, since, job){
+  const evs = logEvents().filter(e => (e.at || 0) >= since && (!job || !e.job || e.job === job));
+  const r = BADGE.route;
+  const L = [];
+  L.push("# MonoSpace report: " + title, "");
+  L.push("- When: " + new Date().toString());
+  L.push("- App: MonoSpace (FastAPI + SQLite server on this PC, app/index.html UI; Claude via the official `claude -p`, Qwen via Ollama when offline or if Claude fails)");
+  L.push("- AI right now: " + (r ? r.model + (r.claude_paused ? " (Claude paused after a usage limit)" : "") + ", Qwen context " + r.num_ctx : "unknown"));
+  if(job) L.push("- Build: " + job);
+  L.push("- Browser: " + navigator.userAgent);
+  if(err){
+    L.push("", "## Error", "```", String((err && (err.stack || err.message)) || err).slice(0, 4000), "```");
+  }
+  L.push("", "## Steps (oldest first)");
+  const steps = evs.filter(e => e.type !== "ai").slice(-80);
+  if(!steps.length) L.push("(none logged)");
+  steps.forEach(e => L.push("- " + hhmmss(e.at) + " " + (e.err || e.type === "crash" || e.type === "error" ? "**[problem]** " : "") +
+    (e.type === "build" || e.type === "sup" ? e.msg : e.type === "retry" ? "Retry: " + e.note : e.type === "crash" ? "Crash: " + e.title : e.error || e.msg || "")));
+  const ai = evs.filter(e => e.type === "ai");
+  L.push("", "## AI requests (" + ai.length + ")", "", "| time | step | model | seconds | tokens out | result |", "|---|---|---|---|---|---|");
+  ai.slice(-40).forEach(e => L.push("| " + hhmmss(e.at) + " | " + e.kind + " | " + (e.model || "-") +
+    " | " + (e.ms ? (e.ms / 1000).toFixed(1) : "-") + " | " + (e.tout || "-") + " | " +
+    (!e.ok ? "FAILED: " + String(e.error || "").replace(/\|/g, "/").slice(0, 160) : e.fallback ? "Qwen answered; Claude failed: " + String(e.fallback).replace(/\|/g, "/").slice(0, 120) : e.stop === "max_tokens" ? "cut off at length limit" : "ok") + " |"));
+  const detail = ai.filter(e => !e.ok || e.fallback).concat(ai).filter((e, i, a) => a.indexOf(e) === i).slice(0, 6);
+  if(detail.length){
+    L.push("", "## Requests in detail (problems first; previews, not the full text)");
+    detail.forEach(e => {
+      L.push("", "### " + hhmmss(e.at) + " · " + e.kind + " · " + (e.ok ? e.model : "failed"));
+      if(e.error) L.push("Error: " + e.error);
+      if(e.fallback) L.push("Claude failed: " + e.fallback);
+      L.push("Asked:", "```", String(e.prompt || "").slice(0, 900), "```");
+      if(e.reply) L.push("Answered:", "```", String(e.reply).slice(0, 900), "```");
+    });
+  }
+  L.push("", "## What I need", "Explain what went wrong in plain words, and what to change (in MonoSpace or in how I use it) so it doesn't happen again.");
+  return L.join("\n");
+}
+let lastCrashAt = 0;
+async function crashReport(title, err, since, job){
+  if(Date.now() - lastCrashAt < 15000 && !job) return null;      // one report per burst, not a flood
+  lastCrashAt = Date.now();
+  const md = reportMarkdown(title, err, since || Date.now() - 30 * 60000, job);
+  const c = {title, at:Date.now(), md, file:null};
+  ACT.crashes.unshift(c);
+  try{
+    const r = await fetch("/api/logs/crash", {method:"POST", headers:{"Content-Type":"application/json"},
+                                               body:JSON.stringify({markdown:md})});
+    if(r.ok) c.file = (await r.json()).file;
+  }catch(e){}
+  actLog({type:"crash", title, error:String(err && err.message || err || ""), stack:err && err.stack ? String(err.stack).slice(0, 3000) : undefined, file:c.file || undefined});
+  return c;
+}
+$("log-close").onclick = closeLog;
+$("logscrim").onclick = closeLog;
+$("log-filters").onclick = e => { const b = e.target.closest(".chip"); if(!b) return; ACT.filter = b.dataset.f; renderLog(); };
+$("log-copy").onclick = async () => {
+  const c = ACT.crashes[0];
+  const md = c ? c.md : reportMarkdown("activity report (no crash)", null,
+    (JOB && JOB.started) || Math.max(Date.now() - 60 * 60000, (logEvents()[0] || {}).at || 0), null);
+  toast(await copyText(md) ? (c ? "Latest crash report copied" : "Activity report copied") + " — paste it into an AI chat" : "Could not copy the report");
+};
+$("log-older").onclick = async () => {
+  try{
+    const r = await (await fetch("/api/logs?limit=2000", {cache:"no-store"})).json();
+    ACT.older = r.events || []; ACT.folder = r.folder || ACT.folder;
+    toast(ACT.older.length ? "Loaded " + plural(ACT.older.length, "earlier event") : "No earlier sessions logged yet");
+    renderLog();
+  }catch(e){ toast("Could not load the saved log"); }
+};
+
+/* ============ SUPERVISOR — Claude checks what Qwen wrote ============ */
+const SUPERVISE_RULES = `You are the supervisor. A small offline model (Qwen) wrote these study notes from a university module while you were unavailable. Check each entry against its SOURCE (the module text; it may be partial) and your own knowledge.
+- Fix anything wrong, invented, vague, garbled or not supported by the module. Keep the module's own terms and spelling; never rename a correct term.
+- Check every question: exactly one right answer, the marked answer really is right, the "why" is correct.
+- Do not add new concepts. Be concise.
+Respond with ONLY a JSON array, one object per entry:
+{"i":1,"verdict":"ok"}
+{"i":2,"verdict":"fixed","note":"what was wrong, a few words","definition":"one sentence","example":"","explain":"1-2 sentences","confuse":"","qs":[{"t":"mcq","q":"...","o":["a","b","c","d"],"a":0,"why":"..."},{"t":"tf","q":"...","a":true,"why":"..."},{"t":"txt","q":"...","accept":["answer"],"why":"..."}]}
+{"i":3,"verdict":"doubt","note":"why it may not be in this module"}`;
+function srcAround(name, text, n){
+  n = n || 2500; const t = String(text || "");
+  if(t.length <= n) return t;
+  const i = t.toLowerCase().indexOf(String(name || "").toLowerCase());
+  const from = i < 0 ? 0 : Math.max(0, i - Math.round(n / 3));
+  return t.slice(from, from + n);
+}
+/* list: concepts Qwen wrote (by === "qwen"). Checks them with Claude only, 5 per request; a
+   correction keeps what Qwen wrote in c.before, so nothing is lost. */
+async function superviseConcepts(list, srcOf, log){
+  const res = {checked:0, fixed:0, doubt:0, failed:0, msg:""};
+  if(!list.length) return res;
+  const route = await aiRoute();
+  if(!route || route.model !== "claude"){
+    res.msg = "Supervisor: Claude isn't available (" + (route && route.claude_paused ? "usage limit" : "offline") + ") — " +
+              plural(list.length, "concept") + " Qwen wrote " + (list.length === 1 ? "is" : "are") + " marked “not checked by Claude yet”";
+    log(res.msg, true);
+    return res;
+  }
+  const batches = [];
+  for(let k = 0; k < list.length; k += 5) batches.push(list.slice(k, k + 5));
+  if(!await budgetOk(batches.length, "Claude checking " + plural(list.length, "concept") + " Qwen wrote", false)){
+    res.msg = "Supervisor check skipped"; log(res.msg, true); return res;
+  }
+  log("Supervisor: Claude is checking " + plural(list.length, "concept") + " Qwen wrote");
+  await inPool(batches, MAX_AI_AT_ONCE, async part => {
+    const body = part.map((c, k) => (k + 1) + ". " + JSON.stringify({name:c.name, definition:c.fact || "",
+        explain:c.guide || "", questions:(c.aiQs || c.qs || []).filter(q => q.t !== "cloze" && !q.gen).slice(0, 3)}) +
+        "\nSOURCE: " + trimNice(srcOf(c) || "(none kept)", 2500)).join("\n\n");
+    try{
+      const r = await claudeWho(SUPERVISE_RULES + "\n\nENTRIES:\n\n" + body, 5000, "claude");
+      const got = new Set();
+      jsonObjects(r.text).forEach(v => {
+        const k = (parseInt(v && v.i, 10) || 0) - 1;
+        if(k < 0 || k >= part.length || got.has(k)) return;
+        got.add(k);
+        const c = part[k];
+        c.checked = "claude"; c.checkedAt = Date.now(); res.checked++;
+        if(v.verdict === "fixed"){
+          const t = taughtConcept(c, Object.assign({}, v, {name:c.name}));
+          const before = {fact:c.fact || "", guide:c.guide || ""};
+          c.before = Object.assign({}, before, {qs:(c.aiQs || c.qs || []).slice()});
+          c.fact = t.fact; if(t.guide) c.guide = t.guide;
+          if(t.aiQs.length) c.aiQs = t.aiQs;
+          c.review = trimNice(String(v.note || "corrected"), 200); res.fixed++;
+          actLog({type:"sup", msg:"Fixed “" + c.name + "”: " + c.review,
+                  before:before.fact + (before.guide ? "\n\n" + before.guide : ""), after:c.fact + (c.guide ? "\n\n" + c.guide : "")});
+        } else if(v.verdict === "doubt"){
+          c.doubt = true; c.review = trimNice(String(v.note || "may not be in this module"), 200); res.doubt++;
+          actLog({type:"sup", msg:"Doubts “" + c.name + "”: " + c.review, err:true});
+        }
+      });
+      res.failed += part.length - got.size;
+    }catch(e){
+      res.failed += part.length;
+      log("Supervisor: " + trimNice(e.message, 90) + " — " + plural(part.length, "concept") + " left unchecked", true);
+    }
+  });
+  res.msg = "Supervisor: " + (res.checked - res.fixed - res.doubt) + " correct · " + res.fixed + " fixed · " +
+            res.doubt + " flagged" + (res.failed ? " · " + res.failed + " not checked" : "");
+  log(res.msg, !!(res.doubt || res.failed));
+  return res;
+}
+function renderSupCard(){
+  const card = $("sup-card"); if(!card || !DECK || !DECK.concepts) return;
+  const waiting = DECK.concepts.filter(c => c.by === "qwen" && !c.checked);
+  const fixed = DECK.concepts.filter(c => c.checked && c.review && !c.doubt);
+  const doubt = DECK.concepts.filter(c => c.doubt);
+  card.classList.toggle("hide", !waiting.length && !fixed.length && !doubt.length);
+  $("sup-text").textContent = [
+    waiting.length ? plural(waiting.length, "concept") + " in this deck " + (waiting.length === 1 ? "was" : "were") +
+      " written by Qwen (offline, or while Claude was unavailable) and " + (waiting.length === 1 ? "hasn't" : "haven't") + " been checked by Claude yet." : "",
+    fixed.length ? "Claude corrected " + plural(fixed.length, "concept") + " Qwen wrote (what Qwen wrote is kept)." : "",
+    doubt.length ? "Claude doubts " + (doubt.length === 1 ? "this is" : "these are") + " in your module: " + doubt.map(c => c.name).join(", ") + " — have a look under Terms." : ""
+  ].filter(Boolean).join(" ");
+  $("btn-sup").classList.toggle("hide", !waiting.length);
+}
+async function superviseDeck(){
+  const deck = DECK; if(!deck) return;
+  const list = deck.concepts.filter(c => c.by === "qwen" && !c.checked);
+  if(!list.length) return;
+  const btn = $("btn-sup"); btn.disabled = true; btn.textContent = "Claude is checking…";
+  const src = String(deck.source || "");
+  try{
+    const res = await superviseConcepts(list, c => srcAround(c.name, src) || c.fact || "",
+                                        (m, e) => actLog({type:"sup", msg:m, err:!!e, job:deck.name}));
+    if(res.checked){
+      const pairs = deck.concepts.map(c => ({term:c.name, def:c.fact}));
+      deck.concepts.forEach((c, i) => {
+        if(!c.aiQs) return;
+        const recall = questionsFromTerms(pairs, i).filter(q => q.t === "txt" || /Which term is this\?$/.test(q.q));
+        c.qs = c.aiQs.concat(recall); delete c.aiQs;
+      });
+      await store.set("deck:" + deck.id, deck);
+      const meta = LIB.decks.find(d => d.id === deck.id);
+      if(meta){ meta.nQ = deck.concepts.reduce((a, c) => a + c.qs.length, 0); await store.set("library", LIB); }
+    }
+    toast(res.msg.replace(/^Supervisor: /, "Claude's check: "));
+  } finally {
+    btn.disabled = false; btn.textContent = "Have Claude check them";
+    if(DECK === deck) openDeck(deck.id);
+  }
 }
 function parseJSON(t){
   t = t.replace(/```json|```/g,"").trim();
@@ -3096,6 +3588,7 @@ async function openDeck(id){
   $("k-learn").textContent = c.learn;
   $("k-mast").textContent = done + "/" + total;
   $("k-acc").textContent = PROG.asked ? Math.round(PROG.right/PROG.asked*100) + "%" : "—";
+  renderSupCard();
   $("btn-study").textContent = (c.due + c.fresh) ? "Study · " + (c.due + c.fresh) + " ready" : "Study";
   const ls = lessons(), lp = Object.keys((PROG.teach && PROG.teach.passed) || {}).length;
   $("btn-teach").textContent = lp ? "Teach me · lesson " + Math.min(lp + 1, ls.length) + " of " + ls.length
@@ -3204,9 +3697,12 @@ function renderTerms(){
     st.textContent = (c.steps ? c.steps.length + "-step process · " : "") +
                      (isNew(p) ? "not studied yet" : isDue(p) ? "due for review now"
                    : (isLong(p) ? "long-term · next review " : "learning · next review ") + whenText(p.due - Date.now()))
-                   + " · " + c.qs.length + " question" + (c.qs.length === 1 ? "" : "s");
+                   + " · " + c.qs.length + " question" + (c.qs.length === 1 ? "" : "s")
+                   + (c.doubt ? " · ⚠ Claude: " + c.review
+                      : c.by !== "qwen" ? "" : c.checked ? (c.review ? " · corrected by Claude" : " · checked by Claude")
+                      : " · written by Qwen, not checked by Claude yet");
     row.append(t, dfn, tools, st);
-    list.appendChild(row);
+    list.appendChild(row); autoGrow(t); autoGrow(dfn);
   });
 }
 async function addTerm(){
@@ -3300,7 +3796,8 @@ function showNew(){
   LIB.folders.forEach(f => { const o = document.createElement("option"); o.value = f.id; o.textContent = f.name; sel.appendChild(o); });
   const o = document.createElement("option"); o.value = "__new"; o.textContent = "+ New folder…"; sel.appendChild(o);
 }
-function plog(m, err){ const d = document.createElement("div"); d.textContent = m; if(err) d.className = "err";
+function plog(m, err){ actLog({type:"build", msg:String(m), err:!!err || undefined});
+  const d = document.createElement("div"); d.textContent = m; if(err) d.className = "err";
   $("prog-log").appendChild(d); $("prog-log").scrollTop = 9e9; }
 function pbar(p, head){ $("prog-bar").style.width = p + "%";
   if(head) $("prog-head").textContent = JOB ? "“" + JOB.name + "” · " + head : head;
@@ -3338,7 +3835,7 @@ async function enqueueBuild(){
 async function runQueue(){
   if(JOB) return;
   for(let job; (job = QUEUE.find(j => j.state === "waiting")); ){
-    JOB = job; job.state = "building"; job.head = "Starting…";
+    JOB = job; job.state = "building"; job.head = "Starting…"; job.started = Date.now();
     $("prog").classList.remove("hide"); $("prog-log").innerHTML = "";
     renderQueue();
     let id = null;
@@ -4554,6 +5051,7 @@ async function inPool(items, n, fn){
   }));
   return out;
 }
+const userStop = m => Object.assign(new Error(m), {userStop:true});
 async function budgetOk(n, what, qwen){
   if(n <= BUILD_ASK) return true;
   return choiceDlg("This module needs a lot of AI work",
@@ -4596,7 +5094,7 @@ async function outlineMaterial(material, log){
   const z = aiSizes(await aiRoute());
   const chunks = chunkText(material, z.chunk);
   if(!await budgetOk(chunks.length, "Outlining " + material.length.toLocaleString() + " characters", z.qwen))
-    throw new Error("Stopped before building — nothing was sent to the AI");
+    throw userStop("Stopped before building — nothing was sent to the AI");
   log("Outlining the material with " + z.who + " · " + plural(chunks.length, "passage"));
   // "name | topic" lines; a reply of plain names (Qwen sometimes drops the topic) is used too
   const parse = txt => {
@@ -4647,7 +5145,7 @@ async function teachConcepts(list, log){
   const z0 = aiSizes(await aiRoute());
   const est = Math.ceil(list.length / z0.batch) + 1;
   if(!await budgetOk(est, "Teaching " + plural(list.length, "concept"), z0.qwen))
-    throw new Error("Stopped before teaching — nothing was saved");
+    throw userStop("Stopped before teaching — nothing was saved");
   log("Teaching pass with " + z0.who + ": definitions, explanations and questions for " + plural(list.length, "concept"));
   const taught = list.map(tidyFact), extras = list.map(() => []);
   let done = 0, failed = 0, at = 0, switched = false;
@@ -4662,9 +5160,12 @@ async function teachConcepts(list, log){
           (c.items && c.items.length ? "\nLISTED: " + c.items.join("; ") : "") +
           (c.steps && c.steps.length ? "\nSTEPS: " + c.steps.join(" -> ") : "")).join("\n\n");
     try{
-      let res = [];
+      let res = [], who = null;
       for(let attempt = 0; attempt < 2 && !res.length; attempt++){     // one retry: a bad reply is usually a one-off
-        try{ res = jsonObjects(await claude(TEACH_RULES + "\n\nALREADY IN THE DECK: " + deckNames + "\n\n" + body, z.maxOut)); }
+        try{
+          const rep = await claudeWho(TEACH_RULES + "\n\nALREADY IN THE DECK: " + deckNames + "\n\n" + body, z.maxOut);
+          res = jsonObjects(rep.text); who = rep.model;
+        }
         catch(e){ if(attempt) throw e; }
       }
       if(!res.length) throw new Error("the reply had no usable entries");
@@ -4674,11 +5175,12 @@ async function teachConcepts(list, log){
         if(k < 0 || k >= part.length) return;
         const c0 = part[k], srcText = (c0._src || "") + " " + (c0.fact || "") + " " + (c0.items || []).join(" ") + " " + (c0.steps || []).join(" ");
         if(typeof r.name === "string" && groundScore(r.name, srcText) < 0.5) r.name = c0.name;   // not in the module: keep its own name
-        taught[start + k] = taughtConcept(taught[start + k], r); got++;
+        taught[start + k] = Object.assign(taughtConcept(taught[start + k], r), who ? {by:who} : {}); got++;
         (Array.isArray(r.also) ? r.also : []).slice(0, 2).forEach(a => {
           if(a && typeof a.name === "string" && typeof a.definition === "string" && a.definition.trim() &&
              groundScore(a.name, srcText) >= 0.5)
-            extras[start + k].push(taughtConcept({id:uid(), topic:c0.topic, pages:c0.pages, star:false, qs:[]}, a));
+            extras[start + k].push(taughtConcept(Object.assign({id:uid(), topic:c0.topic, pages:c0.pages, star:false, qs:[],
+                                                               _src:c0._src}, who ? {by:who} : {}), a));
         });
       });
       if(got < part.length){ failed += part.length - got; log("Teaching pass: " + (part.length - got) + " concept(s) came back empty — kept as read", true); }
@@ -4744,6 +5246,12 @@ Respond with ONLY a JSON array, [] if nothing to fold:
       }
     }catch(e){ /* tidying is optional — keep everything */ }
   }
+  // the supervisor: whatever Qwen wrote is checked by Claude when Claude is there
+  const byQwen = out.filter(c => c.by === "qwen");
+  if(byQwen.length){
+    pbar(99, "Supervisor checking what Qwen wrote…");
+    await superviseConcepts(byQwen, c => c._src || c.fact || "", log);
+  }
   // every concept keeps the recall questions too (term ↔ definition), now from clean definitions
   const pairs = out.map(c => ({term:c.name, def:c.fact}));
   out.forEach((c, i) => {
@@ -4808,7 +5316,7 @@ async function build(job){
       // each picture slide is read on its own, so what it teaches can be placed
       // back where it sits in the module
       if(r.textless.length && !await budgetOk(r.textless.length, "Reading " + plural(r.textless.length, "picture page"), aiSizes(await aiRoute()).qwen))
-        throw new Error("Stopped before reading the picture pages — nothing was built");
+        throw userStop("Stopped before reading the picture pages — nothing was built");
       const zp = aiSizes(await aiRoute());
       const texts = await inPool(r.textless, zp.par, pn => pdfPagesAsText(Object.assign({}, u, {range:String(pn)}), (m,e) => plog(m,e)));
       r.textless.forEach((pn, i) => { if(texts[i].trim()) pictures.push({page:pn, text:texts[i]}); });
@@ -4884,7 +5392,11 @@ async function build(job){
     }
   }catch(e){
     plog(e.message, true); pbar(100,"Stopped");
-    toast("“" + name + "” stopped — see the log");
+    if(!e.userStop){
+      const c = await crashReport("Build stopped: “" + name + "”", e, job.started, name);
+      toast("“" + name + "” stopped — a crash report was saved (tap the AI badge, bottom left)");
+      if(c) plog("Crash report saved" + (c.file ? " as " + c.file : "") + " — tap the AI badge (bottom left) to copy it for an AI");
+    } else toast("“" + name + "” stopped — see the log");
     return null;
   } finally { rateNotice = null; }
 }
@@ -5168,7 +5680,7 @@ function clozeFor(c){
     // away or ambiguous — either way it tests nothing
     const hits = (fact.match(new RegExp("\\b" + esc(word) + "\\w*","gi")) || []).length;
     if(hits !== 1) return null;
-    const q = fact.slice(0, idx) + "______" + fact.slice(idx + word.length);
+    const q = fact.slice(0, idx) + "⟦" + fact.slice(idx, idx + word.length) + "⟧" + fact.slice(idx + word.length);
     return {t:"cloze", q, accept:[word, name].filter(Boolean), why:fact};
   };
 
@@ -5193,8 +5705,14 @@ function clozeFor(c){
   // 4. otherwise no blank at all — a weak question is worse than none
   return bad();
 }
-/* Blanks out the term (and its distinctive words) inside its own definition, so
-   a prompt can never hand you the answer it is asking for. */
+/* Hides the term inside its own definition, so a prompt never hands you the answer it asks for
+   (MonoSpace 2026-09-30: no more ______). A definition that opens with its own term ("Software
+   costs are the expenses of...") is rephrased to start at what it says ("The expenses of...");
+   anywhere else the term becomes ⟦word⟧, which fillMasked() shows as a tidy chip (tap for a
+   hint) and plainMasked() / unmask() turn back into plain text. */
+const HIDDEN = /⟦([^⟧]*)(?:⟧|$)|_{4,}/g;
+const unmask = t => String(t || "").replace(/⟦([^⟧]*)(?:⟧|$)/g, "$1");
+const plainMasked = t => String(t || "").replace(HIDDEN, "[the term]");
 function maskTerm(text, name){
   if(!text || !name) return text || "";
   // strip the plural/verb ending off each word so a plural term still matches a
@@ -5203,28 +5721,65 @@ function maskTerm(text, name){
   const parts = bare.split(/[\s\-–—/]+/).filter(Boolean);
   const pattern = parts.map(w => esc(stem(w.replace(/[^\w]/g,""))) + "\\w*").join("[\\s\\-–—]+");
   let hits = 0;
-  let out = pattern ? text.replace(new RegExp("\\b" + pattern,"gi"), () => { hits++; return "______"; }) : text;
+  if(pattern){
+    const lead = text.match(new RegExp("^\\s*(?:(?:an?|the)\\s+)?" + pattern +
+      "(?:\\s*\\([^)]*\\))?\\s*,?\\s*(?:is|are|was|were|refers? to|means?|describes?|represents?|occurs?|happens?|can be defined as)\\s+" +
+      "(?:(?:defined as|known as|called)\\s+)?", "i"));
+    if(lead && text.length - lead[0].length > 15){
+      text = text.slice(lead[0].length);
+      text = text[0].toUpperCase() + text.slice(1);
+      hits++;
+    }
+  }
+  const hide = m => { hits++; return "⟦" + m + "⟧"; };
+  let out = pattern ? text.replace(new RegExp("\\b" + pattern,"gi"), hide) : text;
   // an acronym in the name gives the answer away just as fast: "(NER)", "(CIA)"
   const acro = (name.match(/\(([A-Za-z]{2,6})\)/) || [])[1] ||
                (/^[A-Z]{2,6}$/.test(bare) ? bare : null);
-  if(acro) out = out.replace(new RegExp("\\b" + esc(acro) + "\\b","g"), () => { hits++; return "______"; });
-  if(!hits){
-    // the term itself never appears — hide its distinctive words instead, but only
-    // a couple, or the sentence stops making sense
-    const words = parts.filter(w => w.length > 4 && !FILLER.has(w.toLowerCase()))
-                       .sort((a,b) => b.length - a.length).slice(0,2);
-    words.forEach(w => {
-      out = out.replace(new RegExp("\\b" + esc(stem(w)) + "\\w*","gi"), () => { hits++; return "______"; });
-    });
+  if(acro) out = out.replace(new RegExp("\\b" + esc(acro) + "\\b","g"), hide);
+  // Only the term itself (or its acronym) is hidden. Its words scattered through the sentence
+  // ("maintaining software", "an engineering discipline") are ordinary words and stay readable —
+  // hiding them turned definitions into guessing games.
+  // neighbouring hidden words become one chip: "⟦Software⟧ ⟦costs⟧" -> "⟦Software costs⟧"
+  return out.replace(/⟦([^⟧]*)⟧(?:[\s,]*⟦([^⟧]*)⟧)+/g, m => "⟦" + unmask(m).replace(/\s*,\s*/g, " ") + "⟧")
+            .replace(/\s{2,}/g," ").trim();
+}
+/* Shows text with hidden terms as chips. mode: "peek" — tap for a hint (first letter and
+   length), tap again for the word; "gap" — a slot to fill (hint only); "shown" — the word,
+   highlighted (after answering); "none" — a plain "the term" chip (tests, options). */
+function fillMasked(el, text, mode){
+  text = String(text == null ? "" : text);
+  el.replaceChildren();
+  let last = 0, m;
+  HIDDEN.lastIndex = 0;
+  while((m = HIDDEN.exec(text))){
+    if(m.index > last) el.append(text.slice(last, m.index));
+    el.append(termChip(m[1] || "", mode));
+    last = HIDDEN.lastIndex;
   }
-  // last check: only a leak if EVERY significant word of the term is still there,
-  // which means the answer can be read straight out of the prompt. A single shared
-  // ordinary word ("information") is not a leak and must stay readable.
-  const key = parts.filter(w => w.length > 3 && !FILLER.has(w.toLowerCase()));
-  if(key.length && key.every(w => new RegExp("\\b" + esc(stem(w)) + "\\w*","i").test(out))){
-    key.forEach(w => { out = out.replace(new RegExp("\\b" + esc(stem(w)) + "\\w*","gi"), "______"); });
-  }
-  return out.replace(/(?:______[\s,]*){2,}/g, "______ ").replace(/\s{2,}/g," ").trim();
+  if(last < text.length) el.append(text.slice(last));
+}
+function termChip(word, mode){
+  const s = document.createElement("span");
+  s.className = "hterm" + (mode === "gap" ? " gap" : "");
+  const w = String(word || "").trim();
+  if(mode === "shown" && w){ s.classList.add("shown"); s.textContent = w; return s; }
+  s.textContent = mode === "gap" ? "?" : "the term";
+  if(!w || (mode !== "peek" && mode !== "gap")) return s;
+  const words = w.split(/\s+/).length;
+  const hint = w[0].toUpperCase() + "… · " + (words > 1 ? words + " words" : w.length + " letters");
+  s.classList.add("peek"); s.tabIndex = 0; s.setAttribute("role", "button");
+  s.title = mode === "gap" ? "Tap for a hint" : "Tap for a hint, again to see it";
+  let step = 0;
+  const tap = e => {
+    e.stopPropagation(); e.preventDefault();
+    step = Math.min(step + 1, mode === "gap" ? 1 : 2);
+    s.textContent = step === 1 ? hint : w;
+    s.classList.toggle("hinted", step === 1); s.classList.toggle("shown", step === 2);
+  };
+  s.onclick = tap;
+  s.onkeydown = e => { if(e.key === "Enter" || e.key === " ") tap(e); };
+  return s;
 }
 function tidyName(n){
   return String(n || "")
@@ -5348,7 +5903,7 @@ function addMatchCard(){
   });
   shuffle([...ids]).forEach(id => {
     const bt = document.createElement("button"); bt.className = "mm"; bt.dataset.id = id;
-    bt.textContent = shortDef2(con(id));
+    fillMasked(bt, shortDef2(con(id)), "none");
     bt.onclick = () => {
       if(!sel || bt.dataset.s === "ok") return;
       const cid = sel.dataset.id;
@@ -5362,7 +5917,7 @@ function addMatchCard(){
           const why = document.createElement("div"); why.className = "why";
           const h = document.createElement("b");
           h.textContent = Object.keys(wrongOnce).length ? "Round done — some needed a second look" : "All four, first try";
-          why.append(h, document.createTextNode(ids.map(i => con(i).name + ": " + shortDef2(con(i))).join("  ·  ")));
+          why.append(h, document.createTextNode(ids.map(i => con(i).name + ": " + unmask(shortDef2(con(i)))).join("  ·  ")));
           el.appendChild(why);
           if(viewMode === "focus" || S.test){
             const row = document.createElement("div"); row.className = "nextrow";
@@ -5426,9 +5981,9 @@ function renderCard(card){
     const lead = document.createElement("p"); lead.className = "qlead"; lead.textContent = parts[0];
     el.appendChild(lead);
     const p = document.createElement("p"); p.className = "qtext";
-    p.textContent = parts.slice(1).join("\n\n"); el.appendChild(p);
+    fillMasked(p, parts.slice(1).join("\n\n"), q.t === "cloze" ? "gap" : "peek"); el.appendChild(p);
   } else {
-    const p = document.createElement("p"); p.className = "qtext"; p.textContent = q.q; el.appendChild(p);
+    const p = document.createElement("p"); p.className = "qtext"; fillMasked(p, q.q, q.t === "cloze" ? "gap" : "peek"); el.appendChild(p);
   }
   if(q.t === "order"){
     const box = document.createElement("div"); box.className = "orderbox";
@@ -5688,7 +6243,7 @@ function testReport(){
   $("r-reviewcard").classList.toggle("hide", !missed.length);
   missed.forEach(x => {
     const d = document.createElement("div"); d.className = "rev";
-    const p = document.createElement("p"); p.textContent = x.q.q;
+    const p = document.createElement("p"); fillMasked(p, x.q.q, "shown");
     const you = document.createElement("div"); you.className = "a you";
     you.textContent = "You said: " + (x.given || "—");
     const real = document.createElement("div"); real.className = "a real";
@@ -5781,7 +6336,7 @@ function showExplain(card, ok, given, answer, why, spawn){
   $("x-title").textContent = ok
     ? (S.m[card.cid].done ? "Correct — concept mastered" : "Correct — one more to lock it in")
     : card._partial ? "Almost — you need the whole term" : "Not quite";
-  $("x-q").textContent = card.q.q;
+  fillMasked($("x-q"), card.q.q, "shown");
   $("x-yourow").classList.toggle("hide", ok);
   $("x-you").textContent = given || "—";
   $("x-ans").textContent = answer;
@@ -5818,7 +6373,7 @@ async function deepExplain(cid, q, given, ok, host, btn){
 
 CONCEPT: ${c.name}
 WHAT THE MATERIAL SAYS: ${c.fact}
-QUESTION: ${q.q}
+QUESTION: ${unmask(q.q)}
 CORRECT ANSWER: ${q.t === "mcq" ? q.o[q.a] : q.t === "tf" ? (q.a ? "True" : "False") : q.accept[0]}
 THE STUDENT ANSWERED: ${given || "(nothing)"} ${ok ? "(correct)" : "(wrong)"}
 
@@ -6192,6 +6747,12 @@ function saveCards(){
     $("c-count").textContent = deckCards().length + " cards in this deck";
   }, 400);
 }
+const FIELD_SIZING = !!(window.CSS && CSS.supports && CSS.supports("field-sizing", "content"));
+function autoGrow(ta){
+  if(FIELD_SIZING) return;
+  const fit = () => { ta.style.height = "auto"; ta.style.height = (ta.scrollHeight + 2) + "px"; };
+  ta.addEventListener("input", fit); requestAnimationFrame(fit);
+}
 function renderCardEditor(){
   const box = $("c-editor"); box.innerHTML = "";
   const cards = deckCards();
@@ -6213,7 +6774,7 @@ function renderCardEditor(){
       if(!await confirmDlg("Delete this card?", c.front || "Untitled card")) return;
       cards.splice(i,1); await store.set("deck:"+DECK.id, DECK); renderCardEditor(); toast("Card deleted");
     };
-    row.append(f,b,del); box.appendChild(row);
+    row.append(f,b,del); box.appendChild(row); autoGrow(f); autoGrow(b);
   });
 }
 async function autoCards(){
@@ -6457,9 +7018,16 @@ function softError(msg){
   lastErrAt = Date.now();
   try{ toast("Something went wrong there — it has been skipped. (" + trimNice(String(msg||""), 60) + ")"); }catch(e){}
 }
-window.addEventListener("error", e => { e.preventDefault(); softError(e.message); });
+window.addEventListener("error", e => { e.preventDefault(); softError(e.message);
+  const err = e.error || new Error(String(e.message || "error") + (e.filename ? " at " + e.filename + ":" + e.lineno : ""));
+  actLog({type:"error", error:String(err.message || err), stack:err.stack ? String(err.stack).slice(0, 3000) : undefined});
+  crashReport("Unexpected error: " + trimNice(String(err.message || err), 80), err);
+});
 window.addEventListener("unhandledrejection", e => {
   e.preventDefault(); softError(e.reason && e.reason.message || e.reason);
+  const err = e.reason instanceof Error ? e.reason : new Error(String(e.reason));
+  actLog({type:"error", error:String(err.message), stack:err.stack ? String(err.stack).slice(0, 3000) : undefined});
+  crashReport("Unexpected error: " + trimNice(String(err.message), 80), err);
 });
 
 /* ============================================================
@@ -6639,7 +7207,7 @@ function spawnAlien(){
   const c = (choices.length ? choices : GAME.pool)[Math.floor(Math.random()*(choices.length||GAME.pool.length))];
   const el = document.createElement("div"); el.className = "alien";
   const def = trimNice(maskTerm((c.fact||"").split(/(?<=[.!?])\s/)[0] || c.fact, c.name), 110);
-  el.textContent = def;
+  fillMasked(el, def, "none");
   el.style.left = (12 + Math.random()*76) + "%";
   el.style.top = "-40px";
   arena.appendChild(el);
@@ -6953,9 +7521,9 @@ function renderItem(it, num){
   if(parts.length > 1 && parts[0].length < 60){
     const lead = document.createElement("p"); lead.className = "qlead"; lead.textContent = parts[0];
     el.appendChild(lead);
-    const p = document.createElement("p"); p.className = "prompt"; p.textContent = parts.slice(1).join("\n\n");
+    const p = document.createElement("p"); p.className = "prompt"; fillMasked(p, parts.slice(1).join("\n\n"), "none");
     el.appendChild(p);
-  } else { const p = document.createElement("p"); p.className = "prompt"; p.textContent = it.prompt; el.appendChild(p); }
+  } else { const p = document.createElement("p"); p.className = "prompt"; fillMasked(p, it.prompt, "none"); el.appendChild(p); }
 
   const mark = () => { el.classList.toggle("answered",
     PAPER.answers[it.id] !== undefined && String(PAPER.answers[it.id]).trim() !== ""); paintExamBar(); saveDraft(); };
@@ -7113,7 +7681,7 @@ function renderExamResult(){
       pts.textContent = (it.got||0) + "/" + it.points;
       hd.append(b,pts); d.appendChild(hd);
       const p = document.createElement("p"); p.className = "prompt";
-      p.textContent = String(it.prompt).replace(/\n+/g," "); d.appendChild(p);
+      fillMasked(p, String(it.prompt).replace(/\n+/g," "), "shown"); d.appendChild(p);
       const row = (label, val, cls) => {
         const r = document.createElement("div"); r.className = "xrow " + (cls||"");
         const a = document.createElement("b"); a.textContent = label;
@@ -7709,12 +8277,12 @@ function nextSprint(){
     {text: askTerm ? c.name : short(maskTerm(c.fact, c.name)), ok:true},
     ...others.map(o => ({text: askTerm ? o.name : short(maskTerm(o.fact, o.name)), ok:false}))
   ]);
-  $("sp-q").textContent = askTerm ? short(maskTerm(c.fact, c.name)) : c.name;
+  fillMasked($("sp-q"), askTerm ? short(maskTerm(c.fact, c.name)) : c.name, "peek");
   const box = $("sp-opts"); box.innerHTML = "";
   opts.forEach((o,i) => {
     const b = document.createElement("button"); b.className = "opt"; b.type = "button";
     const k = document.createElement("span"); k.className = "key"; k.textContent = i+1;
-    const t = document.createElement("span"); t.textContent = o.text;
+    const t = document.createElement("span"); fillMasked(t, o.text, "none");
     b.append(k,t);
     b.onclick = () => {
       if(!SP) return;
@@ -7823,7 +8391,7 @@ function matchRound(){
   });
   shuffle([...ids]).forEach(id => {
     const b = document.createElement("button"); b.className = "mitem"; b.dataset.id = id;
-    b.textContent = shortDef(con(id));
+    fillMasked(b, shortDef(con(id)), "none");
     b.onclick = () => tryMatch(b);
     R.appendChild(b);
   });
@@ -8119,6 +8687,7 @@ $("btn-folder").onclick = async () => {
   refreshView();
 };
 $("bk-close").onclick = closeBackup;
+$("btn-sup").onclick = superviseDeck;
 $("bscrim").onclick = closeBackup;
 $("bk-copy").onclick = copyBackup;
 $("bk-download").onclick = downloadBackup;

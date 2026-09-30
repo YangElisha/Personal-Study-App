@@ -7,6 +7,9 @@ import ipaddress
 import json
 import logging
 import mimetypes
+import re
+import time
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -313,6 +316,95 @@ def create_app(settings: Settings, app_dir: Path | None = None,
                                            body["deck_id"], md_paths, pages, prev)
         except modules.ModuleError as e:
             return _err(e.status, e.kind, e.message)
+
+    # ---- activity log and crash reports (DATA_DIR\logs) -----------------------------------
+    # The app records every AI request (model, time, fallback, a short preview of prompt and
+    # reply), every build step and every error; they are appended here as JSON lines, one file
+    # a day, so the log viewer can show earlier sessions. Crash reports are Markdown files made
+    # to paste into an AI chat. Nothing here is ever deleted by the app.
+    logs_dir = settings.data_dir / "logs"
+
+    def _append_events(events: list) -> int:
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        f = logs_dir / time.strftime("activity-%Y-%m-%d.jsonl")
+        with f.open("a", encoding="utf-8") as out:
+            for e in events:
+                line = json.dumps(e, ensure_ascii=False)
+                if len(line) > 20000:                # a runaway preview, not a record
+                    line = json.dumps({"at": e.get("at"), "type": e.get("type"),
+                                       "note": "event too large, left out"})
+                out.write(line + "\n")
+        return len(events)
+
+    def _read_events(limit: int) -> list:
+        if not logs_dir.is_dir():
+            return []
+        out: list = []
+        for f in sorted(logs_dir.glob("activity-*.jsonl"), reverse=True)[:7]:
+            lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
+            for line in reversed(lines):
+                try:
+                    out.append(json.loads(line))
+                except ValueError:
+                    continue
+                if len(out) >= limit:
+                    return out
+        return out
+
+    @app.post("/api/logs")
+    async def logs_append(request: Request):
+        try:
+            body = json.loads((await request.body()).decode("utf-8"))
+            events = [e for e in body["events"] if isinstance(e, dict)][:500]
+        except (UnicodeDecodeError, ValueError, TypeError, KeyError):
+            return _err(400, "bad_request", 'Body must be {"events": [...]}')
+        return {"saved": await asyncio.to_thread(_append_events, events)}
+
+    @app.get("/api/logs")
+    async def logs_read(limit: int = 400):
+        return {"events": await asyncio.to_thread(_read_events, max(1, min(limit, 3000))),
+                "folder": str(logs_dir)}
+
+    _CRASH = re.compile(r"^crash-\d{8}-\d{6}-[0-9a-f]{4}\.md$")
+
+    @app.post("/api/logs/crash")
+    async def crash_save(request: Request):
+        try:
+            body = json.loads((await request.body()).decode("utf-8"))
+            md = str(body["markdown"])[:400000]
+        except (UnicodeDecodeError, ValueError, TypeError, KeyError):
+            return _err(400, "bad_request", 'Body must be {"markdown": "..."}')
+        name = time.strftime("crash-%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4] + ".md"
+
+        def write():
+            logs_dir.mkdir(parents=True, exist_ok=True)
+            (logs_dir / name).write_text(md, encoding="utf-8")
+        await asyncio.to_thread(write)
+        log.warning("crash report saved: %s", logs_dir / name)
+        return {"file": name, "path": str(logs_dir / name)}
+
+    @app.get("/api/logs/crashes")
+    async def crash_list():
+        def listing():
+            if not logs_dir.is_dir():
+                return []
+            fs = sorted((f for f in logs_dir.glob("crash-*.md") if _CRASH.match(f.name)),
+                        reverse=True)[:30]
+            out = []
+            for f in fs:
+                head = f.read_text(encoding="utf-8", errors="replace").split("\n", 1)[0]
+                out.append({"file": f.name, "title": head.lstrip("# ").strip()[:200],
+                            "size": f.stat().st_size})
+            return out
+        return {"crashes": await asyncio.to_thread(listing), "folder": str(logs_dir)}
+
+    @app.get("/api/logs/crashes/{name}")
+    async def crash_read(name: str):
+        f = logs_dir / name
+        if not _CRASH.match(name) or not f.is_file():
+            return _err(404, "not_found", "No such crash report")
+        return Response(f.read_text(encoding="utf-8", errors="replace"),
+                        media_type="text/markdown; charset=utf-8")
 
     # ---- deck builds in progress: the desktop window asks before closing on one ---------
     # Each open page reports how many builds it has running or queued; the queue lives in the

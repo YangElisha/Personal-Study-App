@@ -48,6 +48,10 @@ Errors are JSON: `{"ok":false,"error":"<kind>","message":"..."}`.
 | `GET/POST /api/modules`, `POST /api/modules/{sha}/deck` | Module library (Phase 6). See "Modules" below. |
 | `POST /api/ai` | The AI router (Phase 5, `server/ai.py`). See "AI" below. |
 | `GET /api/ai/route` | Which model would answer a text request now, and Qwen's context: `{"model":"qwen"|"claude","num_ctx":8192}`. Used by the teacher chat to size its prompt for Qwen. |
+| `POST /api/ai` with `"only":"claude"` | The supervisor's own check of what Qwen wrote: answered by Claude or not at all — 503 `claude_unavailable` when Claude is off, paused, unreachable or fails (never Qwen). Every `/api/ai` reply also carries `elapsed_ms`. |
+| `POST /api/logs`, `GET /api/logs?limit=n` | Activity log: the app appends events (AI requests with model, time, fallback and short previews; build steps; errors) as JSON lines to `DATA_DIR\logs\activity-YYYY-MM-DD.jsonl`; GET returns the newest first (last 7 files) and the folder. Nothing is ever deleted. |
+| `POST /api/logs/crash`, `GET /api/logs/crashes`, `GET /api/logs/crashes/{file}` | Crash reports: `{"markdown":...}` is saved as `DATA_DIR\logs\crash-<ts>-<id>.md` (made to paste into an AI chat); listed newest first; read back by exact file name only. |
+| `POST/GET /api/builds` | Deck builds each open page has running or queued (`{"page","active"}`), so the desktop window can ask before closing on one. |
 | `GET /` and other paths | Files from `app/` (Phase 4), with `Cache-Control: no-cache`; `.woff2` fonts as `font/woff2`. If `app/index.html` does not exist when the server starts, `/` shows a placeholder page. |
 | `GET /favicon.ico` | **204** (no body) unless `app/favicon.ico` exists, so the browser's automatic icon request doesn't log a 404. |
 

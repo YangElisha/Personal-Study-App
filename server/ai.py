@@ -28,6 +28,10 @@ thinking model; the app wants the plain answer), truncate:false and shift:false 
 refuses a prompt that doesn't fit (with its exact token count) instead of silently cutting
 it, and ends a reply that runs out of room with done_reason "length" (-> "max_tokens").
 
+A request with "only": "claude" (the supervisor checking Qwen's work) never falls back: if
+Claude is paused, unreachable or fails, it gets error claude_unavailable (503) instead.
+Every reply carries elapsed_ms (whole request, fallback included) for the activity log.
+
 Every answer has Anthropic's shape: {content:[{type:"text",text}], stop_reason, ...} plus
 model_used "claude"|"qwen". Errors use Anthropic's error shape
 {type:"error", error:{type, message}}.
@@ -425,10 +429,24 @@ class Router:
         return time.monotonic() < self._claude_paused_until
 
     async def handle(self, body: Any) -> dict:
+        t0 = time.monotonic()
+        reply = await self._handle(body)
+        reply["elapsed_ms"] = round((time.monotonic() - t0) * 1000)
+        return reply
+
+    async def _handle(self, body: Any) -> dict:
         msgs, system, max_tokens = parse_request(body)
         _check_blocks(msgs)
         model = (self.cfg.claude_fast_model or None) if isinstance(body, dict) and \
             body.get("tier") == "fast" else None
+        only_claude = isinstance(body, dict) and body.get("only") == "claude"
+        if only_claude:
+            if not self.cfg.claude_cli:
+                raise AIError(503, "claude_unavailable", "Claude is switched off (CLAUDE_CLI=off).")
+            if self.claude_paused():
+                raise AIError(503, "claude_unavailable", "Claude is paused after a usage limit.")
+            if not await self.claude_reachable():
+                raise AIError(503, "claude_unavailable", "Claude is not reachable (offline?).")
         fallback = {}
         if self.claude_paused():
             fallback = {"fallback_from": "claude",
@@ -448,6 +466,8 @@ class Router:
                     self._claude_paused_until = time.monotonic() + CLAUDE_LIMIT_PAUSE
                     log.warning("Claude usage limit: using Qwen for the next %d minutes",
                                 CLAUDE_LIMIT_PAUSE // 60)
+                if only_claude:
+                    raise AIError(503, "claude_unavailable", str(e)[:300]) from None
                 fallback = {"fallback_from": "claude", "fallback_reason": str(e)[:300]}
         try:
             reply = await asyncio.to_thread(call_ollama, self.cfg, msgs, system, max_tokens)

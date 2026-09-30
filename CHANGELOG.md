@@ -4,6 +4,33 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — AI activity log, Claude as supervisor, crash reports; no more ______ (2026-09-30)
+- **Hidden terms read naturally.** A definition that opens with its own term ("Software costs
+  are the expenses of…") is rephrased to start at what it says ("The expenses of…"); where the
+  term appears mid-sentence it becomes a soft chip — tap for a hint (first letter, length), tap
+  again to see it. Fill-in-the-blank shows a slot instead of underscores. Only the term itself
+  (or its acronym) is hidden now; its words scattered through a sentence stay readable. Stored
+  data is unchanged (older "______" questions show as chips too).
+- **Cards and Terms fit their text.** The boxes grow with what is in them (no inner
+  scrollbars); each flashcard is a tile, term in bold, and looks like text until edited.
+- **AI activity log.** The AI badge (bottom left) is now a button: it opens a drawer with every
+  AI request (step, Claude/Qwen, fallback reason, seconds, tokens, previews of prompt and
+  answer), every build step and every error, filterable (AI requests · Builds · Supervisor ·
+  Problems). The badge counts new problems. Kept on this PC in `DATA_DIR\logs` (one file a day);
+  "Earlier sessions" loads them. Works offline — it then shows Qwen's work alone.
+- **Supervisor.** The teaching pass records who wrote each concept. When Qwen wrote some
+  (offline, or Claude failed), Claude checks them against the module before the deck is saved:
+  it confirms, corrects (what Qwen wrote is kept in the concept) or flags a doubt. Supervisor
+  requests go to Claude only (`"only":"claude"`), never back to Qwen. If Claude isn't there,
+  the concepts are marked "written by Qwen, not checked by Claude yet", and the deck's Overview
+  offers "Have Claude check them" once it is back. Terms show the status per concept.
+  Tested with real models: Qwen built an 8-concept deck offline (97 s); Claude then checked it
+  in 13 s and fixed 4 (questions that didn't match their concept, an invented claim).
+- **Crash reports.** A build that stops on an error (not one you stopped), or an error nobody
+  caught, saves `DATA_DIR\logs\crash-….md`: the error and stack, the steps before it, the AI
+  requests (table, problems in detail). "Copy for AI" / "Copy report for AI" puts it on the
+  clipboard as Markdown ready to paste into an AI chat.
+
 ### Fixed — closing the window no longer loses a build silently; one window only (2026-09-30)
 - The desktop window (WebView2) shows no "leave page?" prompt, so closing MonoSpace mid-build
   dropped the build and the whole queue without a word. The page now tells the server how many

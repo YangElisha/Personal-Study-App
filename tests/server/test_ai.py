@@ -413,3 +413,36 @@ def test_route_says_qwen_when_offline(ai_client, fake_claude):
 def test_route_says_claude_when_online(ai_client, fake_claude, online):
     d = ai_client(claude="on", reach=online, claude_path=fake_claude.path).get("/api/ai/route").json()
     assert d["model"] == "claude" and fake_claude.calls() == []
+
+
+# ---- supervisor requests: Claude only, never Qwen ------------------------------------------
+def only_claude(client, text):
+    return client.post("/api/ai", json={"model": "x", "max_tokens": 50, "only": "claude",
+                                        "messages": [{"role": "user", "content": text}]})
+
+
+def test_only_claude_is_answered_by_claude(ai_client, fake_claude, online, ollama):
+    d = only_claude(ai_client(claude="on", reach=online, claude_path=fake_claude.path), "check").json()
+    assert d["model_used"] == "claude" and d["elapsed_ms"] >= 0
+    assert not ollama.requests
+
+
+def test_only_claude_never_falls_back_to_qwen(ai_client, fake_claude, online, ollama):
+    fake_claude.mode("error")
+    r = only_claude(ai_client(claude="on", reach=online, claude_path=fake_claude.path), "check")
+    assert r.status_code == 503 and r.json()["error"]["type"] == "claude_unavailable"
+    assert not ollama.requests
+
+
+def test_only_claude_refused_while_paused_or_switched_off(ai_client, fake_claude, online, ollama):
+    fake_claude.mode("limit")
+    c = ai_client(claude="on", reach=online, claude_path=fake_claude.path)
+    ask(c, "first")                                    # hits the limit, pauses Claude
+    r = only_claude(c, "check")
+    assert r.status_code == 503 and "paused" in r.json()["error"]["message"]
+    r = only_claude(ai_client(claude="off"), "check")
+    assert r.status_code == 503 and r.json()["error"]["type"] == "claude_unavailable"
+
+
+def test_every_reply_says_how_long_it_took(ai_client, ollama):
+    assert ask(ai_client(), "hi").json()["elapsed_ms"] >= 0

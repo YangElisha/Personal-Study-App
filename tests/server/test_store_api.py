@@ -218,3 +218,23 @@ def test_builds_are_counted_per_page_so_the_window_can_ask_before_closing(client
     assert client.post("/api/builds", json={"page": "a", "active": 0}).json() == {"active": 1}
     assert client.get("/api/builds").json() == {"active": 1}
     assert client.post("/api/builds", content=b"nope").status_code == 400
+
+
+def test_activity_log_is_appended_and_read_back_newest_first(client, settings):
+    assert client.get("/api/logs").json()["events"] == []
+    client.post("/api/logs", json={"events": [{"id": "a", "type": "ai"}, {"id": "b", "type": "build"}]})
+    client.post("/api/logs", json={"events": [{"id": "c", "type": "crash"}]})
+    ev = client.get("/api/logs").json()["events"]
+    assert [e["id"] for e in ev] == ["c", "b", "a"]
+    assert list((settings.data_dir / "logs").glob("activity-*.jsonl"))
+    assert client.post("/api/logs", content=b"{}").status_code == 400
+
+
+def test_crash_reports_are_saved_listed_and_read(client, settings):
+    r = client.post("/api/logs/crash", json={"markdown": "# MonoSpace report: Build stopped\n\nboom"}).json()
+    assert (settings.data_dir / "logs" / r["file"]).read_text(encoding="utf-8").endswith("boom")
+    listed = client.get("/api/logs/crashes").json()["crashes"]
+    assert listed[0]["file"] == r["file"] and listed[0]["title"] == "MonoSpace report: Build stopped"
+    assert client.get("/api/logs/crashes/" + r["file"]).text.endswith("boom")
+    assert client.get("/api/logs/crashes/..%2F..%2Fdrill.db").status_code == 404
+    assert client.get("/api/logs/crashes/drill.db").status_code == 404
