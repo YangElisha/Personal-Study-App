@@ -4,6 +4,24 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — pick Claude or Qwen in Ask the teacher; signed-out Claude handled; every log entry named (2026-10-01)
+- **Ask the teacher: Claude | Qwen.** A switch at the top of the chat (Claude each time the app
+  opens). Claude: Claude answers, Qwen if Claude can't. Qwen: Qwen answers on this PC and Claude
+  is never asked (`"only":"qwen"`). Each reply says who wrote it. Only this chat has the choice.
+- **Claude Code signed out.** "Failed to authenticate: OAuth session expired" used to fail
+  every request on Claude first (about 20 s each) before Qwen answered, while the log still said
+  "AI: claude". Now it pauses Claude for 5 minutes, says so once ("Claude Code is signed out, so
+  Qwen is answering"), the badge reads "Claude signed out", and the Activity drawer shows the fix
+  (run `claude`, then `/login`) with a **Try Claude again** button (`POST /api/ai/claude/retry`).
+- **"forgot", "idk", "no idea", "?"…** are not sent to the AI to check, and get no "I was right".
+- **Every AI request is named in the log** — Answer check, Teacher chat, Explain my answer,
+  Explain a concept, More questions, Replace a bad question, Read a slide, Read page pictures,
+  Outline the module, Teach concepts, Merge duplicates, Supervisor check, Write the study guide,
+  Mark an exam, problem-course steps and more; entries saved earlier as "Other" are named from
+  their preview. Requests outside a build are grouped as "While studying · …". Requests Qwen
+  answered in Claude's place are amber and say why (signed out / paused / failed); red is kept
+  for real failures.
+
 ### Fixed — fair marking of typed answers; questions never show their own answer; layout (2026-09-30)
 - **Typed answers in your own words.** An answer holding every meaningful word of the expected
   one, in any order and with more around it, is right ("Playing games on work laptop" for "game

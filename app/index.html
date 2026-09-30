@@ -426,6 +426,13 @@ textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var
 .chathead b{font-family:var(--display);font-weight:700;font-size:1.12em;display:block}
 .chathead small{color:var(--ink-3);font-size:.78em;display:block;margin-top:2px}
 .chathead .x{background:none;border:0;font-size:1.5em;color:var(--ink-3);cursor:pointer;line-height:1}
+.chatpick{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.chatpick small{color:var(--ink-3);font-size:.78em}
+#chat-pick{display:inline-flex;padding:3px;border-radius:999px;background:var(--surface-2);border:1px solid var(--rule)}
+#chat-pick button{border:0;background:none;color:var(--ink-2);font:inherit;font-size:.85em;font-weight:600;
+                  padding:5px 16px;border-radius:999px;cursor:pointer}
+#chat-pick button[aria-pressed="true"]{background:var(--live);color:var(--on-live)}
+.msg .msgwho{display:block;margin-top:8px;font-size:.72em;color:var(--ink-3);letter-spacing:.02em}
 .chatlog{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
 .msg{max-width:92%;padding:12px 14px;border-radius:var(--r);font-size:.93em;line-height:1.6}
 .msg.me{align-self:flex-end;background:var(--live);color:var(--on-live);border-bottom-right-radius:4px}
@@ -876,6 +883,9 @@ textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
 .lgstat{display:flex;align-items:center;gap:10px;padding:14px 22px;font-size:.9em;color:var(--ink-2);
         border-bottom:1px solid var(--rule);line-height:1.45}
 .lgstat b{color:var(--ink);font-weight:600}
+.lgstat{display:block}.lgstat .bdot{display:inline-block;margin-right:8px;vertical-align:1px}
+.lgstat .btn2{display:block;margin-top:10px}
+.lgstep.warn{color:#d89a3a}
 .lgalert{margin:14px 22px 0;padding:12px 14px;border-radius:12px;display:flex;gap:12px;align-items:center;
          justify-content:space-between;font-size:.88em;line-height:1.4;color:var(--ink);
          background:color-mix(in srgb,var(--miss) 12%,transparent);border:1px solid color-mix(in srgb,var(--miss) 35%,transparent)}
@@ -2053,6 +2063,13 @@ Availability: Information is there when it is needed"></textarea>
     <div><b>Ask the teacher</b><small id="chat-ctx">—</small></div>
     <button class="x" id="chat-close">&times;</button>
   </div>
+  <div class="chatpick">
+    <div class="seg" id="chat-pick" role="group" aria-label="Which AI answers">
+      <button type="button" data-m="claude" aria-pressed="true">Claude</button>
+      <button type="button" data-m="qwen" aria-pressed="false">Qwen</button>
+    </div>
+    <small id="chat-pick-note"></small>
+  </div>
   <div class="chatlog" id="chatlog"></div>
   <div class="chatquick" id="chatquick"></div>
   <div class="chatbox">
@@ -2603,7 +2620,7 @@ async function aiRequest(content, maxTokens, tier, only){
     if(d && d.error) throw new Error(trimNice(errMsg || "API error (" + (errType || r.status) + ")", 160));
     if(!d || !Array.isArray(d.content)) throw new Error("Unexpected reply from the API");
     lastStop = d.stop_reason || null;
-    modelBadge(d);
+    if(only !== "qwen") modelBadge(d);        // picking Qwen in the chat doesn't change the app's AI
     return {text: d.content.filter(b => b.type === "text").map(b => b.text).join(""),
             stop: d.stop_reason || null, model: d.model_used || null,
             fallback: d.fallback_from ? (d.fallback_reason || "Claude failed") : null, ms: d.elapsed_ms || null,
@@ -2634,6 +2651,10 @@ function actLog(ev){
   ACT.unsent.push(ev); if(ACT.unsent.length > 1000) ACT.unsent.shift();
   actFlushSoon();
   if(isProblem(ev) && ev.type !== "retry" && !logOpen()){ BADGE.errs++; modelBadge(); }
+  if(ev.type === "ai" && /signed out/i.test(ev.fallback || "") && !ACT.signinTold){
+    ACT.signinTold = true; refreshRoute();
+    toast("Claude Code is signed out, so Qwen is answering. Tap the AI badge (bottom left) for the fix.");
+  }
   if(logOpen()) renderLogSoon();
   return ev;
 }
@@ -2663,19 +2684,43 @@ function previewContent(content){
     ? "[picture · " + Math.round(String(b.source && b.source.data || "").length * 0.75 / 1024) + " KB]"
     : trimNice(String(b.text || ""), 700)).join("\n");
 }
+/* What each AI request is for, from how its prompt starts. */
+const AI_KINDS = [
+  ["List the concepts a student must learn", "Outline the module"],
+  ["You turn a university module into study notes", "Teach concepts"],
+  ["You are the supervisor", "Supervisor check"],
+  ["These are the concepts of one study deck", "Merge duplicates"],
+  ["You are reading ONE slide", "Read a slide"],
+  ["Extract EVERY item", "Find terms"],
+  ["You are checking an extraction for omissions", "Check for missing terms"],
+  ["Below is course material, then some umbrella terms", "Expand lists"],
+  ["For each concept below, decide whether it is an ordered process", "Find processes & steps"],
+  ["A student answered a study question", "Answer check"],
+  ["A student answered a problem", "Answer check (maths)"],
+  ["You are this student's tutor", "Teacher chat"],
+  ["You are tutoring a university student one to one", "Explain my answer"],
+  ["You are teaching a university student one concept", "Explain a concept"],
+  ["Explain this concept to a university student", "Explain a concept"],
+  ["You are writing a study guide", "Write the study guide"],
+  ["Write 2 NEW multiple-choice questions", "More questions"],
+  ["You write exam questions for a university course. A student rejected", "Replace a bad question"],
+  ["You are marking a university student's exam answers", "Mark an exam"],
+  ["A student wants to learn to SOLVE", "Plan a problem course"],
+  ["Write ONE lesson", "Write a problem lesson"],
+  ["Write 3 more practice problems", "More practice problems"],
+  ["Reply with the single word: ok", "Connection test"],
+];
 function aiKind(content){
   const img = Array.isArray(content) && content.some(b => b.type === "image");
-  const t = typeof content === "string" ? content : (content || []).filter(b => b.type === "text").map(b => b.text).join(" ");
-  if(img) return "Read page picture";
-  if(t.startsWith("List the concepts a student must learn")) return "Outline";
-  if(t.startsWith("You turn a university module into study notes")) return "Teach";
-  if(t.startsWith("You are the supervisor")) return "Supervisor check";
-  if(t.startsWith("These are the concepts of one study deck")) return "Tidy duplicates";
-  if(t.startsWith("You are this student's tutor")) return "Teacher chat";
-  if(/multiple-choice questions/.test(t.slice(0, 200))) return "More questions";
-  return "Other";
+  const t = (typeof content === "string" ? content : (content || []).filter(b => b.type === "text").map(b => b.text).join(" ")).trimStart();
+  if(img || /^\[picture/.test(t)) return "Read page pictures";
+  const k = AI_KINDS.find(([start]) => t.startsWith(start));
+  return k ? k[1] : "Other";
 }
-/* The badge: which model answered last, and a count of problems since the log was last opened. */
+/* The name shown in the log; entries saved before a kind had a name are named from their preview. */
+const kindOf = e => (!e.kind || e.kind === "Other") && e.prompt ? aiKind(e.prompt)
+                  : ({"Outline":"Outline the module", "Teach":"Teach concepts", "Tidy duplicates":"Merge duplicates",
+                      "Read page picture":"Read page pictures"})[e.kind] || e.kind || "Other";
 function modelBadge(d){
   if(d && d.model_used){
     BADGE.model = d.model_used;
@@ -2694,9 +2739,11 @@ function modelBadge(d){
   }
   const r = BADGE.route, model = BADGE.model || (r ? r.model : null);
   const name = model === "claude" ? "Claude" : model === "qwen" ? "Qwen" : "…";
-  const why = BADGE.fallback ? " (Claude failed)"
+  const signedOut = (r && r.pause_reason === "signin") || /signed out/i.test(BADGE.fallback || "");
+  const why = signedOut ? " · Claude signed out"
+            : BADGE.fallback ? " (Claude failed)"
             : model === "qwen" && r && r.model === "qwen" ? (r.claude_paused ? " · Claude paused" : " · offline") : "";
-  const dot = el("i", "bdot " + (BADGE.fallback ? "warn" : model === "claude" ? "ok" : "local"));
+  const dot = el("i", "bdot " + (BADGE.fallback || signedOut ? "warn" : model === "claude" ? "ok" : "local"));
   b.replaceChildren(dot, "AI: " + name + why);
   if(BADGE.errs) b.append(el("span", "berr", String(BADGE.errs)));
   b.title = (BADGE.fallback ? BADGE.fallback + "\n\n" : "") + "Tap to see the AI activity log";
@@ -2704,6 +2751,7 @@ function modelBadge(d){
 async function refreshRoute(){
   BADGE.route = await aiRoute();
   modelBadge();
+  if($("chat-pick-note")) chatPickShow();
   if(logOpen()) renderLog();
 }
 setTimeout(refreshRoute, 1200);
@@ -2744,6 +2792,11 @@ function logGroups(){
   });
   return [...groups.values()].sort((a, b) => b.evs[b.evs.length - 1].at - a.evs[a.evs.length - 1].at);
 }
+/* A day's requests outside any build: named after what they were ("Answer check · Teacher chat"). */
+function groupName(g){
+  const kinds = [...new Set(g.evs.filter(e => e.type === "ai").map(kindOf))];
+  return kinds.length ? "While studying · " + kinds.slice(0, 3).join(", ") + (kinds.length > 3 ? " …" : "") : "While studying";
+}
 function groupSummary(g){
   const evs = g.evs, ai = evs.filter(e => e.type === "ai");
   const claude = ai.filter(e => e.ok && e.model === "claude").length, qwen = ai.filter(e => e.ok && e.model === "qwen").length;
@@ -2769,9 +2822,23 @@ function renderLog(){
   const claudeOn = r && r.model === "claude";
   st.appendChild(el("i", "bdot " + (!r ? "" : claudeOn ? "ok" : "local")));
   const txt = el("span");
-  txt.append(el("b", "", !r ? "Checking…" : claudeOn ? "Claude is on" : r.claude_paused ? "Claude is paused (usage limit)" : "Offline — Qwen only"));
-  txt.append(!r ? "" : claudeOn ? " · it double-checks anything Qwen writes" : " · what Qwen writes is marked for Claude to check later");
+  const signin = r && r.pause_reason === "signin";
+  txt.append(el("b", "", !r ? "Checking…" : claudeOn ? "Claude is on" : signin ? "Claude Code is signed out"
+                        : r.claude_paused ? "Claude is paused (usage limit)" : "Offline — Qwen only"));
+  txt.append(!r ? "" : claudeOn ? " · it double-checks anything Qwen writes"
+           : signin ? " · Qwen is answering. To fix it: open a terminal, run claude, then type /login."
+           : " · what Qwen writes is marked for Claude to check later");
   st.appendChild(txt);
+  if(r && r.claude_paused){
+    const again = el("button", "btn2 sm", "Try Claude again");
+    again.onclick = async () => {
+      again.disabled = true;
+      try{ BADGE.route = await (await fetch("/api/ai/claude/retry", {method:"POST"})).json(); }catch(e){}
+      BADGE.fallback = null; modelBadge(); renderLog();
+      toast(BADGE.route && BADGE.route.model === "claude" ? "Claude will be tried on the next request" : "Claude still isn't reachable");
+    };
+    st.appendChild(again);
+  }
   // the latest crash, if any, with the one button that matters
   const al = $("log-alert"); al.replaceChildren();
   const last = ACT.crashes[0] || ACT.saved[0];
@@ -2800,7 +2867,7 @@ function renderLog(){
     const s = el("summary");
     s.appendChild(el("span", "lgicon " + sum.state, {ok:"✓", bad:"!", run:"…", info:"·"}[sum.state]));
     const m = el("span", "lgmain");
-    m.append(el("b", "", g.job || "Other AI requests"), el("small", "", sum.line));
+    m.append(el("b", "", g.job || groupName(g)), el("small", "", sum.line));
     s.append(m, el("span", "lgtime", hhmm(g.evs[0].at || 0)));
     det.appendChild(s);
     det.ontoggle = () => { if(det.open && !det.querySelector(".lgsteps")) det.appendChild(groupSteps(g)); };
@@ -2812,13 +2879,16 @@ function renderLog(){
 function groupSteps(g){
   const box = el("div", "lgsteps");
   g.evs.forEach(e => {
-    const row = el("div", "lgstep" + (isProblem(e) ? " bad" : e.type === "ai" ? " ai" : ""));
+    // answered by Qwen instead of Claude: amber, not red — only real failures are red
+    const row = el("div", "lgstep" + (e.type === "ai" && e.ok && e.fallback ? " warn" : isProblem(e) ? " bad" : e.type === "ai" ? " ai" : ""));
     row.appendChild(el("time", "", hhmm(e.at || 0)));
     const body = el("div");
     if(e.type === "ai"){
-      const who = !e.ok ? "Failed" : e.model === "claude" ? "Claude" : e.fallback ? "Qwen (Claude failed)" : "Qwen";
+      const who = !e.ok ? "Failed" : e.model === "claude" ? "Claude"
+                : !e.fallback ? "Qwen" : /signed out/i.test(e.fallback) ? "Qwen (Claude signed out)"
+                : /usage limit reached earlier/i.test(e.fallback) ? "Qwen (Claude paused)" : "Qwen (Claude failed)";
       const det = el("details");
-      det.appendChild(el("summary", "", who + " · " + e.kind + (e.ms ? " · " + (e.ms / 1000).toFixed(1) + " s" : "")));
+      det.appendChild(el("summary", "", who + " · " + kindOf(e) + (e.ms ? " · " + (e.ms / 1000).toFixed(1) + " s" : "")));
       const more = [e.error && "Error: " + e.error, e.fallback && "Why Claude didn't answer: " + e.fallback,
                     e.prompt && "Asked:\n" + e.prompt, e.reply && "Answered:\n" + e.reply].filter(Boolean).join("\n\n");
       det.appendChild(el("pre", "", more || "(nothing more)"));
@@ -2836,7 +2906,7 @@ function groupSteps(g){
   });
   const b = el("button", "btn2 sm lgcopy", "Copy report for AI");
   b.onclick = async () => {
-    const md = reportMarkdown((g.job ? "“" + g.job + "”" : "AI requests") + " — " + groupSummary(g).line,
+    const md = reportMarkdown((g.job ? "“" + g.job + "”" : groupName(g)) + " — " + groupSummary(g).line,
                               (g.evs.find(e => e.type === "crash" || e.type === "error") || {}).stack || null, g.evs[0].at, g.job);
     toast(await copyText(md) ? "Report copied — paste it into an AI chat" : "Could not copy the report");
   };
@@ -2872,14 +2942,14 @@ function reportMarkdown(title, err, since, job){
     (e.type === "build" || e.type === "sup" ? e.msg : e.type === "retry" ? "Retry: " + e.note : e.type === "crash" ? "Crash: " + e.title : e.error || e.msg || "")));
   const ai = evs.filter(e => e.type === "ai");
   L.push("", "## AI requests (" + ai.length + ")", "", "| time | step | model | seconds | tokens out | result |", "|---|---|---|---|---|---|");
-  ai.slice(-40).forEach(e => L.push("| " + hhmmss(e.at) + " | " + e.kind + " | " + (e.model || "-") +
+  ai.slice(-40).forEach(e => L.push("| " + hhmmss(e.at) + " | " + kindOf(e) + " | " + (e.model || "-") +
     " | " + (e.ms ? (e.ms / 1000).toFixed(1) : "-") + " | " + (e.tout || "-") + " | " +
     (!e.ok ? "FAILED: " + String(e.error || "").replace(/\|/g, "/").slice(0, 160) : e.fallback ? "Qwen answered; Claude failed: " + String(e.fallback).replace(/\|/g, "/").slice(0, 120) : e.stop === "max_tokens" ? "cut off at length limit" : "ok") + " |"));
   const detail = ai.filter(e => !e.ok || e.fallback).concat(ai).filter((e, i, a) => a.indexOf(e) === i).slice(0, 6);
   if(detail.length){
     L.push("", "## Requests in detail (problems first; previews, not the full text)");
     detail.forEach(e => {
-      L.push("", "### " + hhmmss(e.at) + " · " + e.kind + " · " + (e.ok ? e.model : "failed"));
+      L.push("", "### " + hhmmss(e.at) + " · " + kindOf(e) + " · " + (e.ok ? e.model : "failed"));
       if(e.error) L.push("Error: " + e.error);
       if(e.fallback) L.push("Claude failed: " + e.fallback);
       L.push("Asked:", "```", String(e.prompt || "").slice(0, 900), "```");
@@ -6185,7 +6255,7 @@ function resolve(card, ok, btn){
   card.el.appendChild(why);
   card.whyEl = why;
   // a typed answer marked wrong: you can overrule it, and the AI checks the wording meanwhile
-  if(!ok && (q.t === "txt" || q.t === "cloze") && !card._partial && givenText.trim()){
+  if(!ok && (q.t === "txt" || q.t === "cloze") && !card._partial && givenText.trim() && !nonAnswer(givenText)){
     const mk = document.createElement("button"); mk.className = "btn2 sm markok"; mk.textContent = "I was right — mark as correct";
     mk.onclick = () => markCorrect(card, "Marked correct by you");
     why.appendChild(mk); card.markBtn = mk;
@@ -6274,6 +6344,12 @@ async function markCorrect(card, how){
   }
   paint(); saveProg();
 }
+/* "forgot", "idk", "no idea", "?" — nothing to check: the AI isn't asked and there is no "I was right". */
+const nonAnswer = t => {
+  const x = String(t || "").trim().toLowerCase();
+  return !/[a-z0-9]{2}/.test(x) ||
+    /^(i\s*)?(forgot|forget|dunno|idk|dk|don'?t know|do not know|no idea|not sure|no clue|pass|skip|nothing|none|n\/?a|\?+|blank|can'?t remember|cannot remember|ok\??|okay\??|hmm+|um+)[\s.!?]*$/.test(x);
+};
 /* Asks the AI whether a typed answer that didn't match means the same as the expected one. */
 async function aiJudge(card, given, expected){
   const note = document.createElement("small"); note.className = "aijudge"; note.textContent = "Checking your wording with the AI…";
@@ -7173,7 +7249,17 @@ window.addEventListener("unhandledrejection", e => {
 /* ============================================================
    ASK THE TEACHER — a tutor that already knows the module
    ============================================================ */
-let CHAT = {open:false, msgs:[], focus:null};
+let CHAT = {open:false, msgs:[], focus:null, model:"claude"};     // model: the teacher you picked (Claude each time the app opens)
+/* Which AI answers in Ask the teacher. Claude: Claude, or Qwen if Claude can't (signed out,
+   usage limit, offline). Qwen: always Qwen, on this PC. Only this chat has the choice. */
+function chatPickShow(){
+  document.querySelectorAll("#chat-pick button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === CHAT.model));
+  const r = BADGE.route;
+  $("chat-pick-note").textContent = CHAT.model === "qwen" ? "Runs on this PC — works offline"
+    : r && r.model !== "claude" ? (r.pause_reason === "signin" ? "Claude is signed out — Qwen answers for now"
+                                   : r.claude_paused ? "Claude is paused — Qwen answers for now" : "Offline — Qwen answers for now")
+    : "Qwen answers if Claude can't";
+}
 function chatContext(budget){
   if(!DECK) return "";
   if(DECK.kind === "skill"){
@@ -7220,6 +7306,10 @@ function chatShow(){
   CHAT.msgs.forEach(m => {
     const d = document.createElement("div"); d.className = "msg " + (m.role === "user" ? "me" : "ai");
     if(m.role === "user") d.textContent = m.content; else paras(d, m.content);
+    if(m.role !== "user" && m.model){
+      d.appendChild(el("small", "msgwho", (m.model === "claude" ? "Claude" : "Qwen") +
+        (m.fallback ? (/signed out/i.test(m.fallback) ? " · Claude is signed out" : " · Claude couldn't answer") : "")));
+    }
     log.appendChild(d);
   });
   log.scrollTop = log.scrollHeight;
@@ -7244,7 +7334,7 @@ function openChat(focusId){
   const f = focusId ? DECK.concepts.find(c => c.id === focusId) : null;
   $("chat-ctx").textContent = f ? DECK.name + " · " + f.name : DECK.name;
   $("chatdrawer").classList.add("on"); $("chatscrim").classList.add("on");
-  chatShow(); chatQuick();
+  chatShow(); chatQuick(); chatPickShow();
   setTimeout(() => $("chat-input").focus(), 80);
 }
 async function aiRoute(){
@@ -7260,7 +7350,7 @@ async function chatSend(){
   chatShow();
   const log = $("chatlog");
   const wait = document.createElement("div"); wait.className = "msg ai thinking";
-  wait.textContent = "thinking…"; log.appendChild(wait); log.scrollTop = log.scrollHeight;
+  wait.textContent = (CHAT.model === "qwen" ? "Qwen" : "Claude") + " is thinking…"; log.appendChild(wait); log.scrollTop = log.scrollHeight;
   try{
     /* LOCAL PORT: Qwen has OLLAMA_NUM_CTX tokens for prompt AND reply. When Qwen will
        answer, shrink the module text (and, if needed, drop the oldest messages) so it fits:
@@ -7268,7 +7358,7 @@ async function chatSend(){
        of fixed instructions. Claude keeps 22000 characters and 8 messages. */
     let hist = CHAT.msgs.slice(-8), budget = 22000;
     const route = await aiRoute();
-    if(route && route.model === "qwen" && route.num_ctx){
+    if(route && (route.model === "qwen" || CHAT.model === "qwen") && route.num_ctx){
       const room = (route.num_ctx - 900 - 400) * 3 - 700;
       const size = h => h.reduce((n, m) => n + m.content.length + 10, 0);
       while(hist.length > 1 && room - size(hist) < 3000) hist = hist.slice(1);
@@ -7276,7 +7366,7 @@ async function chatSend(){
     }
     const history = hist.map(m =>
       (m.role === "user" ? "STUDENT: " : "YOU: ") + m.content).join("\n\n");
-    const reply = await claude(
+    const who = await claudeWho(
 `You are this student's tutor for one module. You are patient and encouraging, you explain the logic underneath rather than reciting definitions, and you reach for analogies and concrete examples. Never dry, never a wall of text: 3-6 sentences unless they ask for more. If they are confused, find a different angle rather than repeating yourself. The list below is their whole module. Before you ever say something is "not covered" or "not in this module", check that list properly — including sub-types, examples and the members of any list. If it is there, teach it from there. Only say it is outside their material when you have looked and it genuinely is not present, and even then answer the question anyway and say plainly that you are going beyond the deck. Never guess at what the module does or does not contain.
 
 ${chatContext(budget)}
@@ -7284,9 +7374,9 @@ ${chatContext(budget)}
 CONVERSATION SO FAR:
 ${history}
 
-Reply to their last message. No preamble, no headings.`, 900);
+Reply to their last message. No preamble, no headings.`, 900, CHAT.model === "qwen" ? "qwen" : undefined);
     wait.remove();
-    CHAT.msgs.push({role:"assistant", content:reply.trim()});
+    CHAT.msgs.push({role:"assistant", content:String(who.text).trim(), model:who.model, fallback:who.fallback || undefined});
     chatShow(); chatQuick();
   }catch(e){
     wait.remove();
@@ -8876,6 +8966,7 @@ $("btn-folder").onclick = async () => {
   refreshView();
 };
 $("bk-close").onclick = closeBackup;
+$("chat-pick").onclick = e => { const b = e.target.closest("button[data-m]"); if(!b) return; CHAT.model = b.dataset.m; chatPickShow(); };
 $("btn-sup").onclick = superviseDeck;
 $("bscrim").onclick = closeBackup;
 $("bk-copy").onclick = copyBackup;

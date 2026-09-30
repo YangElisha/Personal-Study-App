@@ -436,6 +436,11 @@ def create_app(settings: Settings, app_dir: Path | None = None,
     async def ai_which_model():
         return await router.route_for_text()
 
+    @app.post("/api/ai/claude/retry")
+    async def ai_claude_retry():
+        router.resume_claude()
+        return await router.route_for_text()
+
     @app.post("/api/ai")
     async def ai_route(request: Request):
         try:

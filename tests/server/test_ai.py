@@ -402,7 +402,7 @@ def test_malformed_body(ai_client):
 # ---- GET /api/ai/route: lets the app size a prompt for Qwen -------------------------------
 def test_route_says_qwen_with_its_context_when_claude_off(ai_client, online):
     d = ai_client(claude="off", reach=online, num_ctx=8192).get("/api/ai/route").json()
-    assert d == {"model": "qwen", "num_ctx": 8192, "claude_paused": False}
+    assert d == {"model": "qwen", "num_ctx": 8192, "claude_paused": False, "pause_reason": ""}
 
 
 def test_route_says_qwen_when_offline(ai_client, fake_claude):
@@ -461,3 +461,34 @@ def test_a_failed_reach_check_is_retried_soon_a_good_one_is_cached(monkeypatch):
     assert asyncio.run(r.claude_reachable()) is True
     clock[0] += 5                                           # a success is remembered
     assert asyncio.run(r.claude_reachable()) is True
+
+
+# ---- Claude Code signed out ----------------------------------------------------------------
+def test_signed_out_pauses_claude_and_says_how_to_sign_in(ai_client, fake_claude, online, ollama):
+    fake_claude.mode("signedout")
+    c = ai_client(claude="on", reach=online, claude_path=fake_claude.path)
+    d = ask(c, "first").json()
+    assert d["model_used"] == "qwen" and "/login" in d["fallback_reason"]
+    d2 = ask(c, "second").json()
+    assert d2["model_used"] == "qwen" and "signed out" in d2["fallback_reason"]
+    assert len(fake_claude.calls()) == 1              # not tried again on every request
+    r = c.get("/api/ai/route").json()
+    assert r["claude_paused"] is True and r["pause_reason"] == "signin"
+
+
+def test_try_claude_again_lifts_the_pause(ai_client, fake_claude, online, ollama):
+    fake_claude.mode("signedout")
+    c = ai_client(claude="on", reach=online, claude_path=fake_claude.path)
+    ask(c, "first")
+    fake_claude.mode("ok")                            # signed in again
+    r = c.post("/api/ai/claude/retry").json()
+    assert r["model"] == "claude" and r["claude_paused"] is False and r["pause_reason"] == ""
+    assert ask(c, "again").json()["model_used"] == "claude"
+
+
+def test_only_qwen_never_asks_claude(ai_client, fake_claude, online, ollama):
+    c = ai_client(claude="on", reach=online, claude_path=fake_claude.path)
+    d = c.post("/api/ai", json={"model": "x", "max_tokens": 50, "only": "qwen",
+                                "messages": [{"role": "user", "content": "hi"}]}).json()
+    assert d["model_used"] == "qwen" and "fallback_from" not in d
+    assert not fake_claude.calls()

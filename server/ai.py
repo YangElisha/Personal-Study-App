@@ -28,6 +28,11 @@ thinking model; the app wants the plain answer), truncate:false and shift:false 
 refuses a prompt that doesn't fit (with its exact token count) instead of silently cutting
 it, and ends a reply that runs out of room with done_reason "length" (-> "max_tokens").
 
+If Claude Code is signed out ("Failed to authenticate: OAuth session expired…"), Claude is paused
+for CLAUDE_SIGNIN_PAUSE seconds the same way, route says pause_reason "signin", and the reason
+tells the user to sign in again; POST /api/ai/claude/retry lifts any pause at once.
+A request with "only": "qwen" (the student picked Qwen in Ask the teacher) goes to Qwen and
+never to Claude.
 A request with "only": "claude" (the supervisor checking Qwen's work) never falls back: if
 Claude is paused, unreachable or fails, it gets error claude_unavailable (503) instead.
 Every reply carries elapsed_ms (whole request, fallback included) for the activity log.
@@ -390,12 +395,20 @@ def call_claude(cfg: AIConfig, prompt: str, system: str, stream: bool = False,
 CLAUDE_LIMIT_PAUSE = 1800          # seconds Claude is skipped after a usage / rate limit
 _LIMIT = re.compile(r"usage limit|session limit|rate limit|limit reached|quota|too many requests|"
                     r"api status 429|\b429\b", re.I)
+# Claude Code signed out (its sign-in expired). Every request would fail the same way until the
+# user signs in again, so Claude is paused for a few minutes (or until "Try Claude again").
+CLAUDE_SIGNIN_PAUSE = 300
+_SIGNIN = re.compile(r"failed to authenticate|oauth|not logged in|please (run )?/?login|log in again|"
+                     r"authentication_error|invalid (api )?key|unauthori[sz]ed|api status 401|\b401\b", re.I)
+SIGNIN_HELP = ("Claude Code is signed out — sign in again (open a terminal, run claude, then /login); "
+               "Qwen answers until then")
 
 
 class Router:
     def __init__(self, cfg: AIConfig):
         self.cfg = cfg
         self._claude_paused_until = 0.0
+        self._pause_reason = ""                # "limit" | "signin" while paused
         self._claude_slots = asyncio.Semaphore(MAX_CLAUDE_AT_ONCE)
         self._reach: tuple[float, bool] | None = None
 
@@ -425,10 +438,24 @@ class Router:
         paused = self.claude_paused()
         claude = self.cfg.claude_cli and not paused and await self.claude_reachable()
         return {"model": "claude" if claude else "qwen", "num_ctx": self.cfg.num_ctx,
-                "claude_paused": paused}
+                "claude_paused": paused, "pause_reason": self._pause_reason if paused else ""}
 
     def claude_paused(self) -> bool:
         return time.monotonic() < self._claude_paused_until
+
+    def pause_claude(self, reason: str, seconds: float) -> None:
+        self._claude_paused_until = time.monotonic() + seconds
+        self._pause_reason = reason
+
+    def resume_claude(self) -> None:
+        """Try Claude again now (POST /api/ai/claude/retry): after signing in again, say."""
+        self._claude_paused_until = 0.0
+        self._pause_reason = ""
+        self._reach = None
+
+    def _pause_text(self) -> str:
+        return SIGNIN_HELP if self._pause_reason == "signin" else \
+            "Claude usage limit reached earlier; using Qwen for now"
 
     async def handle(self, body: Any) -> dict:
         t0 = time.monotonic()
@@ -442,18 +469,19 @@ class Router:
         model = (self.cfg.claude_fast_model or None) if isinstance(body, dict) and \
             body.get("tier") == "fast" else None
         only_claude = isinstance(body, dict) and body.get("only") == "claude"
+        only_qwen = isinstance(body, dict) and body.get("only") == "qwen"     # the student chose Qwen
         if only_claude:
             if not self.cfg.claude_cli:
                 raise AIError(503, "claude_unavailable", "Claude is switched off (CLAUDE_CLI=off).")
             if self.claude_paused():
-                raise AIError(503, "claude_unavailable", "Claude is paused after a usage limit.")
+                raise AIError(503, "claude_unavailable",
+                              SIGNIN_HELP if self._pause_reason == "signin" else "Claude is paused after a usage limit.")
             if not await self.claude_reachable():
                 raise AIError(503, "claude_unavailable", "Claude is not reachable (offline?).")
         fallback = {}
         if self.claude_paused():
-            fallback = {"fallback_from": "claude",
-                        "fallback_reason": "Claude usage limit reached earlier; using Qwen for now"}
-        elif self.cfg.claude_cli and await self.claude_reachable():
+            fallback = {"fallback_from": "claude", "fallback_reason": self._pause_text()}
+        elif not only_qwen and self.cfg.claude_cli and await self.claude_reachable():
             try:
                 async with self._claude_slots:
                     if has_image(msgs):
@@ -464,8 +492,13 @@ class Router:
                                                    prompt_for_claude(msgs), system, False, model)
             except ClaudeFailed as e:
                 log.warning("claude -p failed, retrying on Qwen: %s", e)
-                if _LIMIT.search(str(e)):
-                    self._claude_paused_until = time.monotonic() + CLAUDE_LIMIT_PAUSE
+                if _SIGNIN.search(str(e)):
+                    self.pause_claude("signin", CLAUDE_SIGNIN_PAUSE)
+                    log.warning("Claude Code is signed out: using Qwen for the next %d minutes "
+                                "(or until the app says try again)", CLAUDE_SIGNIN_PAUSE // 60)
+                    e = ClaudeFailed(SIGNIN_HELP + f" ({e})")
+                elif _LIMIT.search(str(e)):
+                    self.pause_claude("limit", CLAUDE_LIMIT_PAUSE)
                     log.warning("Claude usage limit: using Qwen for the next %d minutes",
                                 CLAUDE_LIMIT_PAUSE // 60)
                 if only_claude:
@@ -475,7 +508,9 @@ class Router:
             reply = await asyncio.to_thread(call_ollama, self.cfg, msgs, system, max_tokens)
         except QwenUnavailable as e:
             why = f"Qwen is not available: {e}."
-            if fallback:
+            if only_qwen:
+                why += " You chose Qwen: start Ollama, or switch back to Claude."
+            elif fallback:
                 why += f" Claude failed too: {fallback['fallback_reason']}"
             elif not self.cfg.claude_cli:
                 why += " Claude is switched off (CLAUDE_CLI=off)."
