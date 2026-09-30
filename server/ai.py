@@ -83,6 +83,7 @@ CLAUDE_SYSTEM = ("You are answering a request from MonoSpace, a personal study a
 
 REACH_TIMEOUT = 2.0
 REACH_CACHE_SECONDS = 15.0
+REACH_FAIL_CACHE_SECONDS = 3.0      # a failed check is retried soon: one network blip is not "offline"
 MAX_CLAUDE_AT_ONCE = 4        # parallel `claude -p` processes; same usage, less waiting
 
 
@@ -408,7 +409,8 @@ class Router:
 
     async def claude_reachable(self) -> bool:
         now = time.monotonic()
-        if self._reach and now - self._reach[0] < REACH_CACHE_SECONDS:
+        if self._reach and now - self._reach[0] < (REACH_CACHE_SECONDS if self._reach[1]
+                                                    else REACH_FAIL_CACHE_SECONDS):
             return self._reach[1]
         try:   # DNS can hang when offline; the whole check gets 2 seconds
             ok = await asyncio.wait_for(asyncio.to_thread(self._connect), REACH_TIMEOUT + 0.2)

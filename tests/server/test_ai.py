@@ -446,3 +446,18 @@ def test_only_claude_refused_while_paused_or_switched_off(ai_client, fake_claude
 
 def test_every_reply_says_how_long_it_took(ai_client, ollama):
     assert ask(ai_client(), "hi").json()["elapsed_ms"] >= 0
+
+
+def test_a_failed_reach_check_is_retried_soon_a_good_one_is_cached(monkeypatch):
+    import asyncio
+    from server import ai as aim
+    r = aim.Router(aim.load_ai_config())
+    answers = iter([False, True])
+    monkeypatch.setattr(r, "_connect", lambda: next(answers))
+    clock = [1000.0]
+    monkeypatch.setattr(aim.time, "monotonic", lambda: clock[0])
+    assert asyncio.run(r.claude_reachable()) is False
+    clock[0] += aim.REACH_FAIL_CACHE_SECONDS + 0.1          # a blip: asked again, now reachable
+    assert asyncio.run(r.claude_reachable()) is True
+    clock[0] += 5                                           # a success is remembered
+    assert asyncio.run(r.claude_reachable()) is True

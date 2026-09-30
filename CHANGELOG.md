@@ -4,6 +4,30 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed — Module 2's garbled terms and the Gospel slide; simpler Activity log; remove while learning (2026-09-30)
+- **Garbled term names.** On slides built from two-column boxes, the slide reader ran titles and
+  text together, so "terms" came out as whole sentences in Title Case ("Incremental Development
+  Benefits the Cost of Accommodating…"). The PDF's own text was fine. Now, when 15% or more of the
+  names read are over 8 words (the reader tests never have one), that reading is dropped and the
+  page text goes through the outline and teaching pass instead, with running footers left out.
+  Module 2 now builds in about a minute: 40 clean terms, each found in the module.
+- **Not course content.** Prayers, gospel or bible readings and devotionals are recognised by
+  the reader (asked about, like activities), left out of page text ("Left out page 2 — a prayer
+  or reading"), skipped by page transcription and by the outline, and caught by "Remove course
+  outcomes & admin" on existing decks.
+- **Duplicate folding** no longer merges narrower terms into broader ones (it had folded
+  "Software validation" and "Software specification"); at most a fifth of a deck is folded.
+- **Teach me → "Not needed — remove".** Takes a concept out of the deck while you learn; it is
+  kept (with its progress) under Manage → Removed concepts, where "Bring back" restores it.
+- **Activity log redesigned.** One line of status, then one card per build (or per Claude check):
+  done / stopped / building, time taken, Claude and Qwen requests, real problems only. Open a card
+  for its steps; each AI request expands to what was asked and answered; "Copy report for AI" per
+  build. Earlier sessions load automatically; the latest crash sits on top with its copy button.
+- A single failed reachability check no longer counts as offline for 15 s (3 s now), and the
+  supervisor asks twice before skipping its check. Checked on real models: Claude reviewed 11
+  concepts Qwen wrote after a usage limit and corrected 5, including the CMM levels in the wrong
+  order.
+
 ### Added — AI activity log, Claude as supervisor, crash reports; no more ______ (2026-09-30)
 - **Hidden terms read naturally.** A definition that opens with its own term ("Software costs
   are the expenses of…") is rephrased to start at what it says ("The expenses of…"); where the
