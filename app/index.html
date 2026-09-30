@@ -4174,16 +4174,22 @@ function coverageSummary(report, extra){
 const TRANSCRIBE = "Transcribe ALL of the text on these pages word for word, in reading order. " +
   "Keep every heading, every list item, every example, every table row, and every definition exactly as written. " +
   "Do not summarise, shorten, merge or skip anything — including items nested under headings. " +
-  "Mark each new page with a line like --- page N ---. Output only the transcription.";
+  "Mark each new page with a line like --- page N ---. " +
+  "Where the page has a diagram, chart or picture that teaches something, transcribe its labels, then add one line " +
+  "[Figure: what it shows and what it means, in one or two sentences]. Skip logos and decoration. " +
+  "Output only the transcription.";
+/* Page images are read by Sonnet, not Haiku: on a real module Haiku changed words in small print
+   ("Infer" -> "Uses", "combining" -> "constituting", "subtasks" -> "subsets") and, with thinking
+   off, was no faster (8-15 s a page for both). */
 async function transcribe(blocks, label, say){
   let out = "", guard = 0;
-  let r = await claudeFull([...blocks, {type:"text", text:TRANSCRIBE}], 8000, "fast");
+  let r = await claudeFull([...blocks, {type:"text", text:TRANSCRIBE}], 8000);
   out += r.text;
   while(r.stop === "max_tokens" && guard++ < 4){
     if(say) say(label + " is long — fetching the rest (" + guard + ")");
     r = await claudeFull([...blocks, {type:"text", text: TRANSCRIBE +
       "\n\nYou already transcribed up to this point — continue EXACTLY after the last character, " +
-      "even if that is mid-word, without repeating anything:\n" + out.slice(-1500)}], 8000, "fast");
+      "even if that is mid-word, without repeating anything:\n" + out.slice(-1500)}], 8000);
     out = joinContinuation(out, r.text);
   }
   if(r.stop === "max_tokens" && say) say(label + " may still be incomplete — split it into fewer pages", true);

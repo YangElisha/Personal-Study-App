@@ -4,6 +4,17 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Changed — page images read by Sonnet, with figures explained (2026-09-30)
+- Compared Haiku and Sonnet on every page of a real picture module against the page images:
+  Haiku changed three words in small print ("Infer" → "Uses", "combining" → "constituting",
+  "subtasks" → "subsets"); Sonnet made no misreadings and kept the module's own spelling. With thinking
+  off, both took 8-15 s a page, so page images go back to Sonnet (the "fast" tier stays
+  available, unused).
+- Transcription now adds one `[Figure: …]` line for a diagram, chart or picture that teaches
+  something (e.g. AI ⊃ ML ⊃ DL; manual feature extraction vs a CNN), instead of only its labels.
+- Checked: the same module in 62 s, 14 requests, 22 concepts all taught, names found in the
+  source; small print correct; 7 figures explained. Reader tests 3/3.
+
 ### Fixed — builds were slow (a 6-page picture PDF: 273 s → 60 s) (2026-09-30)
 - Measured per request (the server now logs model, seconds and tokens for every Claude call):
   about 4 s start-up each, and most of the rest was **hidden thinking**: a 4-concept teaching

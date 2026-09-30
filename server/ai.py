@@ -10,8 +10,8 @@ limit also pauses Claude for CLAUDE_LIMIT_PAUSE seconds, so the requests after i
 to Qwen instead of each failing on Claude first (GET /api/ai/route says claude_paused).
 Claude runs Sonnet unless CLAUDE_MODEL says otherwise: building decks does not need the
 largest model, and it spends far less of the user's Claude usage. A request with
-"tier": "fast" (copying text off page images) runs CLAUDE_FAST_MODEL (Haiku) instead:
-transcription needs speed, not judgement. Up to MAX_CLAUDE_AT_ONCE run in parallel.
+"tier": "fast" runs CLAUDE_FAST_MODEL (Haiku) instead — available, but the app does not use it
+for page images: Haiku misread small print on a real module and was no faster. Up to MAX_CLAUDE_AT_ONCE run in parallel.
 Every call runs with --effort CLAUDE_CLI_EFFORT (low; not CLAUDE_EFFORT, which Claude Code itself uses): at Claude Code's default effort about three
 quarters of each reply was hidden thinking — measured on a 4-concept teaching request, 7,038
 tokens and 66 s against 1,809 tokens and 22 s at low, for nearly the same visible answer.
