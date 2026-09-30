@@ -6254,8 +6254,11 @@ function resolve(card, ok, btn){
                      : card._revealed ? "You saw the answer — counted as not known yet"
                      : card._partial ? "Almost — you need the whole term" : "Not quite";
   let text = q.why || con(cid).fact || "";
-  if(!ok && card._partial)
+  if(!ok && card._partial){
+    const lead = card._partial + " — ";
+    if(text.startsWith(lead)) text = text.slice(lead.length);
     text = "That is only part of it — the full term is “" + card._partial + "”. " + text;
+  }
   else if(!ok){
     const lead = answerText + " — ";
     if(text.startsWith(lead)) text = text.slice(lead.length);
@@ -6266,11 +6269,12 @@ function resolve(card, ok, btn){
   card.el.appendChild(why);
   card.whyEl = why;
   // a typed answer marked wrong: you can overrule it, and the AI checks the wording meanwhile
-  if(!ok && (q.t === "txt" || q.t === "cloze") && !card._partial && !card._revealed && givenText.trim() && !nonAnswer(givenText)){
+  // (also after "Almost — you need the whole term": you decide whether part of the term is enough)
+  if(!ok && (q.t === "txt" || q.t === "cloze") && !card._revealed && givenText.trim() && !nonAnswer(givenText)){
     const mk = document.createElement("button"); mk.className = "btn2 sm markok"; mk.textContent = "I was right — mark as correct";
     mk.onclick = () => markCorrect(card, "Marked correct by you");
     why.appendChild(mk); card.markBtn = mk;
-    if(OPT.ai) aiJudge(card, givenText, answerText);
+    if(OPT.ai && !card._partial) aiJudge(card, givenText, answerText);   // a part of the term: the AI would only say "partly right"
   }
   CHAT.focus = cid;
   card._exp = {ok, given:givenText, answer:answerText,

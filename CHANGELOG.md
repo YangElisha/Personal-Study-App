@@ -4,6 +4,12 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed — "Mark as correct" after "Almost — you need the whole term" (2026-10-01)
+- A partial answer ("Customized" for "Customized products") now has "I was right — mark as
+  correct" too; marking it right means that wording is accepted from then on. No AI check there
+  (it would only say "partly right"). The message no longer repeats the term before its
+  definition.
+
 ### Fixed — Settings layout (2026-10-01)
 - "Layout and length" and "Appearance" touched with no gap (a card after the study-options block
   got no spacing). Checked at 780, 1000 and 1100 px wide and at the largest text size: nothing
