@@ -303,7 +303,8 @@ def create_app(settings: Settings, app_dir: Path | None = None,
             body = json.loads((await request.body()).decode("utf-8"))
         except (UnicodeDecodeError, ValueError):
             body = None
-        if not isinstance(body, dict) or not isinstance(body.get("deck_id"), str)                 or not body["deck_id"]:
+        if (not isinstance(body, dict) or not isinstance(body.get("deck_id"), str)
+                or not body["deck_id"]):
             return _err(400, "bad_request", 'Body must be {"deck_id": "<id>"}')
         pages = body.get("pages") if isinstance(body.get("pages"), int) else None
         prev = body.get("previous_sha") if isinstance(body.get("previous_sha"), str) else None
@@ -312,6 +313,28 @@ def create_app(settings: Settings, app_dir: Path | None = None,
                                            body["deck_id"], md_paths, pages, prev)
         except modules.ModuleError as e:
             return _err(e.status, e.kind, e.message)
+
+    # ---- deck builds in progress: the desktop window asks before closing on one ---------
+    # Each open page reports how many builds it has running or queued; the queue lives in the
+    # page, so closing the window would drop it without a word (WebView2 shows no "leave page?").
+    builds: dict[str, int] = {}
+
+    @app.post("/api/builds")
+    async def builds_report(request: Request):
+        try:
+            body = json.loads((await request.body()).decode("utf-8"))
+            page, active = str(body["page"])[:64], int(body["active"])
+        except (UnicodeDecodeError, ValueError, TypeError, KeyError):
+            return _err(400, "bad_request", 'Body must be {"page": "<id>", "active": <n>}')
+        if active > 0 and (page in builds or len(builds) < 32):
+            builds[page] = active
+        else:
+            builds.pop(page, None)
+        return {"active": sum(builds.values())}
+
+    @app.get("/api/builds")
+    async def builds_active():
+        return {"active": sum(builds.values())}
 
     # ---- AI (Phase 5): Qwen by default, `claude -p` when online. See server/ai.py --------
     router = ai.Router(ai_config if ai_config is not None else ai.load_ai_config())

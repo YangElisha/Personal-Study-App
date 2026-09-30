@@ -4,6 +4,17 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed — closing the window no longer loses a build silently; one window only (2026-09-30)
+- The desktop window (WebView2) shows no "leave page?" prompt, so closing MonoSpace mid-build
+  dropped the build and the whole queue without a word. The page now tells the server how many
+  builds are running or queued (`/api/builds`), and the window asks before closing on one
+  (Cancel keeps it open). Tested on a real window: warning shown, Cancel kept it, idle close
+  immediate.
+- Starting MonoSpace while it is already open now brings the open window to the front (restoring
+  it if minimised) instead of opening a second one. Seen in the log: a double-click opened two
+  windows, and closing the first stopped the server under the second.
+- The log names the pywebview version instead of "?".
+
 ### Changed — page images read by Sonnet, with figures explained (2026-09-30)
 - Compared Haiku and Sonnet on every page of a real picture module against the page images:
   Haiku changed three words in small print ("Infer" → "Uses", "combining" → "constituting",

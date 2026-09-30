@@ -2417,7 +2417,7 @@ Theme.onChange = () => savePrefs();
 /* ============================================================
    CLAUDE
    ============================================================ */
-/* Requests are queued two at a time and retried with backoff, because a big
+/* Requests are queued four at a time and retried with backoff, because a big
    deck build fires a dozen calls in a row and will otherwise trip a rate limit. */
 let inFlight = 0, waiters = [];
 const MAX_AI_AT_ONCE = 4;
@@ -3362,6 +3362,7 @@ async function jobDone(id){
 }
 function renderQueue(){
   const active = QUEUE.filter(j => j.state === "waiting" || j.state === "building").length;
+  reportBuilds();
   const nq = $("nav-queue"); nq.textContent = active ? String(active) : ""; nq.classList.toggle("hide", !active);
   $("btn-build").textContent = JOB ? "Add to queue" : "Build the deck";
   $("bqueue").classList.toggle("hide", !QUEUE.length);
@@ -3386,6 +3387,18 @@ function renderQueue(){
 }
 $("bq-clear").onclick = () => { for(let i = QUEUE.length - 1; i >= 0; i--) if(QUEUE[i].state === "done" || QUEUE[i].state === "failed") QUEUE.splice(i, 1); renderQueue(); };
 window.addEventListener("beforeunload", e => { if(JOB || QUEUE.some(j => j.state === "waiting")){ e.preventDefault(); e.returnValue = ""; } });
+/* The desktop window (WebView2) shows no "leave page?" prompt, so the server is told how many
+   builds are running or queued and the window asks before closing (server/launcher.py). */
+const PAGE_ID = uid(); let buildsSent = 0;
+function reportBuilds(){
+  const n = QUEUE.filter(j => j.state === "waiting" || j.state === "building").length;
+  if(n === buildsSent) return;
+  buildsSent = n;
+  fetch("/api/builds", {method:"POST", headers:{"Content-Type":"application/json"}, keepalive:true,
+                        body:JSON.stringify({page:PAGE_ID, active:n})}).catch(() => {});
+}
+window.addEventListener("pagehide", () => { if(buildsSent){ buildsSent = -1;
+  navigator.sendBeacon("/api/builds", new Blob([JSON.stringify({page:PAGE_ID, active:0})], {type:"application/json"})); } });
 const unxml = t => t.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">")
                      .replace(/&quot;/g,'"').replace(/&apos;/g,"'");
 /* .pptx and .docx are ZIP files. This reads them with the browser's own

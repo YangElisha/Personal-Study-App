@@ -242,6 +242,37 @@ def find_edge() -> str | None:
     return None
 
 
+def builds_running(url: str) -> int:
+    """How many deck builds the open pages have running or queued (0 if the server can't say)."""
+    try:
+        with urllib.request.urlopen(url + "api/builds", timeout=2) as r:
+            return max(0, int(json.loads(r.read().decode("utf-8")).get("active", 0)))
+    except (OSError, ValueError, AttributeError, TypeError):
+        return 0
+
+
+def ok_to_close(url: str) -> bool:
+    """Asked when the window is closing: a build in progress would be lost, so check first."""
+    n = builds_running(url)
+    if not n or os.name != "nt":
+        return True
+    what = "A deck is still being built" if n == 1 else f"{n} decks are still being built or queued"
+    # MB_OKCANCEL | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SETFOREGROUND | MB_TOPMOST; IDOK = 1
+    r = ctypes.windll.user32.MessageBoxW(
+        None, f"{what}.\n\nClosing MonoSpace stops it, and anything not finished is lost "
+        "(finished decks are safe).\n\nClose anyway?", APP, 0x1 | 0x30 | 0x100 | 0x10000 | 0x40000)
+    log.info("close during %d build(s): %s", n, "closed" if r == 1 else "kept open")
+    return r == 1
+
+
+def package_version(name: str) -> str:
+    try:
+        from importlib.metadata import version
+        return version(name)
+    except Exception:                          # not recorded in the frozen app
+        return "?"
+
+
 def native_window(url: str, profile: Path) -> bool:
     """Show the app in a native WebView2 window; blocks until it closes. False = unavailable."""
     try:
@@ -253,9 +284,10 @@ def native_window(url: str, profile: Path) -> bool:
         profile.mkdir(parents=True, exist_ok=True)
         webview.settings["ALLOW_DOWNLOADS"] = True          # "Download backup"
         webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
-        webview.create_window(APP, url, width=1400, height=900, min_size=(900, 600),
-                              background_color="#000000", text_select=True)
-        log.info("window: native (pywebview %s)", getattr(webview, "__version__", "?"))
+        win = webview.create_window(APP, url, width=1400, height=900, min_size=(900, 600),
+                                    background_color="#000000", text_select=True)
+        win.events.closing += lambda: ok_to_close(url)      # False keeps the window open
+        log.info("window: native (pywebview %s)", package_version("pywebview"))
         webview.start(gui="edgechromium", icon=str(ICON), private_mode=False,
                       storage_path=str(profile))
         return True
@@ -359,6 +391,54 @@ def running_note(local: Path) -> Path:
     return local / "running.json"
 
 
+def running_pid(settings, local: Path) -> int | None:
+    """The desktop MonoSpace process serving this data folder, from its running note."""
+    try:
+        d = json.loads(running_note(local).read_text(encoding="utf-8"))
+        if os.path.normcase(d.get("data_dir", "")) == os.path.normcase(str(settings.data_dir)):
+            return int(d["pid"])
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return None
+
+
+def focus_window(pid: int, wait: float = 5.0) -> bool:
+    """Bring the MonoSpace window of process `pid` to the front. False = it has none (yet).
+
+    A second launch does this instead of opening a second window: two windows share one
+    server, and closing the first stops that server under the second."""
+    if os.name != "nt" or not pid:
+        return False
+    u32 = ctypes.windll.user32
+    found: list[int] = []
+
+    @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+    def each(hwnd, _):
+        owner = ctypes.c_ulong()
+        u32.GetWindowThreadProcessId(ctypes.c_void_p(hwnd), ctypes.byref(owner))
+        if owner.value == pid and u32.IsWindowVisible(ctypes.c_void_p(hwnd)):
+            buf = ctypes.create_unicode_buffer(256)
+            u32.GetWindowTextW(ctypes.c_void_p(hwnd), buf, 256)
+            if buf.value == APP:
+                found.append(hwnd)
+                return False
+        return True
+
+    end = time.time() + wait                 # it may still be opening (a double-click)
+    while not found:
+        u32.EnumWindows(each, None)
+        if found or time.time() >= end:
+            break
+        time.sleep(0.25)
+    if not found:
+        return False
+    h = ctypes.c_void_p(found[0])
+    if u32.IsIconic(h):
+        u32.ShowWindow(h, 9)                 # SW_RESTORE
+    u32.SetForegroundWindow(h)
+    return True
+
+
 def find_running(settings, local: Path) -> str | None:
     """URL of the MonoSpace server already serving this data folder, if it answers."""
     try:
@@ -411,6 +491,9 @@ def run() -> int:
     except AlreadyRunning:
         url = find_running(settings, local)
         if url:
+            if focus_window(running_pid(settings, local) or 0):
+                log.info("already running at %s; brought its window to the front", url)
+                return 0
             log.info("already running at %s; opening another window", url)
             if native_window(url, profile / "native"):
                 return 0

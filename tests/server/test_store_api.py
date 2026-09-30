@@ -209,3 +209,12 @@ def test_writes_are_transactions_and_wal(client, settings):
     finally:
         conn.close()
     assert kv_full(settings)[0][:2] == ("k", "1")
+
+
+def test_builds_are_counted_per_page_so_the_window_can_ask_before_closing(client):
+    assert client.get("/api/builds").json() == {"active": 0}
+    assert client.post("/api/builds", json={"page": "a", "active": 2}).json() == {"active": 2}
+    assert client.post("/api/builds", json={"page": "b", "active": 1}).json() == {"active": 3}
+    assert client.post("/api/builds", json={"page": "a", "active": 0}).json() == {"active": 1}
+    assert client.get("/api/builds").json() == {"active": 1}
+    assert client.post("/api/builds", content=b"nope").status_code == 400
