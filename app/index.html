@@ -2420,13 +2420,14 @@ Theme.onChange = () => savePrefs();
 /* Requests are queued two at a time and retried with backoff, because a big
    deck build fires a dozen calls in a row and will otherwise trip a rate limit. */
 let inFlight = 0, waiters = [];
+const MAX_AI_AT_ONCE = 4;
 function slot(){
-  if(inFlight < 2){ inFlight++; return Promise.resolve(); }
+  if(inFlight < MAX_AI_AT_ONCE){ inFlight++; return Promise.resolve(); }
   return new Promise(res => waiters.push(res));
 }
 function release(){
   inFlight--;
-  if(waiters.length && inFlight < 2){ inFlight++; waiters.shift()(); }
+  if(waiters.length && inFlight < MAX_AI_AT_ONCE){ inFlight++; waiters.shift()(); }
 }
 const nap = ms => new Promise(r => setTimeout(r, ms));
 let rateNotice = null;
@@ -2444,17 +2445,17 @@ async function claudeCall(content, maxTokens){
 /* Same call, but tells you whether the model ran out of room. Anything that
    transcribes or extracts must use this — a reply cut off at the token limit
    is otherwise indistinguishable from a complete one. */
-async function claudeFull(content, maxTokens){
+async function claudeFull(content, maxTokens, tier){
   await slot();
-  try{ return await claudeRawCall(content, maxTokens); }
+  try{ return await claudeRawCall(content, maxTokens, tier); }
   finally{ release(); }
 }
-async function claudeRawCall(content, maxTokens){
+async function claudeRawCall(content, maxTokens, tier){
   /* LOCAL PORT: the Drill server on this PC answers (docs/API.md). No API key, and no
      offline check here: the server picks the model, and Qwen works offline. */
   const headers = {"Content-Type":"application/json"};
-  const body = JSON.stringify({model:"claude-sonnet-4-6", max_tokens:maxTokens||1000,
-                               messages:[{role:"user", content}]});
+  const body = JSON.stringify(Object.assign({model:"claude-sonnet-4-6", max_tokens:maxTokens||1000,
+                               messages:[{role:"user", content}]}, tier ? {tier} : {}));
   let lastErr = "";
   for(let attempt = 0; attempt < 4; attempt++){
     let r, d;
@@ -4176,13 +4177,13 @@ const TRANSCRIBE = "Transcribe ALL of the text on these pages word for word, in 
   "Mark each new page with a line like --- page N ---. Output only the transcription.";
 async function transcribe(blocks, label, say){
   let out = "", guard = 0;
-  let r = await claudeFull([...blocks, {type:"text", text:TRANSCRIBE}], 8000);
+  let r = await claudeFull([...blocks, {type:"text", text:TRANSCRIBE}], 8000, "fast");
   out += r.text;
   while(r.stop === "max_tokens" && guard++ < 4){
     if(say) say(label + " is long — fetching the rest (" + guard + ")");
     r = await claudeFull([...blocks, {type:"text", text: TRANSCRIBE +
       "\n\nYou already transcribed up to this point — continue EXACTLY after the last character, " +
-      "even if that is mid-word, without repeating anything:\n" + out.slice(-1500)}], 8000);
+      "even if that is mid-word, without repeating anything:\n" + out.slice(-1500)}], 8000, "fast");
     out = joinContinuation(out, r.text);
   }
   if(r.stop === "max_tokens" && say) say(label + " may still be incomplete — split it into fewer pages", true);
@@ -4465,12 +4466,13 @@ For EACH numbered concept return:
 - "name": the exact term a student must recall (e.g. "Supervised learning", "K-fold cross-validation"). If the given name is a slide title or a question rather than a term ("Why use it?", "Train/Test in Practice", "Model"), name the idea the slide actually teaches. Keep the module's spelling for real terms. Use the module's own words for the term; never invent a label, and never add filler such as "mechanism", "objective", "type", "hierarchy", "calculation" or "scope".
 - "definition": ONE clear sentence saying what it is. If the source gives a definition, keep its wording; if it only names the term, give the standard textbook definition in one sentence. Never contradict the module or add claims it does not support. Never start with a bullet, "This slide", or "The concept".
 - "example": the module's example in one sentence, or "" if it has none.
-- "explain": 2-3 plain-language sentences: how it works / why it matters, as a tutor would say it.
+- "explain": 1-2 plain-language sentences: how it works / why it matters, as a tutor would say it.
 - "confuse": one sentence starting "Students often confuse this with" naming the nearest confusable idea and how to tell them apart, or "".
 - "items": ONLY if it is an unordered list or set in the source — the members as short strings. Omit otherwise.
 - "steps": ONLY if it is an ordered procedure in the source — the steps in order. Omit otherwise.
-- "qs": 3 questions testing understanding, not wording: one multiple choice (4 options, exactly one right, plausible distractors from real confusions), one true/false, one short type-in answer of 1-3 words. Each with "why": 1-2 sentences of reasoning.
-- "also": distinct key terms the source defines or uses inside this concept that a student would be examined on (e.g. "Latent variable", "Overfitting", "Training set") — each with "name", "definition", "example", "explain", "qs" as above. NEVER a part, restatement or narrower version of this concept or of anything in ALREADY IN THE DECK (not "Public key encrypts" when the concept is asymmetric encryption). At most 3; usually 0-1; [] if none.
+- "qs": 3 questions testing understanding, not wording: one multiple choice (4 options, exactly one right, plausible distractors from real confusions), one true/false, one short type-in answer of 1-3 words. Each with "why": ONE short sentence of reasoning. Keep options short.
+- "also": distinct key terms the source defines or uses inside this concept that a student would be examined on (e.g. "Latent variable", "Overfitting", "Training set") — each with ONLY "name", "definition", "example", "explain" (no questions — they are made from the definition). NEVER a part, restatement or narrower version of this concept or of anything in ALREADY IN THE DECK (not "Public key encrypts" when the concept is asymmetric encryption). At most 2; usually 0-1; [] if none.
+Be concise throughout — every word is something a student has to read.
 
 Respond with ONLY a JSON array, no preamble, no markdown fences:
 [{"i":1,"name":"...","definition":"...","example":"...","explain":"...","confuse":"...","qs":[
@@ -4523,7 +4525,15 @@ const BUILD_ASK = 25;
 function aiSizes(route){
   const qwen = !route || route.model !== "claude";
   return {qwen, who: !route ? "the AI" : qwen ? "Qwen" : "Claude",
-          chunk: qwen ? 3500 : 14000, batch: qwen ? 1 : 6, maxOut: qwen ? 3500 : 8000};
+          chunk: qwen ? 3500 : 14000, batch: qwen ? 1 : 4, maxOut: qwen ? 3500 : 6000, par: qwen ? 1 : 4};
+}
+/* fn over items, at most n at a time; results in the original order. */
+async function inPool(items, n, fn){
+  const out = new Array(items.length); let next = 0;
+  await Promise.all(Array.from({length: Math.max(1, Math.min(n, items.length))}, async () => {
+    while(next < items.length){ const i = next++; out[i] = await fn(items[i], i); }
+  }));
+  return out;
 }
 async function budgetOk(n, what, qwen){
   if(n <= BUILD_ASK) return true;
@@ -4569,32 +4579,40 @@ async function outlineMaterial(material, log){
   if(!await budgetOk(chunks.length, "Outlining " + material.length.toLocaleString() + " characters", z.qwen))
     throw new Error("Stopped before building — nothing was sent to the AI");
   log("Outlining the material with " + z.who + " · " + plural(chunks.length, "passage"));
-  const out = [], seen = new Set();
-  for(let i = 0; i < chunks.length; i++){
-    pbar(15 + i / chunks.length * 28, "Outlining passage " + (i + 1) + " of " + chunks.length + "…");
-    // "name | topic" lines; a reply of plain names (Qwen sometimes drops the topic) is used too
-    const parse = txt => {
-      const ls = String(txt || "").split("\n").map(l => l.replace(/^[\s\-*•\d.)]+/, "").replace(/\*\*/g, "").trim()).filter(Boolean);
-      const piped = ls.filter(l => l.includes("|"));
-      return (piped.length ? piped : ls.filter(l => l.split(/\s+/).length <= 6 && !/[:.?!]$/.test(l)))
-        .map(l => l.split("|").map(x => x.trim()));
-    };
-    let n = 0, off = 0;
+  // "name | topic" lines; a reply of plain names (Qwen sometimes drops the topic) is used too
+  const parse = txt => {
+    const ls = String(txt || "").split("\n").map(l => l.replace(/^[\s\-*•\d.)]+/, "").replace(/\*\*/g, "").trim()).filter(Boolean);
+    const piped = ls.filter(l => l.includes("|"));
+    return (piped.length ? piped : ls.filter(l => l.split(/\s+/).length <= 6 && !/[:.?!]$/.test(l)))
+      .map(l => l.split("|").map(x => x.trim()));
+  };
+  let doneP = 0;
+  const outlineOne = async (chunk, i) => {
+    const got = [], local = new Set(); let off = 0;
     // a ceiling against runaway lists (one symbol per concept), roomy enough for dense notes
-    const cap = Math.max(8, Math.min(25, Math.round(chunks[i].split(/\s+/).length / 40)));
-    for(let attempt = 0; attempt < 2 && !n; attempt++){     // retry once when nothing usable came back
+    const cap = Math.max(8, Math.min(25, Math.round(chunk.split(/\s+/).length / 40)));
+    for(let attempt = 0; attempt < 2 && !got.length; attempt++){     // retry once when nothing usable came back
       let rows = [];
-      try{ rows = parse(await claude(OUTLINE_RULES + "\n\nPASSAGE:\n" + chunks[i], 1200)); }
+      try{ rows = parse(await claude(OUTLINE_RULES + "\n\nPASSAGE:\n" + chunk, 1200)); }
       catch(e){ if(attempt) log("Passage " + (i + 1) + " could not be outlined: " + trimNice(e.message, 70), true); }
       rows.forEach(([nm, tp]) => {
         const name = stripFiller(tidyName(nm) || nm), key = norm(name);
-        if(!name || !key || seen.has(key) || n >= cap) return;
-        if(name.split(/\s+/).length > 8 || groundScore(name, chunks[i]) < 0.5){ off++; return; }
-        seen.add(key); n++;
-        out.push({id:uid(), name, topic:tp || "General", fact:excerptFor(name, chunks[i]), _src:chunks[i], star:false, qs:[]});
+        if(!name || !key || local.has(key) || got.length >= cap) return;
+        if(name.split(/\s+/).length > 8 || groundScore(name, chunk) < 0.5){ off++; return; }
+        local.add(key);
+        got.push({id:uid(), name, topic:tp || "General", fact:excerptFor(name, chunk), _src:chunk, star:false, qs:[]});
       });
     }
-    if(!n){   // never lose a passage: keep it whole as one concept named by its heading; teaching names it properly
+    doneP++;
+    pbar(15 + doneP / chunks.length * 28, "Outlined " + doneP + " of " + chunks.length + " passages…");
+    return {got, off};
+  };
+  const parts = await inPool(chunks, z.par, outlineOne);
+  const out = [], seen = new Set();
+  parts.forEach(({got, off}, i) => {
+    let n = 0;
+    got.forEach(c => { const k = norm(c.name); if(seen.has(k)) return; seen.add(k); out.push(c); n++; });
+    if(!got.length){   // never lose a passage: keep it whole as one concept named by its heading; teaching names it properly
       const head = (chunks[i].split("\n").map(l => l.replace(/^\[Page \d+\]\s*/, "").trim())
                      .find(l => l && l.split(/\s+/).length <= 8 && !/^[$\\]/.test(l))) || "Passage " + (i + 1);
       out.push({id:uid(), name:head, topic:"General", fact:excerptFor(head, chunks[i]), _src:chunks[i], star:false, qs:[]});
@@ -4602,7 +4620,7 @@ async function outlineMaterial(material, log){
       log("Passage " + (i + 1) + ": no outline came back — kept whole as “" + head + "”", true);
     }
     log("Passage " + (i + 1) + ": " + plural(n, "concept") + (off ? " · left out " + off + " name(s) not found in the text" : ""));
-  }
+  });
   return out;
 }
 async function teachConcepts(list, log){
@@ -4652,7 +4670,7 @@ async function teachConcepts(list, log){
     done += part.length;
     pbar(45 + done / list.length * 52, "Teaching… " + done + " of " + list.length + " concepts");
   };
-  // two workers; each asks which model is answering before every request
+  // workers (4 for Claude, 1 for Qwen); each asks which model is answering before every request
   const worker = async () => {
     while(at < list.length){
       const z = aiSizes(await aiRoute());
@@ -4664,7 +4682,7 @@ async function teachConcepts(list, log){
       await runBatch(start, end, z);
     }
   };
-  await Promise.all([worker(), worker()]);
+  await Promise.all(Array.from({length: z0.par}, worker));
   // concepts in module order, each followed by the key terms found inside it; no duplicate names
   const seen = new Set(), out = [];
   taught.forEach((c, k) => {
@@ -4772,10 +4790,9 @@ async function build(job){
       // back where it sits in the module
       if(r.textless.length && !await budgetOk(r.textless.length, "Reading " + plural(r.textless.length, "picture page"), aiSizes(await aiRoute()).qwen))
         throw new Error("Stopped before reading the picture pages — nothing was built");
-      for(const pn of r.textless){
-        const txt = await pdfPagesAsText(Object.assign({}, u, {range:String(pn)}), (m,e) => plog(m,e));
-        if(txt.trim()) pictures.push({page:pn, text:txt});
-      }
+      const zp = aiSizes(await aiRoute());
+      const texts = await inPool(r.textless, zp.par, pn => pdfPagesAsText(Object.assign({}, u, {range:String(pn)}), (m,e) => plog(m,e)));
+      r.textless.forEach((pn, i) => { if(texts[i].trim()) pictures.push({page:pn, text:texts[i]}); });
     }
     if(others.length){
       const got = await uploadsToText(others, (m,e) => plog(m,e));

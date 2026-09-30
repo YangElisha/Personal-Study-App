@@ -9,7 +9,14 @@ reply then says model_used "qwen" with fallback_from "claude" and the reason. A 
 limit also pauses Claude for CLAUDE_LIMIT_PAUSE seconds, so the requests after it go straight
 to Qwen instead of each failing on Claude first (GET /api/ai/route says claude_paused).
 Claude runs Sonnet unless CLAUDE_MODEL says otherwise: building decks does not need the
-largest model, and it spends far less of the user's Claude usage.
+largest model, and it spends far less of the user's Claude usage. A request with
+"tier": "fast" (copying text off page images) runs CLAUDE_FAST_MODEL (Haiku) instead:
+transcription needs speed, not judgement. Up to MAX_CLAUDE_AT_ONCE run in parallel.
+Every call runs with --effort CLAUDE_CLI_EFFORT (low; not CLAUDE_EFFORT, which Claude Code itself uses): at Claude Code's default effort about three
+quarters of each reply was hidden thinking — measured on a 4-concept teaching request, 7,038
+tokens and 66 s against 1,809 tokens and 22 s at low, for nearly the same visible answer.
+Thinking is switched off too (MAX_THINKING_TOKENS=0 for the child): Haiku still spent up to
+11,000 tokens and 100 s "thinking" over one maths-heavy page it had ~800 characters to copy.
 
 Claude is reached ONLY by running the official `claude` program: prompt on stdin, from an
 empty temporary folder, no tools, one turn, JSON output. Claude Code's login is never read
@@ -48,7 +55,8 @@ from .settings import ENV_FILE, read_env_file
 log = logging.getLogger("monospace.ai")
 
 AI_KEYS = ("OLLAMA_URL", "OLLAMA_MODEL", "OLLAMA_NUM_CTX", "OLLAMA_TIMEOUT", "CLAUDE_CLI",
-           "CLAUDE_CLI_PATH", "CLAUDE_MODEL", "CLAUDE_TIMEOUT", "CLAUDE_REACH_HOST")
+           "CLAUDE_CLI_PATH", "CLAUDE_MODEL", "CLAUDE_FAST_MODEL", "CLAUDE_CLI_EFFORT",
+           "CLAUDE_TIMEOUT", "CLAUDE_REACH_HOST")
 AI_DEFAULTS = {
     "OLLAMA_URL": "http://localhost:11434",
     "OLLAMA_MODEL": "qwen3.5:9b",
@@ -57,6 +65,8 @@ AI_DEFAULTS = {
     "CLAUDE_CLI": "off",
     "CLAUDE_CLI_PATH": "claude",
     "CLAUDE_MODEL": "sonnet",         # "" = Claude Code's own default (often the largest model)
+    "CLAUDE_FAST_MODEL": "haiku",     # "tier": "fast" requests (page transcription)
+    "CLAUDE_CLI_EFFORT": "low",           # low | medium | high ... ; "" = Claude Code's default
     "CLAUDE_TIMEOUT": "600",
     # host:port the 2-second reachability check connects to. Only change it to simulate
     # being offline (e.g. 127.0.0.1:9) — the real check is api.anthropic.com:443.
@@ -69,7 +79,7 @@ CLAUDE_SYSTEM = ("You are answering a request from MonoSpace, a personal study a
 
 REACH_TIMEOUT = 2.0
 REACH_CACHE_SECONDS = 15.0
-MAX_CLAUDE_AT_ONCE = 2
+MAX_CLAUDE_AT_ONCE = 4        # parallel `claude -p` processes; same usage, less waiting
 
 
 @dataclass(frozen=True)
@@ -81,6 +91,8 @@ class AIConfig:
     claude_cli: bool
     claude_cli_path: str
     claude_model: str
+    claude_fast_model: str
+    claude_effort: str
     claude_timeout: float
     reach_host: str
     reach_port: int
@@ -104,6 +116,8 @@ def load_ai_config(env_file=None, environ=None) -> AIConfig:
         claude_cli=v["CLAUDE_CLI"].strip().lower() in ("on", "1", "true", "yes"),
         claude_cli_path=v["CLAUDE_CLI_PATH"],
         claude_model=v["CLAUDE_MODEL"].strip(),
+        claude_fast_model=v["CLAUDE_FAST_MODEL"].strip(),
+        claude_effort=v["CLAUDE_CLI_EFFORT"].strip().lower(),
         claude_timeout=float(v["CLAUDE_TIMEOUT"]),
         reach_host=host or v["CLAUDE_REACH_HOST"],
         reach_port=int(port) if port else 443,
@@ -284,7 +298,8 @@ def call_ollama(cfg: AIConfig, msgs, system: str, max_tokens: int) -> dict:
 
 
 # ---- Claude via `claude -p` -------------------------------------------------------------
-def claude_command(cfg: AIConfig, system: str, stream: bool = False) -> list[str]:
+def claude_command(cfg: AIConfig, system: str, stream: bool = False,
+                   model: str | None = None) -> list[str]:
     exe = shutil.which(cfg.claude_cli_path) or cfg.claude_cli_path
     io = (["--input-format", "stream-json",    # a full message with image blocks on stdin
            "--output-format", "stream-json", "--verbose"] if stream
@@ -296,8 +311,11 @@ def claude_command(cfg: AIConfig, system: str, stream: bool = False) -> list[str
            "--strict-mcp-config",              # no MCP servers
            "--disable-slash-commands",         # no skills
            "--system-prompt", CLAUDE_SYSTEM + ("\n\n" + system if system else "")]
-    if cfg.claude_model:
-        cmd += ["--model", cfg.claude_model]
+    model = model or cfg.claude_model
+    if model:
+        cmd += ["--model", model]
+    if cfg.claude_effort:
+        cmd += ["--effort", cfg.claude_effort]
     return cmd
 
 
@@ -305,6 +323,8 @@ def child_env() -> dict:
     env = dict(os.environ)
     for k in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"):   # never an API key
         env.pop(k, None)
+    env.pop("CLAUDE_EFFORT", None)          # --effort decides, not a Claude Code session around us
+    env["MAX_THINKING_TOKENS"] = "0"        # no hidden thinking: the tasks are structured, not puzzles
     return env
 
 
@@ -325,12 +345,14 @@ def stream_input_for_claude(msgs) -> str:
     return json.dumps({"type": "user", "message": {"role": "user", "content": blocks}}) + "\n"
 
 
-def call_claude(cfg: AIConfig, prompt: str, system: str, stream: bool = False) -> dict:
+def call_claude(cfg: AIConfig, prompt: str, system: str, stream: bool = False,
+                model: str | None = None) -> dict:
     """prompt: plain text (stream=False) or one stream-json line (stream=True)."""
     workdir = tempfile.mkdtemp(prefix="monospace-claude-")      # empty: no CLAUDE.md to load
+    t0 = time.monotonic()
     try:
         try:
-            p = subprocess.run(claude_command(cfg, system, stream), input=prompt.encode("utf-8"),
+            p = subprocess.run(claude_command(cfg, system, stream, model), input=prompt.encode("utf-8"),
                                capture_output=True, cwd=workdir, env=child_env(),
                                timeout=cfg.claude_timeout,
                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
@@ -351,7 +373,10 @@ def call_claude(cfg: AIConfig, prompt: str, system: str, stream: bool = False) -
             err = p.stderr.decode("utf-8", "replace").strip()
             raise ClaudeFailed(f"claude -p exit {p.returncode}, no JSON: "
                                f"{(err or out)[:200]}") from None
-        return from_claude(d)
+        reply = from_claude(d)
+        log.info("claude %s: %.1fs, %d tokens out", model or cfg.claude_model or "default",
+                 time.monotonic() - t0, reply["usage"]["output_tokens"])
+        return reply
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 
@@ -402,6 +427,8 @@ class Router:
     async def handle(self, body: Any) -> dict:
         msgs, system, max_tokens = parse_request(body)
         _check_blocks(msgs)
+        model = (self.cfg.claude_fast_model or None) if isinstance(body, dict) and \
+            body.get("tier") == "fast" else None
         fallback = {}
         if self.claude_paused():
             fallback = {"fallback_from": "claude",
@@ -411,9 +438,10 @@ class Router:
                 async with self._claude_slots:
                     if has_image(msgs):
                         return await asyncio.to_thread(call_claude, self.cfg,
-                                                       stream_input_for_claude(msgs), system, True)
+                                                       stream_input_for_claude(msgs), system, True,
+                                                       model)
                     return await asyncio.to_thread(call_claude, self.cfg,
-                                                   prompt_for_claude(msgs), system)
+                                                   prompt_for_claude(msgs), system, False, model)
             except ClaudeFailed as e:
                 log.warning("claude -p failed, retrying on Qwen: %s", e)
                 if _LIMIT.search(str(e)):

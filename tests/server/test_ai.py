@@ -273,6 +273,21 @@ def test_ordinary_claude_error_does_not_pause(ai_client, fake_claude, online, ol
     assert c.get("/api/ai/route").json()["claude_paused"] is False
 
 
+def test_fast_tier_uses_haiku(ai_client, fake_claude, online):
+    c = ai_client(claude="on", reach=online, claude_path=fake_claude.path)
+    c.post("/api/ai", json={"model": "x", "max_tokens": 50, "tier": "fast",
+                            "messages": [{"role": "user", "content": "hi"}]})
+    argv = fake_claude.calls()[0]["argv"]
+    assert argv[argv.index("--model") + 1] == "haiku"
+
+
+def test_claude_runs_at_low_effort(ai_client, fake_claude, online):
+    ask(ai_client(claude="on", reach=online, claude_path=fake_claude.path), "hi")
+    argv = fake_claude.calls()[0]["argv"]
+    assert argv[argv.index("--effort") + 1] == "low"
+    assert fake_claude.calls()[0]["thinking"] == "0"          # thinking switched off
+
+
 def test_claude_uses_sonnet_by_default(ai_client, fake_claude, online):
     ask(ai_client(claude="on", reach=online, claude_path=fake_claude.path), "hi")
     argv = fake_claude.calls()[0]["argv"]
@@ -311,20 +326,20 @@ def test_non_ascii_prompt_survives_stdin(ai_client, fake_claude, online):
     assert d["content"][0]["text"] == "CLAUDE:" + prompt[-40:]
 
 
-def test_at_most_two_claude_calls_at_once(ai_client, fake_claude, online):
+def test_at_most_four_claude_calls_at_once(ai_client, fake_claude, online):
     fake_claude.mode("slow")
     c = ai_client(claude="on", reach=online, claude_path=fake_claude.path)
     results = []
     ts = [threading.Thread(target=lambda: results.append(ask(c, "hi").json()))
-          for _ in range(5)]
+          for _ in range(7)]
     for t in ts:
         t.start()
     for t in ts:
         t.join(60)
-    assert len(results) == 5 and all(r["model_used"] == "claude" for r in results)
+    assert len(results) == 7 and all(r["model_used"] == "claude" for r in results)
     spans = [(x["start"], x["end"]) for x in fake_claude.calls()]
     most = max(sum(1 for s, e in spans if s <= t < e) for t, _ in spans)
-    assert most <= 2
+    assert most <= 4
 
 
 # ---- context limit -------------------------------------------------------------------------

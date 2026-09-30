@@ -4,6 +4,23 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed — builds were slow (a 6-page picture PDF: 273 s → 60 s) (2026-09-30)
+- Measured per request (the server now logs model, seconds and tokens for every Claude call):
+  about 4 s start-up each, and most of the rest was **hidden thinking**: a 4-concept teaching
+  request was 7,038 tokens / 66 s at Claude Code's default, 1,809 / 22 s at low effort, with
+  nearly the same answer; Haiku spent up to 11,000 tokens / 100 s on one maths-heavy page.
+- Every `claude -p` now runs with `--effort low` (`CLAUDE_CLI_EFFORT`; not `CLAUDE_EFFORT`,
+  which Claude Code itself sets) and `MAX_THINKING_TOKENS=0`. Faster and far less usage.
+- Page images are copied out by **Haiku** (`"tier": "fast"`, `CLAUDE_FAST_MODEL`), 4 pages at
+  once; teaching stays on Sonnet.
+- Up to 4 Claude requests run side by side (was 2); passages are outlined side by side; teaching
+  runs 4 workers of 4 concepts. Qwen stays one at a time.
+- Teaching replies are shorter: 1-2 sentence explanations, one-line reasons, extra terms get a
+  definition and explanation (their recall questions are made locally).
+- Checked on a copy of the real database, the 6-page picture PDF with Claude: 273 s → 241 →
+  173 → 165 → **60 s**, 14 requests, 20 concepts all taught, names found in the source.
+  221 server tests, reader tests 3/3.
+
 ### Fixed — one picture PDF used ~120 Claude requests and a whole usage window (2026-09-29)
 - Cause: a 6-page picture PDF went page by page through the exhaustive extract / re-check /
   expand loop, every maths symbol became a concept (267), and each was taught 3 per request;

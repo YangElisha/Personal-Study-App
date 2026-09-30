@@ -5,17 +5,38 @@ Every module PDF uploaded to MonoSpace, newest first: its deck, term count, fing
 
 | Module | Deck | Terms | Pages | Uploaded | SHA-256 | Changes |
 |---|---|---|---|---|---|---|
-| Module 1 Machine Learning.pdf | - | - | - | 2026-09-29 | `df181e422b6d` | deck not built yet |
+| Module-2-Software-Processes-1.pdf | - | - | - | 2026-09-30 | `4f21b7283c98` | deck not built yet |
+| Module 1.pdf | Module 1 | 50 | 18 | 2026-09-30 | `eb69c8076da2` | first upload |
+| Module 1 Machine Learning.pdf | Module 1 (B) | 23 | 6 | 2026-09-29 | `df181e422b6d` | first upload |
 | What_is._machine_learning.pdf | Module 1 (A) | 9 | 8 | 2026-09-29 | `fea2d5d5aa46` | first upload |
 | MODULE3_S-ITCS318.pdf | IA Module 3 | 23 | 33 | 2026-09-29 | `0d1eeb2b43f9` | first upload |
 | MODULE2_S-ITCS318.pdf | IA Module 2 | 40 | 37 | 2026-09-29 | `09132ea86c48` | first upload |
 
-## Module 1 Machine Learning.pdf (2026-09-29)
+## Module-2-Software-Processes-1.pdf (2026-09-30)
 
 - Deck: not built yet
-- Terms: -; pages: -; size: 1.0 MB
+- Terms: -; pages: -; size: 1.3 MB
+- Uploaded: 2026-09-30 08:52 UTC; stored as `modules/Module-2-Software-Processes-1.pdf`
+- SHA-256: `4f21b7283c980a9ef73d2a7fada5464e803d50f7849b9f682972d31ca0a00e7b`
+
+## Module 1.pdf (2026-09-30)
+
+- Deck: Module 1 (`munv9x1dchbl`)
+- Terms: 50; pages: 18; size: 2.3 MB
+- Uploaded: 2026-09-30 08:35 UTC; stored as `modules/Module 1.pdf`
+- SHA-256: `eb69c8076da26728813caf1719d93820597268b777d3ebe62b7b341407f65bf8`
+- Coverage: 0 content slides, 0 with text but no term, 0 skipped
+- Changes: first upload of this module
+
+## Module 1 Machine Learning.pdf (2026-09-29)
+
+- Deck: Module 1 (B) (`munghqcth9f4`)
+- Terms: 23; pages: 6; size: 1.0 MB
 - Uploaded: 2026-09-29 13:10 UTC; stored as `modules/Module 1 Machine Learning.pdf`
 - SHA-256: `df181e422b6dd159572a992d62ababb6c942c6018fc14de378a4167dae0df60a`
+- Coverage: 0 content slides, 0 with text but no term, 0 skipped
+- Uploaded again 2026-09-30 01:54 UTC: identical file, no changes
+- Changes: first upload of this module
 
 ## What_is._machine_learning.pdf (2026-09-29)
 

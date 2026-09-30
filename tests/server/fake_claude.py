@@ -30,6 +30,7 @@ elif mode == "limit":
                result="Claude AI usage limit reached. Your limit will reset at 5pm.")
 log = {"argv": sys.argv[1:], "cwd": os.getcwd(), "cwd_listing": os.listdir("."),
        "stdin": prompt, "has_api_key": "ANTHROPIC_API_KEY" in os.environ,
+       "thinking": os.environ.get("MAX_THINKING_TOKENS"),
        "start": start, "end": time.time()}
 with open(os.path.join(os.environ["FAKE_CLAUDE_LOG"], f"{start:.6f}-{uuid.uuid4().hex}.json"),
           "w", encoding="utf-8") as f:
