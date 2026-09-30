@@ -4,6 +4,13 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed — "___" in AI-written questions (2026-10-01)
+- Questions the AI wrote itself sometimes contain a blank as three underscores ("usable and ___
+  with other systems"). Only four or more were turned into a slot, so these showed as a line.
+  Any run of three or more underscores now shows as the blank slot (saved decks included;
+  `__init__` and the like are left alone). The teaching pass, "More questions" and the
+  supervisor now ask for direct questions instead of fill-in-the-blanks.
+
 ### Added — update from inside MonoSpace (2026-10-01)
 - Every build is stamped (`build-info.json` inside the program; `dist\MonoSpace-Setup.json`
   beside the installer, with its sha256). When a newer build is in the project's dist folder,

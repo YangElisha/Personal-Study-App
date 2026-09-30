@@ -3035,7 +3035,7 @@ $("logscrim").onclick = closeLog;
 /* ============ SUPERVISOR — Claude checks what Qwen wrote ============ */
 const SUPERVISE_RULES = `You are the supervisor. A small offline model (Qwen) wrote these study notes from a university module while you were unavailable. Check each entry against its SOURCE (the module text; it may be partial) and your own knowledge.
 - Fix anything wrong, invented, vague, garbled or not supported by the module. Keep the module's own terms and spelling; never rename a correct term.
-- Check every question: exactly one right answer, the marked answer really is right, the "why" is correct.
+- Check every question: exactly one right answer, the marked answer really is right, the "why" is correct. Rewrite any fill-in-the-blank with underscores ("___") as a direct question.
 - Do not add new concepts. Be concise.
 Respond with ONLY a JSON array, one object per entry:
 {"i":1,"verdict":"ok"}
@@ -5140,7 +5140,7 @@ For EACH numbered concept return:
 - "confuse": one sentence starting "Students often confuse this with" naming the nearest confusable idea and how to tell them apart, or "".
 - "items": ONLY if it is an unordered list or set in the source — the members as short strings. Omit otherwise.
 - "steps": ONLY if it is an ordered procedure in the source — the steps in order. Omit otherwise.
-- "qs": 3 questions testing understanding, not wording: one multiple choice (4 options, exactly one right, plausible distractors from real confusions), one true/false, one short type-in answer of 1-3 words. Each with "why": ONE short sentence of reasoning. Keep options short.
+- "qs": 3 questions testing understanding, not wording: one multiple choice (4 options, exactly one right, plausible distractors from real confusions), one true/false, one short type-in answer of 1-3 words. Write every question as a direct question — never a fill-in-the-blank with underscores ("___"). Each with "why": ONE short sentence of reasoning. Keep options short.
 - "also": distinct key terms the source defines or uses inside this concept that a student would be examined on (e.g. "Latent variable", "Overfitting", "Training set") — each with ONLY "name", "definition", "example", "explain" (no questions — they are made from the definition). NEVER a part, restatement or narrower version of this concept or of anything in ALREADY IN THE DECK (not "Public key encrypts" when the concept is asymmetric encryption). At most 2; usually 0-1; [] if none.
 Be concise throughout — every word is something a student has to read.
 
@@ -5599,7 +5599,7 @@ async function topUp(){
   await Promise.all(targets.map(async c => {
     try{
       parseJSON(await claude(
-`Write 2 NEW multiple-choice questions for a university course.
+`Write 2 NEW multiple-choice questions for a university course. Ask each as a direct question — never a fill-in-the-blank with underscores.
 
 CONCEPT: ${c.name}
 FACT: ${c.fact}
@@ -5900,7 +5900,7 @@ function clozeFor(c){
    costs are the expenses of...") is rephrased to start at what it says ("The expenses of...");
    anywhere else the term becomes ⟦word⟧, which fillMasked() shows as a tidy chip (tap for a
    hint) and plainMasked() / unmask() turn back into plain text. */
-const HIDDEN = /⟦([^⟧]*)(?:⟧|$)|_{4,}/g;
+const HIDDEN = /⟦([^⟧]*)(?:⟧|$)|_{3,}/g;       // ⟦term⟧, or a blank typed as underscores ("___"; not __init__)
 const unmask = t => String(t || "").replace(/⟦([^⟧]*)(?:⟧|$)/g, "$1");
 const plainMasked = t => String(t || "").replace(HIDDEN, "[the term]");
 function maskTerm(text, name){
@@ -5944,7 +5944,7 @@ function fillMasked(el, text, mode){
   HIDDEN.lastIndex = 0;
   while((m = HIDDEN.exec(text))){
     if(m.index > last) el.append(text.slice(last, m.index));
-    el.append(termChip(m[1] || "", mode));
+    el.append(termChip(m[1] || "", m[1] === undefined ? "gap" : mode));   // underscores: a slot to fill
     last = HIDDEN.lastIndex;
   }
   if(last < text.length) el.append(text.slice(last));
@@ -6484,7 +6484,7 @@ async function growOne(cid, node){
   node.textContent += " · writing new ones…";
   try{
     const add = parseJSON(await claude(
-`Write 2 NEW multiple-choice questions for a university course.
+`Write 2 NEW multiple-choice questions for a university course. Ask each as a direct question — never a fill-in-the-blank with underscores.
 
 CONCEPT: ${c.name}
 FACT: ${c.fact}
