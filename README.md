@@ -15,7 +15,10 @@ decks and progress stay in a local database on your computer.
 - **Your choice of AI:** a **local AI on your PC** (recommended: Qwen through Ollama, or any other
   local model), and/or an **online AI** through its own program and your own plan (Claude Code by
   default; Codex or Gemini CLI too). The two back each other up.
-- **No API keys.** Nothing is sent anywhere except the AI requests you make.
+- **No API keys.** Nothing is sent anywhere except the AI requests you make, and (when you're
+  online) a check for a new MonoSpace release on GitHub, which you can turn off.
+- **Updates from inside the app.** When a new release is out you're told once, can read what's new,
+  and update with one click. Your decks and progress are never touched.
 
 Free and open source (MIT licence).
 

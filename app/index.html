@@ -877,6 +877,21 @@ textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
 .why .aijudge{display:block;margin-top:8px;color:var(--ink-3);font-size:.82em}
 .navupdate{color:var(--live)!important;font-weight:600}
 .navupdate svg{stroke:var(--live)}
+.wnscrim{position:fixed;inset:0;z-index:290;display:grid;place-items:center;padding:24px;
+  background:color-mix(in srgb,var(--bg) 70%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.wncard{width:min(560px,100%);max-height:min(80vh,720px);display:flex;flex-direction:column;background:var(--surface);
+  border:1px solid var(--rule);border-radius:calc(var(--r) + 4px);box-shadow:var(--shadow-2);padding:24px 26px}
+.wncard h2{margin:2px 0 14px;font-family:var(--display)}
+.wnnotes{overflow-y:auto;line-height:1.6;color:var(--ink-2);padding-right:6px;flex:1;min-height:0}
+.wnnotes h3{color:var(--ink);font-size:1em;margin:14px 0 6px}
+.wnnotes h3:first-child{margin-top:0}
+.wnnotes ul{margin:0 0 8px;padding-left:20px}
+.wnnotes li{margin:4px 0}
+.wnnotes b{color:var(--ink)}
+.wnnotes p{margin:0 0 8px}
+.wnnotes code{font-family:var(--mono);font-size:.9em;background:var(--surface-2);padding:1px 5px;border-radius:5px}
+.wnrow{margin-top:18px}
+#wn-meta{display:block;margin-top:10px;color:var(--ink-3);font-size:.78em}
 .updscreen{position:fixed;inset:0;z-index:300;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 92%,transparent);
   -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);text-align:center;padding:24px}
 .updscreen b{display:block;font-family:var(--display);font-size:1.5em;margin-bottom:10px;color:var(--ink)}
@@ -1209,7 +1224,7 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
       <button class="navbtn" id="nav-settings">
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
           <circle cx="10" cy="10" r="2.6"/><path d="M10 2.5v2.2M10 15.3v2.2M2.5 10h2.2M15.3 10h2.2M4.7 4.7l1.6 1.6M13.7 13.7l1.6 1.6M4.7 15.3l1.6-1.6M13.7 6.3l1.6-1.6" stroke-linecap="round"/></svg><span>Settings</span></button>
-      <button class="navbtn navupdate hide" id="nav-update" title="A newer MonoSpace is ready — installs in about half a minute">
+      <button class="navbtn navupdate hide" id="nav-update" title="A newer MonoSpace is ready — see what's new">
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M10 15V4M5.5 8.5 10 4l4.5 4.5M4 16.5h12" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Update ready</span></button>
     </div>
@@ -1378,7 +1393,12 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
         <div class="kv"><span>Version</span><b id="about-ver">MonoSpace</b></div>
         <div class="kv"><span>Updates</span><b id="upd-state">Checking…</b></div>
         <div class="kv"><span>Your data</span><b id="storenote">—</b></div>
-        <button class="btn hide" id="upd-btn" style="margin-top:14px">Update now</button>
+        <div class="row" style="margin-top:14px">
+          <button class="btn hide" id="upd-btn">See what's new &amp; update</button>
+          <button class="btn2" id="upd-check">Check now</button>
+        </div>
+        <label class="check" style="margin-top:14px"><input type="checkbox" id="o-updonline" checked>
+          <span><b>Check for new versions online</b><small>When you're online, MonoSpace looks for a newer release on GitHub (at most every few hours) and tells you. It never updates without asking. Off: it never goes online by itself.</small></span></label>
       </div>
               <div class="card" id="keycard">
           <h2>Anthropic API key</h2>
@@ -2119,6 +2139,15 @@ Availability: Information is there when it is needed"></textarea>
   <div class="loglist" id="log-list"></div>
   <div class="lgfoot" id="log-folder"></div>
 </aside>
+<div class="wnscrim hide" id="wn" role="dialog" aria-modal="true" aria-labelledby="wn-title">
+  <div class="wncard">
+    <p class="eyebrow" id="wn-ver">New version</p>
+    <h2 id="wn-title">What's new</h2>
+    <div class="wnnotes" id="wn-notes"></div>
+    <div class="row wnrow"><button class="btn" id="wn-go">Update now</button><button class="btn2" id="wn-later">Later</button></div>
+    <small id="wn-meta"></small>
+  </div>
+</div>
 <div class="updscreen hide" id="updscreen"><div><b>Updating MonoSpace…</b>
   <p>It closes now, installs the new version and opens again by itself — about half a minute.<br>Your decks and progress are not touched.</p></div></div>
 <div class="hovercard" id="hovercard"></div>
@@ -2574,6 +2603,7 @@ function colorOfDeck(d){
 let uploads = [];
 let OPT = {adaptive:true, ai:true, shuffle:true, timer:false, instant:true, testLen:20,
            explain:true, explainOk:false, strict:false,
+           updOnline:true, updSeen:"",        // check GitHub for new versions when online; last version announced
            types:{mcq:true, tf:true, txt:true, cloze:true, match:true, term:true, order:true}};
 
 async function savePrefs(){
@@ -2814,31 +2844,73 @@ function modelBadge(d){
    Settings → About. Updating takes a backup snapshot, closes MonoSpace, installs silently and
    opens the new version. */
 let UPD = null;
-async function checkUpdate(){
-  try{ UPD = await (await fetch("/api/update", {cache:"no-store"})).json(); }catch(e){ UPD = null; }
+async function checkUpdate(refresh){
+  try{ UPD = await (await fetch("/api/update?online=" + (OPT.updOnline ? 1 : 0) + (refresh ? "&refresh=1" : ""), {cache:"no-store"})).json(); }
+  catch(e){ UPD = null; }
   const a = UPD && UPD.available;
   $("nav-update").classList.toggle("hide", !a);
   const when = t => { try{ return new Date(t).toLocaleString([], {day:"numeric", month:"short", hour:"numeric", minute:"2-digit"}); }catch(e){ return t; } };
   if($("upd-state")){
     $("upd-state").textContent = !UPD ? "Couldn't check"
-      : a ? "New version ready (built " + when(a.built_at) + ")"
+      : a ? (a.source === "github" ? "MonoSpace " + (a.version || "") + " is available" : "New build ready (built " + when(a.built_at) + ")")
       : UPD.reason === "source" ? "Running from source (use git)"
-      : UPD.reason === "no_source" ? "No update folder found"
+      : UPD.reason === "no_source" ? (OPT.updOnline || !UPD.repo ? "No update source set up" : "Online checks are off")
       : "Up to date" + (UPD.current && UPD.current.built_at ? " · built " + when(UPD.current.built_at) : "");
     $("upd-btn").classList.toggle("hide", !a);
+    $("o-updonline").checked = !!OPT.updOnline;
+  }
+  // a new release is announced once; after that it waits quietly in the sidebar
+  if(a && a.source === "github" && OPT.updSeen !== a.build){
+    OPT.updSeen = a.build; savePrefs();
+    toast("MonoSpace " + (a.version || "") + " is available — tap Update ready (sidebar) to see what's new");
   }
 }
+/* Release notes are Markdown; shown with headings, bullets, bold and code only (as text, never HTML). */
+function mdLite(box, md){
+  box.replaceChildren();
+  let list = null;
+  const inline = (el2, t) => {
+    t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+    t.split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|_[^_\s][^_]*_|`[^`]+`)/).forEach(part => {
+      if(/^\*\*[^*]+\*\*$/.test(part)) el2.appendChild(el("b", "", part.slice(2, -2)));
+      else if(/^(\*[^*]+\*|_[^_]+_)$/.test(part)) el2.appendChild(el("i", "", part.slice(1, -1)));
+      else if(/^`[^`]+`$/.test(part)) el2.appendChild(el("code", "", part.slice(1, -1)));
+      else if(part) el2.append(part);
+    });
+  };
+  String(md || "").replace(/\r/g, "").split("\n").forEach(line => {
+    const t = line.trim();
+    if(!t){ list = null; return; }
+    const h = t.match(/^#{1,6}\s+(.*)$/), li = t.match(/^[-*+]\s+(.*)$/);
+    if(h){ list = null; const e = el("h3"); inline(e, h[1]); box.appendChild(e); }
+    else if(li){ if(!list){ list = el("ul"); box.appendChild(list); } const e = el("li"); inline(e, li[1]); list.appendChild(e); }
+    else { list = null; const e = el("p"); inline(e, t); box.appendChild(e); }
+  });
+  if(!box.childNodes.length) box.appendChild(el("p", "", "No notes for this version."));
+}
+function openWhatsNew(){
+  const a = UPD && UPD.available;
+  if(!a) return checkUpdate(true);
+  const gh = a.source === "github";
+  $("wn-ver").textContent = gh ? "New version" + (a.version ? " · " + a.version : "") : "New build";
+  $("wn-title").textContent = gh ? (a.title || "MonoSpace " + (a.version || "")) : "A new build is ready";
+  mdLite($("wn-notes"), gh ? a.notes : "Built " + new Date(a.built_at).toLocaleString() + " in your project folder" +
+         (a.commit ? " (commit `" + a.commit + "`)" : "") + ". See **CHANGELOG.md** for what changed.");
+  $("wn-meta").textContent = "Updating takes about half a minute. MonoSpace closes and opens again by itself; " +
+    "your decks, progress and settings are not touched, and a backup snapshot is taken first.";
+  $("wn").classList.remove("hide");
+  setTimeout(() => $("wn-go").focus(), 30);
+}
+function closeWhatsNew(){ $("wn").classList.add("hide"); }
 async function runUpdate(){
+  closeWhatsNew();
   if(!UPD || !UPD.available) return checkUpdate();
   if(JOB || QUEUE.some(j => j.state === "waiting"))
     return confirmDlg("A deck is still being built", "Update when the build queue has finished — updating now would stop it.", "OK");
-  if(!await confirmDlg("Update MonoSpace now?",
-      "MonoSpace closes, installs the new version and opens again by itself — about half a minute. " +
-      "Your decks, progress and settings stay exactly as they are; a backup snapshot is taken first.", "Update now")) return;
   await actFlush();
   $("updscreen").classList.remove("hide");
   try{
-    const r = await fetch("/api/update/install", {method:"POST"});
+    const r = await fetch("/api/update/install?online=" + (OPT.updOnline ? 1 : 0), {method:"POST"});
     const d = await r.json();
     if(!r.ok) throw new Error(d.message || "The update could not start");
   }catch(e){
@@ -9125,8 +9197,14 @@ $("ai-reload").onclick = async () => {
     toast("AI settings reloaded — online: " + (r.online === "off" ? "none" : AIN.cloud) + " · on this PC: " + (r.local === "off" ? "none" : AIN.local));
   }catch(e){ toast("Could not reload the AI settings"); }
 };
-$("nav-update").onclick = runUpdate;
-$("upd-btn").onclick = runUpdate;
+$("nav-update").onclick = openWhatsNew;
+$("upd-btn").onclick = openWhatsNew;
+$("wn-go").onclick = runUpdate;
+$("wn-later").onclick = closeWhatsNew;
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("wn").classList.contains("hide")) closeWhatsNew(); });
+$("wn").onclick = e => { if(e.target === $("wn")) closeWhatsNew(); };
+$("upd-check").onclick = async () => { $("upd-state").textContent = "Checking…"; await checkUpdate(true); if(!(UPD && UPD.available)) toast($("upd-state").textContent); };
+$("o-updonline").onchange = e => { OPT.updOnline = e.target.checked; savePrefs(); checkUpdate(); };
 $("chat-pick").onclick = e => { const b = e.target.closest("button[data-m]"); if(!b) return; CHAT.model = b.dataset.m; chatPickShow(); };
 $("btn-sup").onclick = superviseDeck;
 $("bscrim").onclick = closeBackup;

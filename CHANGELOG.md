@@ -4,6 +4,26 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — new releases announced in the app, with "What's new" (2026-10-01)
+- A build made with an update repo (`packaging/update-repo.txt` or `MONOSPACE_UPDATE_REPO`, e.g.
+  `YangElisha/MonoSpace`) checks that repo's latest **GitHub Release** when online — at most every
+  6 hours, silently when offline or not found. A newer release is announced once ("MonoSpace 1.1 is
+  available"), stays as **Update ready** in the sidebar, and opens **What's new** (the release
+  notes, Markdown: headings, bullets, bold, italics, code) with **Update now** / **Later**.
+  Updating downloads the installer, refuses it unless its sha256 matches the release's
+  `MonoSpace-Setup.json`, then installs and reopens exactly like a local update. The project
+  folder (dist) is still checked first, so the developer's copy updates from fresh builds.
+- **Settings → About**: "Check now", and "Check for new versions online" (on by default; off means
+  MonoSpace never goes online by itself for updates).
+- `tools/release.py` publishes the build as a release (GitHub CLI, or prints the github.com
+  steps); it refuses a build whose installer and record don't match, whose version differs, or
+  that wouldn't check the repo it's released to. `docs/RELEASING.md` explains the steps and how to
+  write the notes for students.
+- Not switched on yet: the repo is private, so builds carry no update repo and no copy contacts
+  GitHub. Tested against a stand-in GitHub: offered once, notes shown, Later, not re-announced,
+  checks off, offline and missing releases quiet, at most one check per 6 hours, tampered download
+  refused, project folder first.
+
 ### Added — connect other AIs: Codex, Gemini, any CLI; any Ollama model or OpenAI-compatible local server (2026-10-01)
 - **Online AI** (`ONLINE_AI`): `claude` (default; old `CLAUDE_CLI=on` still works), `codex` (OpenAI
   Codex CLI: `codex exec`, empty temp folder, `--sandbox read-only`, pictures as `--image` files,

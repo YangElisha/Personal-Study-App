@@ -33,8 +33,13 @@ Write-Host "MonoSpace $Version  (staging: $Stage)"
 $Commit = (git -C $Root rev-parse --short HEAD 2>$null)
 $Now = (Get-Date).ToUniversalTime()
 $BuildId = $Now.ToString("yyyyMMdd-HHmmss") + "-" + $Commit
+# The GitHub repo whose Releases this build checks for updates (empty = none, e.g. while it's private):
+# $env:MONOSPACE_UPDATE_REPO, else packaging\update-repo.txt ("owner/repo").
+$Repo = $env:MONOSPACE_UPDATE_REPO
+$RepoFile = Join-Path $PSScriptRoot "update-repo.txt"
+if (-not $Repo -and (Test-Path $RepoFile)) { $Repo = (Get-Content $RepoFile -Raw).Trim() }
 $Info = [ordered]@{version=$Version; build=$BuildId; built_at=$Now.ToString("yyyy-MM-ddTHH:mm:ssZ");
-                   commit=$Commit; update_dir=(Join-Path $Root "dist")}
+                   commit=$Commit; update_dir=(Join-Path $Root "dist"); update_repo=("" + $Repo)}
 $InfoFile = Join-Path $PSScriptRoot "build-info.json"
 [IO.File]::WriteAllText($InfoFile, ($Info | ConvertTo-Json))
 

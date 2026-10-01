@@ -431,15 +431,16 @@ def create_app(settings: Settings, app_dir: Path | None = None,
 
     # ---- in-app update (server/update.py) -----------------------------------------------
     @app.get("/api/update")
-    async def update_check():
-        return await asyncio.to_thread(update.check)
+    async def update_check(online: int = 1, refresh: int = 0):
+        """online=0: the app's "check for new versions online" is off — the project folder only."""
+        return await asyncio.to_thread(update.check, online=bool(online), force=bool(refresh))
 
     @app.post("/api/update/install")
-    async def update_install():
+    async def update_install(online: int = 1):
         if sum(builds.values()):
             return _err(409, "busy", "A deck is still being built — update when it has finished.")
         try:
-            r = await asyncio.to_thread(update.install, settings)
+            r = await asyncio.to_thread(update.install, settings, online=bool(online))
         except update.UpdateError as e:
             return _err(409, "no_update", str(e))
         update.quit_soon()           # the window closes; the helper installs and reopens MonoSpace
