@@ -57,8 +57,11 @@ Optional: `CLAUDE_MODEL=sonnet` (the default; `opus` for the largest model) and 
    ```
    Optional: `ONLINE_AI_MODEL=<model name>` to choose the model (empty = Codex's default).
 
-MonoSpace runs `codex exec` in an empty temporary folder with `--sandbox read-only`, so Codex can't
-change any of your files. Pictures (slides that are images) are sent to Codex as image files.
+MonoSpace runs `codex exec -` (the request on standard input) in an empty temporary folder with
+`--sandbox read-only` and `--ephemeral`, so Codex can't change any of your files and keeps no
+session files. The answer comes from `--output-last-message`. Pictures (slides that are images)
+are sent with `--image`. Codex needs a ChatGPT plan that includes it. These options are checked
+against OpenAI's non-interactive documentation; MonoSpace hasn't been run with the real Codex.
 
 ### Google Gemini
 1. Install [Node.js](https://nodejs.org) (LTS), then: `npm install -g @google/gemini-cli`
@@ -69,8 +72,14 @@ change any of your files. Pictures (slides that are images) are sent to Codex as
    ```
    Optional: `ONLINE_AI_MODEL=<model name>`.
 
-MonoSpace sends Gemini text only. Pages that are pictures are read by the AI on this PC instead,
-so keep a local AI that can read images (Qwen does).
+MonoSpace sends Gemini text only (on standard input, with `--prompt` and `--output-format text`).
+Pages that are pictures are read by the AI on this PC instead, so keep a local AI that can read
+images (Qwen does). Headless runs reuse the sign-in you made by running `gemini` once.
+
+**No subscription needed:** signing in with a personal Google account uses Gemini CLI's free tier
+(at the time of writing, about 1,000 requests a day). That's plenty for building decks, so Gemini
+is the online AI to try if you don't pay for Claude or ChatGPT. These options are checked against
+Google's Gemini CLI documentation; MonoSpace hasn't been run with the real Gemini CLI.
 
 ### Any other command-line AI
 If an AI has a program that takes a prompt and prints an answer, MonoSpace can use it:

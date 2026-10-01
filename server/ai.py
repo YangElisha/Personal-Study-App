@@ -461,12 +461,17 @@ def cli_command(cfg: AIConfig, workdir: str, prompt_file: str, output_file: str,
     exe = shutil.which(cfg.online_path) or cfg.online_path
     model = ["--model", cfg.online_model] if cfg.online_model else []
     if cfg.online == "codex":
-        argv = [exe, "exec", "--skip-git-repo-check", "--sandbox", "read-only", "--cd", workdir, *model]
+        # options checked against OpenAI's non-interactive docs (2026-10-01): "-" = prompt on stdin,
+        # read-only sandbox, --ephemeral = no session files kept, -o = the final answer in a file
+        argv = [exe, "exec", "--skip-git-repo-check", "--sandbox", "read-only", "--ephemeral", "--cd", workdir, *model]
         for im in images:
             argv += ["--image", im]
         return argv + ["--output-last-message", output_file, "-"], True, True
     if cfg.online == "gemini":
-        return [exe, *model, "--prompt", "Follow the request given on standard input exactly."], True, False
+        # Gemini CLI docs: --prompt "is appended to stdin input" and forces non-interactive mode;
+        # headless runs reuse the cached Google sign-in
+        return [exe, *model, "--output-format", "text",
+                "--prompt", "Follow the request given on standard input exactly."], True, False
     # custom: ONLINE_AI_COMMAND, with {prompt_file} {output_file} {workdir} {model} {images}
     import shlex
     argv: list[str] = []

@@ -8,6 +8,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node tests/check-app-syntax.js && node tests/run-reader-tests.js"
+    "test": "node tests/check-app-syntax.js && node tests/run-reader-tests.js",
+    "smoke": "node tests/smoke.mjs"
   }
 }

@@ -238,3 +238,18 @@ def test_crash_reports_are_saved_listed_and_read(client, settings):
     assert client.get("/api/logs/crashes/" + r["file"]).text.endswith("boom")
     assert client.get("/api/logs/crashes/..%2F..%2Fdrill.db").status_code == 404
     assert client.get("/api/logs/crashes/drill.db").status_code == 404
+
+
+def test_old_activity_logs_go_after_90_days_crash_reports_and_other_files_stay(make_client, settings):
+    import time as _t
+    logs = settings.data_dir / "logs"
+    logs.mkdir(parents=True)
+    old = _t.strftime("activity-%Y-%m-%d.jsonl", _t.localtime(_t.time() - 120 * 86400))
+    recent = _t.strftime("activity-%Y-%m-%d.jsonl", _t.localtime(_t.time() - 10 * 86400))
+    keep = [recent, "crash-20200101-000000-abcd.md", "activity-notes.txt", "my-file.jsonl"]
+    for name in [old] + keep:
+        (logs / name).write_text("x", encoding="utf-8")
+    with make_client():                                   # pruning runs when the server starts
+        pass
+    left = sorted(p.name for p in logs.iterdir())
+    assert old not in left and sorted(keep) == [n for n in left if n in keep] and len(left) == len(keep)

@@ -4,6 +4,23 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed / added — clean-up before going public (2026-10-01)
+- **Removed the Claude.ai leftovers**: the hidden "Anthropic API key" card, its storage and its
+  buttons (never used since the local port; anything a browser may hold is left alone), and the
+  backup text "Inside Claude, use Copy instead".
+- **Codex and Gemini checked against their official docs** (not installed): every option used
+  exists. Codex now also runs with `--ephemeral` (keeps no session files); Gemini with
+  `--output-format text`. docs/CONNECT-AI.md says so, and that Gemini CLI's free tier (personal
+  Google sign-in) needs no subscription.
+- **Activity logs older than 90 days** are removed at start-up — only files named exactly
+  `activity-YYYY-MM-DD.jsonl` in `DATA_DIR\logs`; crash reports and everything else stay.
+- **`npm run smoke`** (`tests/smoke.mjs`): MonoSpace on a temporary data folder with every AI off,
+  one deck added through the app, then all 34 screens/modes opened in a real browser; fails on any
+  page error or "Something went wrong".
+- **README**: why Windows warns about an unsigned program and how to check the download's SHA-256;
+  a data folder on this PC is safest (in OneDrive: "Always keep on this device", one PC at a time);
+  a second start brings the open window forward; new versions are announced in the app.
+
 ### Added — new releases announced in the app, with "What's new" (2026-10-01)
 - A build made with an update repo (`packaging/update-repo.txt` or `MONOSPACE_UPDATE_REPO`, e.g.
   `YangElisha/MonoSpace`) checks that repo's latest **GitHub Release** when online — at most every

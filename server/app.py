@@ -85,6 +85,9 @@ def _reject_constant(name):
     raise ValueError(f"{name} is not valid JSON")
 
 
+LOG_KEEP_DAYS = 90        # daily activity logs kept (DATA_DIR\logs); crash reports are always kept
+
+
 def _err(status: int, kind: str, message: str, **extra) -> JSONResponse:
     return JSONResponse({"ok": False, "error": kind, "message": message, **extra}, status_code=status)
 
@@ -112,6 +115,10 @@ def create_app(settings: Settings, app_dir: Path | None = None,
         db.init_db(settings.db_path)
         p = snapshots.take_snapshot(settings)
         log.info("snapshot on start: %s", p)
+        try:
+            app.state.prune_activity()
+        except OSError:
+            log.exception("pruning old activity logs failed")
         task = asyncio.create_task(daily_snapshots())
         try:
             yield
@@ -367,6 +374,25 @@ def create_app(settings: Settings, app_dir: Path | None = None,
                 "folder": str(logs_dir)}
 
     _CRASH = re.compile(r"^crash-\d{8}-\d{6}-[0-9a-f]{4}\.md$")
+    _ACTIVITY = re.compile(r"^activity-(\d{4})-(\d{2})-(\d{2})\.jsonl$")
+
+    def prune_activity(keep_days: int = LOG_KEEP_DAYS) -> list[str]:
+        """The daily activity files are diagnostics (AI request previews, build steps), not study
+        data: those older than keep_days go. Only files named exactly activity-YYYY-MM-DD.jsonl in
+        DATA_DIR/logs — never crash reports, decks, backups or anything else."""
+        if not logs_dir.is_dir():
+            return []
+        cutoff = time.strftime("%Y-%m-%d", time.localtime(time.time() - keep_days * 86400))
+        gone = []
+        for f in logs_dir.iterdir():
+            m = _ACTIVITY.match(f.name)
+            if m and f.is_file() and "-".join(m.groups()) < cutoff:
+                f.unlink()
+                gone.append(f.name)
+        if gone:
+            log.info("activity logs older than %d days removed: %s", keep_days, ", ".join(sorted(gone)))
+        return gone
+    app.state.prune_activity = prune_activity
 
     @app.post("/api/logs/crash")
     async def crash_save(request: Request):

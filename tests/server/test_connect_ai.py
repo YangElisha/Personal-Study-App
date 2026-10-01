@@ -84,6 +84,7 @@ def test_codex_answers_through_its_own_cli(ai_client, fake_cli, online, monkeypa
     call = fake_cli.calls()[0]
     a = call["argv"]
     assert a[0] == "exec" and "--skip-git-repo-check" in a and a[a.index("--sandbox") + 1] == "read-only"
+    assert "--ephemeral" in a
     assert a[-1] == "-" and "What is a process model?" in call["stdin"]
     route = c.get("/api/ai/route").json()
     assert route["model"] == "claude" and route["cloud_name"] == "Codex"
@@ -123,7 +124,8 @@ def test_gemini_text_on_stdin_and_pictures_go_to_the_local_ai(ai_client, fake_cl
     c = ai_client()
     d = ask(c, "Explain waterfall END").json()
     assert d["ai_name"] == "Gemini" and d["content"][0]["text"].endswith("Explain waterfall END")
-    assert "--prompt" in fake_cli.calls()[0]["argv"]
+    g = fake_cli.calls()[0]["argv"]
+    assert "--prompt" in g and g[g.index("--output-format") + 1] == "text"
     d = ask(c, picture()).json()
     assert d["model_used"] == "qwen" and "can't read pictures" in d["fallback_reason"]
 

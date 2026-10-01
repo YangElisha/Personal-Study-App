@@ -1400,19 +1400,6 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
         <label class="check" style="margin-top:14px"><input type="checkbox" id="o-updonline" checked>
           <span><b>Check for new versions online</b><small>When you're online, MonoSpace looks for a newer release on GitHub (at most every few hours) and tells you. It never updates without asking. Off: it never goes online by itself.</small></span></label>
       </div>
-              <div class="card" id="keycard">
-          <h2>Anthropic API key</h2>
-          <p class="sub" style="margin-bottom:14px">Only needed when you run this file outside Claude. Without a key the app still works — you just can't build new decks from material or have questions written for you. The key is stored in this browser only and never goes into your backup file.</p>
-          <div class="field" style="margin-bottom:12px">
-            <input type="password" id="apikey" placeholder="sk-ant-..." autocomplete="off">
-          </div>
-          <div class="row">
-            <button class="btn2" id="btn-savekey">Save key</button>
-            <button class="btn2" id="btn-testkey">Test connection</button>
-            <button class="link danger" id="btn-clearkey">Remove key</button>
-            <span class="sub" style="margin:0" id="keystate"></span>
-          </div>
-        </div>
 
     </section>
 
@@ -2384,10 +2371,6 @@ const store = {
     try{ await fetch(storeUrl(k), {method:"DELETE"}); }catch(e){}
   }
 };
-const KEYSTORE = {
-  get(){ try{ return LS ? LS.getItem("drill:apikey") || "" : ""; }catch(e){ return ""; } },
-  set(v){ try{ if(LS){ v ? LS.setItem("drill:apikey", v) : LS.removeItem("drill:apikey"); } }catch(e){} }
-};
 const $ = id => document.getElementById(id);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
@@ -3335,8 +3318,6 @@ async function boot(){
   }
   $("storenote").textContent = STORE_LABEL;
   $("storefull").textContent = STORE_DETAIL;
-  $("keycard").classList.add("hide");   // LOCAL PORT: no API key is ever used (AI runs through this PC)
-  $("keystate").textContent = KEYSTORE.get() ? "A key is saved in this browser." : "";
   const off = () => {
     const on = navigator.onLine !== false;
     $("netstate").textContent = on
@@ -8948,7 +8929,7 @@ function openBackup(mode){
     : "Everything you have made, as text. Copy it somewhere safe — a note, an email to yourself, a file.";
   $("bk-hint").textContent = restore
     ? "Decks and concepts are only added, never removed. For a deck you already have, its progress is taken as a whole from whichever copy has answered more questions (the backup's if equal)."
-    : "“Save as a file” works when this app is running on your own PC. Inside Claude, use Copy instead — downloads are blocked here.";
+    : "“Save as a file” puts it in your Downloads folder; “Copy” puts it on the clipboard. Keep a copy somewhere other than this PC.";
   $("bk-copy").classList.toggle("hide", restore);
   $("bk-download").classList.toggle("hide", restore);
   $("bk-pick").classList.toggle("hide", !restore);
@@ -9024,8 +9005,8 @@ function downloadBackup(){
     $("bk-hint").textContent = "Downloads are blocked here — use Copy to clipboard instead.";
   }
 }
-/* Restoring MERGES rather than replaces, so you can move a backup between the
-   copy running in Claude and the copy on your PC without losing whatever was
+/* Restoring MERGES rather than replaces, so you can move a backup between two
+   copies of MonoSpace (another PC, or an older Drill backup) without losing whatever was
    only in one of them. Progress is taken per deck from whichever side has answered more
    questions (PROG.asked; the backup wins a tie). */
 function importAll(){ $("bk-text").value = ""; $("bk-text").placeholder = "Paste your backup text here"; openBackup("restore"); }
@@ -9220,29 +9201,6 @@ $("bk-file").onchange = async e => {
 $("bk-restore").onclick = () => applyBackup($("bk-text").value);
 $("btn-export").onclick = exportAll;
 $("btn-import").onclick = importAll;
-$("btn-savekey").onclick = () => {
-  const v = $("apikey").value.trim();
-  if(v && !v.startsWith("sk-ant-")) return toast("That does not look like an Anthropic key");
-  KEYSTORE.set(v); $("apikey").value = "";
-  $("keystate").textContent = v ? "A key is saved in this browser." : "";
-  toast(v ? "Key saved in this browser" : "Key removed");
-};
-$("btn-testkey").onclick = async () => {
-  const b = $("btn-testkey"); b.disabled = true; b.textContent = "Testing…";
-  try{
-    await claude([{type:"text", text:"Reply with the single word: ok"}], 16);
-    $("keystate").textContent = "Connection works — deck building is available.";
-    toast("Connection works");
-  }catch(e){
-    $("keystate").textContent = e.message;
-    toast("No connection — see the message");
-  }
-  b.disabled = false; b.textContent = "Test connection";
-};
-$("btn-clearkey").onclick = () => {
-  KEYSTORE.set(""); $("apikey").value = "";
-  $("keystate").textContent = ""; toast("Key removed");
-};
 $("btn-build").onclick = enqueueBuild;
 $("btn-more").onclick = () => { if(needDeck()) topUp(); };
 function needDeck(){

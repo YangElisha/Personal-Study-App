@@ -81,6 +81,7 @@ before it is committed.
 - Start the app: double-click `start.bat`, or `.venv\Scripts\python -m server`
   (first time only, needs internet once: `python -m venv .venv` then
   `.venv\Scripts\python -m pip install -r requirements.txt`; after that everything runs offline)
+- Smoke test (every screen in a real browser, temp data, no AI): `npm run smoke`
 - Run server tests: `.venv\Scripts\python -m pytest` (needs `pip install -r requirements-dev.txt`; scratch DATA_DIR only)
 - Import backups: `.venv\Scripts\python -m server.importer` (server stopped; shows a plan and asks
   for `yes` before changing any existing key; `--yes` for scripts)

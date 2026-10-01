@@ -33,17 +33,24 @@ Download from the [GitHub Releases](../../releases) page. Choose one:
 - **`MonoSpace-<version>-portable.zip`**. Unzip it anywhere (e.g. `Documents\MonoSpace`) and
   double-click `MonoSpace.exe`. Nothing is installed; delete the folder to remove it.
 
-**"Windows protected your PC".** MonoSpace isn't code-signed, so SmartScreen may say the
-publisher is unknown the first time. Click **More info → Run anyway**.
+**"Windows protected your PC".** Windows shows this for programs that aren't code-signed, and
+MonoSpace isn't: a signing certificate costs a few hundred dollars a year, and this is a free
+project. Click **More info → Run anyway**. To check your download is the real one, compare its
+SHA-256 (in PowerShell: `Get-FileHash MonoSpace-Setup.exe`) with the `sha256` in
+`MonoSpace-Setup.json` on the same release page.
 
 **First start.** MonoSpace asks where to keep your data, suggesting `%USERPROFILE%\MonoSpaceData`.
-Click **Change…** to pick another folder (for example one OneDrive backs up), then **Start**. Your
-database, backups and module PDFs go there. The choice is saved in
+Click **Change…** to pick another folder, then **Start**. Your database, backups and module PDFs go
+there. A folder on this PC is safest. If you put it in OneDrive or another synced folder, set it to
+**Always keep on this device**, and don't run MonoSpace on two PCs from the same folder at once. A
+database that's being synced while it's open can be damaged. MonoSpace's automatic snapshots let you
+recover, but it's better not to need them. The choice is saved in
 `%APPDATA%\MonoSpace\settings.env`, which has the same settings as the developer `.env` (open it in
 Notepad to change them, then restart MonoSpace).
 
-MonoSpace opens in its own window. Closing the last MonoSpace window stops it. Starting it again
-while it's open just opens another window. You need Microsoft Edge (built into Windows);
+MonoSpace opens in its own window. Closing it stops MonoSpace (it asks first if a deck is still
+being built). Starting it again while it's open brings the open window to the front. New versions
+are announced inside the app (see [Updates](docs/RELEASING.md)). You need Microsoft Edge (built into Windows);
 without it, MonoSpace opens in your default browser. Logs are in `%LOCALAPPDATA%\MonoSpace\logs`.
 
 ### From source (developers)
@@ -118,6 +125,8 @@ Step-by-step instructions for each AI: **[docs/CONNECT-AI.md](docs/CONNECT-AI.md
 - Snapshots of the database are taken every time MonoSpace starts, and once a day.
 
 ## For developers
+- `npm test` (the page parses; the slide reader against its golden files), `npm run smoke` (every screen
+  in a real browser on a temporary data folder, no AI), `.venv\Scripts\python -m pytest` (the server).
 | Folder | |
 |---|---|
 | `app/` | The web app (a single HTML file, with pdf.js and fonts in `app/vendor/`) |
