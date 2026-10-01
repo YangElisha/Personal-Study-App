@@ -127,6 +127,7 @@ Step-by-step instructions for each AI: **[docs/CONNECT-AI.md](docs/CONNECT-AI.md
 ## For developers
 - `npm test` (the page parses; the slide reader against its golden files), `npm run smoke` (every screen
   in a real browser on a temporary data folder, no AI), `.venv\Scripts\python -m pytest` (the server).
+
 | Folder | |
 |---|---|
 | `app/` | The web app (a single HTML file, with pdf.js and fonts in `app/vendor/`) |
