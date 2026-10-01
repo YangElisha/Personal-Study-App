@@ -7,6 +7,7 @@ import ipaddress
 import json
 import logging
 import mimetypes
+import os
 import re
 import time
 import uuid
@@ -451,6 +452,25 @@ def create_app(settings: Settings, app_dir: Path | None = None,
     @app.get("/api/ai/route")
     async def ai_which_model():
         return await router.route_for_text()
+
+    @app.post("/api/ai/reload")
+    async def ai_reload():
+        """Re-read the AI settings (after editing settings.env), without restarting."""
+        router.cfg = ai.load_ai_config()
+        router.resume_claude()
+        return await router.route_for_text()
+
+    @app.post("/api/settings/open")
+    async def settings_open():
+        """Open the settings file in the default editor (Notepad), to connect another AI."""
+        from .settings import ENV_FILE
+        if not ENV_FILE.is_file():
+            return _err(404, "not_found", f"No settings file at {ENV_FILE}")
+        try:
+            os.startfile(str(ENV_FILE))                       # noqa: S606 — this PC, this user's file
+        except (AttributeError, OSError) as e:
+            return _err(500, "cannot_open", f"Open {ENV_FILE} yourself ({e})")
+        return {"ok": True, "path": str(ENV_FILE)}
 
     @app.post("/api/ai/claude/retry")
     async def ai_claude_retry():

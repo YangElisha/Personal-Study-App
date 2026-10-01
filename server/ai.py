@@ -37,6 +37,16 @@ A request with "only": "claude" (the supervisor checking Qwen's work) never fall
 Claude is paused, unreachable or fails, it gets error claude_unavailable (503) instead.
 Every reply carries elapsed_ms (whole request, fallback included) for the activity log.
 
+Other AIs (MonoSpace 2026-10-01, docs/CONNECT-AI.md). The two slots are not tied to Claude and Qwen:
+  ONLINE_AI = claude | codex | gemini | custom | off — the AI used when online, always through that
+    company's own command-line program and the user's own sign-in (no API keys). Unset, it is
+    "claude" when CLAUDE_CLI=on, else "off" (settings written before this keep working).
+  LOCAL_AI = ollama | openai | off — the AI on this PC: any Ollama model (OLLAMA_MODEL), or any
+    OpenAI-compatible local server (LM Studio, llama.cpp, Jan, vLLM) at LOCAL_AI_URL.
+Replies keep model_used "claude" (the online slot) / "qwen" (the local slot), which the app and
+saved decks already use, and add ai_name — what to call it on screen ("Codex", "Llama"...).
+GET /api/ai/route gives both names.
+
 Every answer has Anthropic's shape: {content:[{type:"text",text}], stop_reason, ...} plus
 model_used "claude"|"qwen". Errors use Anthropic's error shape
 {type:"error", error:{type, message}}.
@@ -44,6 +54,7 @@ model_used "claude"|"qwen". Errors use Anthropic's error shape
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import os
@@ -65,7 +76,10 @@ log = logging.getLogger("monospace.ai")
 
 AI_KEYS = ("OLLAMA_URL", "OLLAMA_MODEL", "OLLAMA_NUM_CTX", "OLLAMA_TIMEOUT", "CLAUDE_CLI",
            "CLAUDE_CLI_PATH", "CLAUDE_MODEL", "CLAUDE_FAST_MODEL", "CLAUDE_CLI_EFFORT",
-           "CLAUDE_TIMEOUT", "CLAUDE_REACH_HOST")
+           "CLAUDE_TIMEOUT", "CLAUDE_REACH_HOST",
+           "ONLINE_AI", "ONLINE_AI_NAME", "ONLINE_AI_PATH", "ONLINE_AI_MODEL", "ONLINE_AI_COMMAND",
+           "ONLINE_AI_IMAGES", "ONLINE_AI_REACH_HOST", "ONLINE_AI_SIGNIN",
+           "LOCAL_AI", "LOCAL_AI_NAME", "LOCAL_AI_URL", "LOCAL_AI_MODEL", "LOCAL_AI_NUM_CTX")
 AI_DEFAULTS = {
     "OLLAMA_URL": "http://localhost:11434",
     "OLLAMA_MODEL": "qwen3.5:9b",
@@ -80,7 +94,30 @@ AI_DEFAULTS = {
     # host:port the 2-second reachability check connects to. Only change it to simulate
     # being offline (e.g. 127.0.0.1:9) — the real check is api.anthropic.com:443.
     "CLAUDE_REACH_HOST": "api.anthropic.com:443",
+    # other AIs (docs/CONNECT-AI.md); "" = the preset's own value
+    "ONLINE_AI": "", "ONLINE_AI_NAME": "", "ONLINE_AI_PATH": "", "ONLINE_AI_MODEL": "",
+    "ONLINE_AI_COMMAND": "", "ONLINE_AI_IMAGES": "", "ONLINE_AI_REACH_HOST": "", "ONLINE_AI_SIGNIN": "",
+    "LOCAL_AI": "ollama", "LOCAL_AI_NAME": "", "LOCAL_AI_URL": "http://localhost:1234/v1",
+    "LOCAL_AI_MODEL": "", "LOCAL_AI_NUM_CTX": "",
 }
+
+# The online AIs MonoSpace knows how to run. Each is the company's own CLI, signed in by the user.
+ONLINE_PRESETS = {
+    "claude": {"name": "Claude", "path": "claude", "reach": "api.anthropic.com:443", "images": True,
+               "signin": "open a terminal, run claude, then type /login"},
+    "codex":  {"name": "Codex", "path": "codex", "reach": "api.openai.com:443", "images": True,
+               "signin": "open a terminal and run: codex login"},
+    "gemini": {"name": "Gemini", "path": "gemini", "reach": "generativelanguage.googleapis.com:443",
+               "images": False, "signin": "open a terminal, run gemini and sign in again"},
+    "custom": {"name": "", "path": "", "reach": "1.1.1.1:443", "images": False,
+               "signin": "sign in to it again"},
+}
+
+
+def local_display_name(model: str) -> str:
+    """'qwen3.5:9b' -> 'Qwen', 'llama3.1:8b' -> 'Llama', 'gemma3' -> 'Gemma'."""
+    m = re.match(r"[A-Za-z]+", (model or "").split("/")[-1])
+    return m.group(0).capitalize() if m else (model or "Local AI")
 
 CLAUDE_SYSTEM = ("You are answering a request from MonoSpace, a personal study app. Reply to the "
                  "user's message directly, following its instructions exactly. You have no "
@@ -106,6 +143,17 @@ class AIConfig:
     claude_timeout: float
     reach_host: str
     reach_port: int
+    online: str = "claude"          # claude | codex | gemini | custom | off
+    online_name: str = "Claude"
+    online_path: str = ""
+    online_model: str = ""
+    online_command: str = ""
+    online_images: bool = True
+    online_signin: str = ""
+    local: str = "ollama"           # ollama | openai | off
+    local_name: str = "Qwen"
+    local_url: str = ""
+    local_model: str = ""
 
 
 def load_ai_config(env_file=None, environ=None) -> AIConfig:
@@ -117,20 +165,51 @@ def load_ai_config(env_file=None, environ=None) -> AIConfig:
     for k in AI_KEYS:
         if environ.get(k):
             v[k] = environ[k]
-    host, _, port = v["CLAUDE_REACH_HOST"].rpartition(":")
+    claude_on = v["CLAUDE_CLI"].strip().lower() in ("on", "1", "true", "yes")
+    online = v["ONLINE_AI"].strip().lower() or ("claude" if claude_on else "off")
+    if online not in ONLINE_PRESETS:
+        online = "off"
+    pre = ONLINE_PRESETS.get(online, {})
+    if online == "claude":
+        reach = v["CLAUDE_REACH_HOST"]
+    else:
+        reach = v["ONLINE_AI_REACH_HOST"].strip() or pre.get("reach", "1.1.1.1:443")
+    host, _, port = reach.rpartition(":")
+    custom_name = "Online AI"
+    if v["ONLINE_AI_COMMAND"].split():
+        custom_name = v["ONLINE_AI_COMMAND"].split()[0].strip('"').replace("\\", "/").split("/")[-1]
+        custom_name = re.sub(r"\.(exe|cmd|bat)$", "", custom_name, flags=re.I).capitalize()
+    images = v["ONLINE_AI_IMAGES"].strip().lower()
+    local = v["LOCAL_AI"].strip().lower() or "ollama"
+    if local not in ("ollama", "openai", "off"):
+        local = "ollama"
+    local_model = v["LOCAL_AI_MODEL"].strip() if local == "openai" else v["OLLAMA_MODEL"]
+    num_ctx = v["LOCAL_AI_NUM_CTX"].strip() if local == "openai" and v["LOCAL_AI_NUM_CTX"].strip() \
+        else v["OLLAMA_NUM_CTX"]
     return AIConfig(
         ollama_url=v["OLLAMA_URL"].rstrip("/"),
         ollama_model=v["OLLAMA_MODEL"],
-        num_ctx=int(v["OLLAMA_NUM_CTX"]),
+        num_ctx=int(num_ctx),
         ollama_timeout=float(v["OLLAMA_TIMEOUT"]),
-        claude_cli=v["CLAUDE_CLI"].strip().lower() in ("on", "1", "true", "yes"),
+        claude_cli=online != "off",          # "the online AI is switched on" (any of them)
         claude_cli_path=v["CLAUDE_CLI_PATH"],
         claude_model=v["CLAUDE_MODEL"].strip(),
         claude_fast_model=v["CLAUDE_FAST_MODEL"].strip(),
         claude_effort=v["CLAUDE_CLI_EFFORT"].strip().lower(),
         claude_timeout=float(v["CLAUDE_TIMEOUT"]),
-        reach_host=host or v["CLAUDE_REACH_HOST"],
+        reach_host=host or reach,
         reach_port=int(port) if port else 443,
+        online=online,
+        online_name=v["ONLINE_AI_NAME"].strip() or pre.get("name") or custom_name,
+        online_path=v["ONLINE_AI_PATH"].strip() or pre.get("path", ""),
+        online_model=v["ONLINE_AI_MODEL"].strip(),
+        online_command=v["ONLINE_AI_COMMAND"].strip(),
+        online_images=(images in ("on", "1", "true", "yes")) if images else bool(pre.get("images")),
+        online_signin=v["ONLINE_AI_SIGNIN"].strip() or pre.get("signin", "sign in to it again"),
+        local=local,
+        local_name=v["LOCAL_AI_NAME"].strip() or (local_display_name(local_model) if local != "off" else "Local AI"),
+        local_url=v["LOCAL_AI_URL"].strip().rstrip("/"),
+        local_model=local_model,
     )
 
 
@@ -307,6 +386,148 @@ def call_ollama(cfg: AIConfig, msgs, system: str, max_tokens: int) -> dict:
     return from_ollama(d, cfg.ollama_model)
 
 
+# ---- an OpenAI-compatible local server (LM Studio, llama.cpp, Jan, vLLM, Ollama's /v1) ------
+def openai_messages(msgs, system: str) -> list[dict]:
+    out = [{"role": "system", "content": system}] if system else []
+    for m in msgs:
+        imgs = [b["source"] for b in m["blocks"] if b.get("type") == "image"]
+        if not imgs:
+            out.append({"role": m["role"], "content": _text_of(m["blocks"])})
+            continue
+        parts = [{"type": "text", "text": _text_of(m["blocks"])}]
+        parts += [{"type": "image_url", "image_url": {
+            "url": f"data:{s.get('media_type') or 'image/jpeg'};base64,{s['data']}"}} for s in imgs]
+        out.append({"role": m["role"], "content": parts})
+    return out
+
+
+def call_openai_local(cfg: AIConfig, msgs, system: str, max_tokens: int, no_thinking: bool = True) -> dict:
+    # reasoning_effort "none": a thinking model (Qwen3.5, DeepSeek-R1…) otherwise spends the whole
+    # reply thinking and returns no answer — measured on Ollama's /v1 with qwen3.5:9b: empty at
+    # 300 tokens; with "none", a full answer in 3.5 s. A server that rejects it is asked again without.
+    body = {"model": cfg.local_model or "local-model", "stream": False, "max_tokens": max_tokens,
+            "messages": openai_messages(msgs, system)}
+    if no_thinking:
+        body["reasoning_effort"] = "none"
+    req = urllib.request.Request(cfg.local_url + "/chat/completions", json.dumps(body).encode("utf-8"),
+                                 {"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=cfg.ollama_timeout) as r:
+            d = json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8", "replace")
+        if no_thinking and e.code in (400, 422) and "reasoning" in raw.lower():
+            return call_openai_local(cfg, msgs, system, max_tokens, no_thinking=False)
+        if e.code == 404:
+            raise QwenUnavailable(f"model {cfg.local_model or '?'} not found at {cfg.local_url} ({raw[:120]})") from None
+        raise AIError(502, "api_error", f"{cfg.local_name} error {e.code}: {raw[:200]}") from None
+    except (urllib.error.URLError, ConnectionError) as e:
+        reason = getattr(e, "reason", e)
+        if isinstance(reason, (TimeoutError, socket.timeout)):
+            raise AIError(504, "api_error", f"{cfg.local_name} took too long to answer (timeout)") from None
+        raise QwenUnavailable(f"{cfg.local_name} is not reachable at {cfg.local_url} ({reason})") from None
+    except (TimeoutError, socket.timeout):
+        raise AIError(504, "api_error", f"{cfg.local_name} took too long to answer (timeout)") from None
+    try:
+        choice = d["choices"][0]
+        text = _THINK.sub("", choice["message"].get("content") or "")
+    except (KeyError, IndexError, TypeError, AttributeError):
+        raise AIError(502, "api_error", f"{cfg.local_name} gave an unexpected reply: {str(d)[:200]}") from None
+    if not text.strip() and choice["message"].get("reasoning"):
+        raise AIError(502, "api_error", f"{cfg.local_name} spent the whole reply thinking and gave no answer — "
+                      "use a non-thinking model, or turn thinking off in the server's settings")
+    u = d.get("usage") or {}
+    return anthropic_reply(text, "max_tokens" if choice.get("finish_reason") == "length" else "end_turn",
+                           "qwen", cfg.local_model, {"input_tokens": int(u.get("prompt_tokens") or 0),
+                                                     "output_tokens": int(u.get("completion_tokens") or 0)},
+                           ai_name=cfg.local_name)
+
+
+def call_local(cfg: AIConfig, msgs, system: str, max_tokens: int) -> dict:
+    """The AI on this PC: Ollama (any model) or an OpenAI-compatible local server."""
+    if cfg.local == "off":
+        raise QwenUnavailable("no local AI is set up (LOCAL_AI=off)")
+    if cfg.local == "openai":
+        return call_openai_local(cfg, msgs, system, max_tokens)
+    r = call_ollama(cfg, msgs, system, max_tokens)
+    r["ai_name"] = cfg.local_name
+    return r
+
+
+# ---- other online AIs: their own CLI, the user's own sign-in (codex, gemini, custom) --------
+def cli_command(cfg: AIConfig, workdir: str, prompt_file: str, output_file: str,
+                images: list[str]) -> tuple[list[str], bool, bool]:
+    """(argv, prompt on stdin?, answer in output_file?) for the configured online CLI."""
+    exe = shutil.which(cfg.online_path) or cfg.online_path
+    model = ["--model", cfg.online_model] if cfg.online_model else []
+    if cfg.online == "codex":
+        argv = [exe, "exec", "--skip-git-repo-check", "--sandbox", "read-only", "--cd", workdir, *model]
+        for im in images:
+            argv += ["--image", im]
+        return argv + ["--output-last-message", output_file, "-"], True, True
+    if cfg.online == "gemini":
+        return [exe, *model, "--prompt", "Follow the request given on standard input exactly."], True, False
+    # custom: ONLINE_AI_COMMAND, with {prompt_file} {output_file} {workdir} {model} {images}
+    import shlex
+    argv: list[str] = []
+    for tok in shlex.split(cfg.online_command, posix=True):
+        if tok == "{images}":
+            argv += images
+            continue
+        argv.append(tok.replace("{prompt_file}", prompt_file).replace("{output_file}", output_file)
+                       .replace("{workdir}", workdir).replace("{model}", cfg.online_model))
+    if argv:
+        argv[0] = shutil.which(argv[0]) or argv[0]
+    return argv, "{prompt_file}" not in cfg.online_command, "{output_file}" in cfg.online_command
+
+
+def call_cli(cfg: AIConfig, msgs, system: str) -> dict:
+    if has_image(msgs) and not cfg.online_images:
+        raise ClaudeFailed(f"{cfg.online_name} can't read pictures here (ONLINE_AI_IMAGES=off)")
+    if cfg.online == "custom" and not cfg.online_command:
+        raise ClaudeFailed("ONLINE_AI=custom needs ONLINE_AI_COMMAND (see docs/CONNECT-AI.md)")
+    workdir = tempfile.mkdtemp(prefix="monospace-ai-")
+    t0 = time.monotonic()
+    try:
+        prompt = (CLAUDE_SYSTEM + ("\n\n" + system if system else "") + "\n\n" + prompt_for_claude(msgs))
+        pf, of = os.path.join(workdir, "prompt.txt"), os.path.join(workdir, "answer.txt")
+        with open(pf, "w", encoding="utf-8") as f:
+            f.write(prompt)
+        images = []
+        for m in msgs:
+            for b in m["blocks"]:
+                if b.get("type") == "image":
+                    ext = ".png" if "png" in (b["source"].get("media_type") or "") else ".jpg"
+                    ip = os.path.join(workdir, f"image{len(images) + 1}{ext}")
+                    with open(ip, "wb") as f:
+                        f.write(base64.b64decode(b["source"]["data"]))
+                    images.append(ip)
+        argv, stdin, to_file = cli_command(cfg, workdir, pf, of, images)
+        try:
+            p = subprocess.run(argv, input=prompt.encode("utf-8") if stdin else None, capture_output=True,
+                               cwd=workdir, env=child_env(), timeout=cfg.claude_timeout,
+                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        except FileNotFoundError:
+            raise ClaudeFailed(f"{cfg.online_name} program not found ({argv[0] if argv else '?'})") from None
+        except subprocess.TimeoutExpired:
+            raise ClaudeFailed(f"{cfg.online_name} took longer than {cfg.claude_timeout:.0f}s") from None
+        out = p.stdout.decode("utf-8", "replace").strip()
+        err = p.stderr.decode("utf-8", "replace").strip()
+        text = ""
+        if to_file and os.path.exists(of):
+            with open(of, encoding="utf-8", errors="replace") as f:
+                text = f.read().strip()
+        elif not to_file:
+            text = out
+        if p.returncode != 0 or not text:
+            raise ClaudeFailed(f"{cfg.online_name} exit {p.returncode}: {(err or out or 'no answer')[:300]}")
+        log.info("%s: %.1fs", cfg.online_name, time.monotonic() - t0)
+        return anthropic_reply(_THINK.sub("", text), "end_turn", "claude", cfg.online_model or cfg.online,
+                               ai_name=cfg.online_name)
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
 # ---- Claude via `claude -p` -------------------------------------------------------------
 def claude_command(cfg: AIConfig, system: str, stream: bool = False,
                    model: str | None = None) -> list[str]:
@@ -400,9 +621,6 @@ _LIMIT = re.compile(r"usage limit|session limit|rate limit|limit reached|quota|t
 CLAUDE_SIGNIN_PAUSE = 300
 _SIGNIN = re.compile(r"failed to authenticate|oauth|not logged in|please (run )?/?login|log in again|"
                      r"authentication_error|invalid (api )?key|unauthori[sz]ed|api status 401|\b401\b", re.I)
-SIGNIN_HELP = ("Claude Code is signed out — sign in again (open a terminal, run claude, then /login); "
-               "Qwen answers until then")
-
 
 class Router:
     def __init__(self, cfg: AIConfig):
@@ -411,6 +629,7 @@ class Router:
         self._pause_reason = ""                # "limit" | "signin" while paused
         self._claude_slots = asyncio.Semaphore(MAX_CLAUDE_AT_ONCE)
         self._reach: tuple[float, bool] | None = None
+        self._local: tuple[float, bool] | None = None
 
     def _connect(self) -> bool:
         try:
@@ -434,11 +653,48 @@ class Router:
 
     async def route_for_text(self) -> dict:
         """Which model would answer a text-only request right now, and Qwen's context size,
-        so the app can size a prompt for Qwen (GET /api/ai/route)."""
+        so the app can size a prompt for Qwen (GET /api/ai/route). Also what each AI is called
+        and how to sign in to the online one again."""
         paused = self.claude_paused()
         claude = self.cfg.claude_cli and not paused and await self.claude_reachable()
         return {"model": "claude" if claude else "qwen", "num_ctx": self.cfg.num_ctx,
-                "claude_paused": paused, "pause_reason": self._pause_reason if paused else ""}
+                "claude_paused": paused, "pause_reason": self._pause_reason if paused else "",
+                "cloud_name": self.cfg.online_name, "local_name": self.cfg.local_name,
+                "online": self.cfg.online, "local": self.cfg.local,
+                "local_model": self.cfg.local_model, "signin_help": self.cfg.online_signin,
+                "local_ok": await self.local_reachable()}
+
+    def signin_text(self) -> str:
+        c = self.cfg
+        return f"{c.online_name} is signed out — sign in again ({c.online_signin}); {c.local_name} answers until then"
+
+    async def call_online(self, msgs, system: str, model: str | None) -> dict:
+        if self.cfg.online == "claude":
+            if has_image(msgs):
+                return await asyncio.to_thread(call_claude, self.cfg, stream_input_for_claude(msgs),
+                                               system, True, model)
+            return await asyncio.to_thread(call_claude, self.cfg, prompt_for_claude(msgs), system,
+                                           False, model)
+        return await asyncio.to_thread(call_cli, self.cfg, msgs, system)
+
+    def _local_check(self) -> bool:
+        c = self.cfg
+        if c.local == "off":
+            return False
+        url = c.local_url + "/models" if c.local == "openai" else c.ollama_url + "/api/tags"
+        try:
+            with urllib.request.urlopen(url, timeout=1.5) as r:
+                return r.status == 200
+        except (OSError, ValueError):
+            return False
+
+    async def local_reachable(self) -> bool:
+        now = time.monotonic()
+        if self._local and now - self._local[0] < (REACH_CACHE_SECONDS if self._local[1] else REACH_FAIL_CACHE_SECONDS):
+            return self._local[1]
+        ok = await asyncio.to_thread(self._local_check)
+        self._local = (now, ok)
+        return ok
 
     def claude_paused(self) -> bool:
         return time.monotonic() < self._claude_paused_until
@@ -452,10 +708,12 @@ class Router:
         self._claude_paused_until = 0.0
         self._pause_reason = ""
         self._reach = None
+        self._local = None
 
     def _pause_text(self) -> str:
-        return SIGNIN_HELP if self._pause_reason == "signin" else \
-            "Claude usage limit reached earlier; using Qwen for now"
+        c = self.cfg
+        return self.signin_text() if self._pause_reason == "signin" else \
+            f"{c.online_name} usage limit reached earlier; using {c.local_name} for now"
 
     async def handle(self, body: Any) -> dict:
         t0 = time.monotonic()
@@ -470,52 +728,50 @@ class Router:
             body.get("tier") == "fast" else None
         only_claude = isinstance(body, dict) and body.get("only") == "claude"
         only_qwen = isinstance(body, dict) and body.get("only") == "qwen"     # the student chose Qwen
+        on, lo = self.cfg.online_name, self.cfg.local_name
         if only_claude:
             if not self.cfg.claude_cli:
-                raise AIError(503, "claude_unavailable", "Claude is switched off (CLAUDE_CLI=off).")
+                raise AIError(503, "claude_unavailable", "No online AI is switched on (ONLINE_AI / CLAUDE_CLI).")
             if self.claude_paused():
                 raise AIError(503, "claude_unavailable",
-                              SIGNIN_HELP if self._pause_reason == "signin" else "Claude is paused after a usage limit.")
+                              self.signin_text() if self._pause_reason == "signin" else f"{on} is paused after a usage limit.")
             if not await self.claude_reachable():
-                raise AIError(503, "claude_unavailable", "Claude is not reachable (offline?).")
+                raise AIError(503, "claude_unavailable", f"{on} is not reachable (offline?).")
         fallback = {}
         if self.claude_paused():
             fallback = {"fallback_from": "claude", "fallback_reason": self._pause_text()}
         elif not only_qwen and self.cfg.claude_cli and await self.claude_reachable():
             try:
                 async with self._claude_slots:
-                    if has_image(msgs):
-                        return await asyncio.to_thread(call_claude, self.cfg,
-                                                       stream_input_for_claude(msgs), system, True,
-                                                       model)
-                    return await asyncio.to_thread(call_claude, self.cfg,
-                                                   prompt_for_claude(msgs), system, False, model)
+                    reply = await self.call_online(msgs, system, model)
+                    reply.setdefault("ai_name", on)
+                    return reply
             except ClaudeFailed as e:
-                log.warning("claude -p failed, retrying on Qwen: %s", e)
+                log.warning("%s failed, retrying on %s: %s", on, lo, e)
                 if _SIGNIN.search(str(e)):
                     self.pause_claude("signin", CLAUDE_SIGNIN_PAUSE)
-                    log.warning("Claude Code is signed out: using Qwen for the next %d minutes "
-                                "(or until the app says try again)", CLAUDE_SIGNIN_PAUSE // 60)
-                    e = ClaudeFailed(SIGNIN_HELP + f" ({e})")
+                    log.warning("%s is signed out: using %s for the next %d minutes "
+                                "(or until the app says try again)", on, lo, CLAUDE_SIGNIN_PAUSE // 60)
+                    e = ClaudeFailed(self.signin_text() + f" ({e})")
                 elif _LIMIT.search(str(e)):
                     self.pause_claude("limit", CLAUDE_LIMIT_PAUSE)
-                    log.warning("Claude usage limit: using Qwen for the next %d minutes",
+                    log.warning("%s usage limit: using %s for the next %d minutes", on, lo,
                                 CLAUDE_LIMIT_PAUSE // 60)
                 if only_claude:
                     raise AIError(503, "claude_unavailable", str(e)[:300]) from None
                 fallback = {"fallback_from": "claude", "fallback_reason": str(e)[:300]}
         try:
-            reply = await asyncio.to_thread(call_ollama, self.cfg, msgs, system, max_tokens)
+            reply = await asyncio.to_thread(call_local, self.cfg, msgs, system, max_tokens)
         except QwenUnavailable as e:
-            why = f"Qwen is not available: {e}."
+            why = f"{lo} is not available: {e}."
             if only_qwen:
-                why += " You chose Qwen: start Ollama, or switch back to Claude."
+                why += f" You chose {lo}: start it, or switch back to {on}."
             elif fallback:
-                why += f" Claude failed too: {fallback['fallback_reason']}"
+                why += f" {on} failed too: {fallback['fallback_reason']}"
             elif not self.cfg.claude_cli:
-                why += " Claude is switched off (CLAUDE_CLI=off)."
+                why += " No online AI is switched on (ONLINE_AI / CLAUDE_CLI=off)."
             else:
-                why += " Claude is not reachable (offline?)."
+                why += f" {on} is not reachable (offline?)."
             raise AIError(503, "ai_not_configured", why) from None
         reply.update(fallback)
         return reply

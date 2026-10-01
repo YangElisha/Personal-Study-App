@@ -12,6 +12,7 @@ check, so the real %APPDATA% is never touched).
 from __future__ import annotations
 
 import os
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -98,6 +99,8 @@ def read_env_file(path: Path) -> dict[str, str]:
         k, v = k.strip(), v.strip()
         if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
             v = v[1:-1]
+        else:   # "ONLINE_AI=codex   # or claude" — a comment after the value (needs a space before #)
+            v = re.split(r"\s+#", v, maxsplit=1)[0].strip()
         out[k] = v
     return out
 

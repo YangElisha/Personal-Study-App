@@ -76,3 +76,15 @@ def test_server_process_refuses_to_start_with_data_dir_in_repo(tmp_path):
     assert r.returncode == 2, r.stdout + r.stderr
     assert "NOT started" in r.stdout and "inside the repo" in r.stdout
     assert not (REPO_ROOT / "data").exists()
+
+
+def test_a_comment_after_a_value_is_not_part_of_it(tmp_path):
+    from server.settings import read_env_file
+    f = tmp_path / "s.env"
+    f.write_text('ONLINE_AI=codex              # or claude, gemini\n'
+                 'OLLAMA_MODEL=llama3.1:8b     # any model\n'
+                 r'DATA_DIR=C:\Notes\C#\MonoSpaceData' '\n'
+                 'ONLINE_AI_NAME="My # AI"\n', encoding="utf-8")
+    d = read_env_file(f)
+    assert d["ONLINE_AI"] == "codex" and d["OLLAMA_MODEL"] == "llama3.1:8b"
+    assert d["DATA_DIR"] == r"C:\Notes\C#\MonoSpaceData" and d["ONLINE_AI_NAME"] == "My # AI"

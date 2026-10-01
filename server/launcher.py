@@ -56,13 +56,19 @@ DATA_DIR={data_dir}
 # Automatic database snapshots kept in DATA_DIR\\backups
 BACKUP_KEEP=30
 
-# ---- Qwen via Ollama: the offline AI (optional) ----
+# ---- AI (optional). How to connect other AIs: docs/CONNECT-AI.md ----
+# The AI on this PC: ollama (any model you pulled), openai (LM Studio, llama.cpp, Jan, vLLM) or off
+LOCAL_AI=ollama
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=qwen3.5:9b
 OLLAMA_NUM_CTX=8192
+# For LOCAL_AI=openai:
+# LOCAL_AI_URL=http://localhost:1234/v1
+# LOCAL_AI_MODEL=<model name>
 
-# ---- Claude when online, through the official Claude Code program (optional) ----
-CLAUDE_CLI=on
+# The online AI, through its own program and your own sign-in (no API keys):
+# claude (Claude Code), codex (OpenAI Codex CLI), gemini (Gemini CLI), custom or off
+ONLINE_AI=claude
 CLAUDE_CLI_PATH=claude
 
 # ---- Local server ----

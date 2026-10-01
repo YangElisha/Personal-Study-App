@@ -6,16 +6,16 @@ A study app that turns lecture slides and notes into decks, lessons, flashcards,
 games. It runs entirely on your own PC. There is no account, no sign-in and no cloud: your
 decks and progress stay in a local database on your computer.
 
-- **Builds decks from your modules.** Slide PDFs with a text layer are read directly, with no AI
-  needed. Pasted notes, prose PDFs and picture slides use AI.
-- **Study modes:** spaced-repetition review, multiple choice, typed answers, flashcards, a study
-  guide, test papers, and an AI teacher you can ask questions.
-- **AI is optional:**
-  - online, it uses **Claude** through the official Claude Code program (your own Claude plan);
-  - offline, or without Claude, it uses **Qwen** running locally through Ollama;
-  - with neither, everything except the AI features still works.
+- **Builds decks from your modules with AI.** An AI reads your slides and notes (including slides
+  that are pictures), and writes definitions, explanations and questions for every concept.
+  **You need an AI connected to build decks**; see [Your AI](#your-ai-needed-to-build-decks).
+- **Studying is fully offline and needs no AI.** Once a deck is built, review, multiple choice,
+  typed answers, flashcards, the study guide, test papers and games all work with Wi-Fi off. Only
+  the extras (*Ask the teacher*, "Explain this properly", fresh questions on repeat misses) use AI.
+- **Your choice of AI:** a **local AI on your PC** (recommended: Qwen through Ollama, or any other
+  local model), and/or an **online AI** through its own program and your own plan (Claude Code by
+  default; Codex or Gemini CLI too). The two back each other up.
 - **No API keys.** Nothing is sent anywhere except the AI requests you make.
-- **Offline-first.** After the first install, it works with Wi-Fi off.
 
 Free and open source (MIT licence).
 
@@ -63,19 +63,49 @@ with winget if it's missing), then the portable zip, into `dist\`. To try a buil
 your real settings, set `MONOSPACE_HOME` to a scratch folder first: `settings.env`, the logs and the
 window profile then live there, and the suggested data folder is `<MONOSPACE_HOME>\MonoSpaceData`.
 
-### Optional: offline AI with Qwen
-Qwen needs a graphics card with about 8 GB of memory, and a download of about 6.6 GB.
-1. Install [Ollama](https://ollama.com/download).
-2. In a terminal, run `ollama pull qwen3.5:9b`.
-3. Restart MonoSpace. `settings.env` (or `.env`) has the settings (`OLLAMA_MODEL`, `OLLAMA_NUM_CTX`). Keep
-   `OLLAMA_NUM_CTX=8192` on an 8 GB card; raise it only if `ollama ps` still shows 100% GPU.
+### Your AI (needed to build decks)
+**Building a deck needs an AI.** It reads your module, picks out the concepts, and writes proper
+definitions, explanations and questions. **After that, studying the deck needs no AI and works fully
+offline.**
 
-### Optional: Claude when online
-1. Install [Claude Code](https://claude.com/claude-code) and sign in with your own Claude plan.
-2. Make sure `CLAUDE_CLI=on` in `settings.env` (or `.env`).
+What you get with no AI connected (from a build with every AI switched off, and the slide reader's own
+tests, which use no AI):
 
-MonoSpace then sends AI requests to Claude whenever you're online, and to Qwen when you're not.
-It runs the official `claude` program. It never uses an API key and never reads your login.
+| Building from… | Without any AI |
+|---|---|
+| Slide PDFs with real text and a plain layout | A rough deck: the slides' own wording as definitions, no explanations, basic auto-made questions |
+| Slide PDFs with a complex layout (two columns, text beside icons) | Fragments of sentences. Not usable (a real module gave 6 fragments for 60 slides) |
+| Pasted notes, prose PDFs | One lump of text per passage. Not usable |
+| Slides that are pictures | Nothing. The build stops |
+
+MonoSpace warns you before building when no AI is connected.
+
+So connect an AI before you build. **A local AI is recommended.** It runs on your PC with no
+account, no usage limits and nothing leaving your computer, and it keeps working offline. An online
+AI is optional. It is faster and more thorough, and when both are connected MonoSpace uses the
+online one and falls back to the local one.
+
+- **On your PC (recommended):** Qwen through Ollama (the default), any other Ollama model (Gemma,
+  Llama, Mistral…), or LM Studio, llama.cpp, Jan or vLLM. A model that reads images (Qwen 3.5,
+  Gemma 3…) is needed for picture slides.
+- **Online (optional):** Claude Code (the default), OpenAI Codex, Google Gemini CLI, or any other
+  command-line AI. Each runs through the company's own program with **your own** sign-in. There are
+  no API keys.
+
+The quickest setup:
+1. **Local:** install [Ollama](https://ollama.com/download) and run `ollama pull qwen3.5:9b`. It
+   needs a graphics card with about 8 GB of memory and a 6.6 GB download.
+2. **Online (optional):** install [Claude Code](https://claude.com/claude-code), run `claude` once
+   and sign in.
+
+To use another AI, add two or three lines to the settings file (**Settings → AI → Connect a different
+AI** opens it), then press **Reload AI settings**. For example:
+```
+ONLINE_AI=codex
+LOCAL_AI=ollama
+OLLAMA_MODEL=gemma3:12b
+```
+Step-by-step instructions for each AI: **[docs/CONNECT-AI.md](docs/CONNECT-AI.md)**.
 
 ## Your data
 - Everything lives in your `DATA_DIR`: the database `drill.db`, automatic snapshots in `backups\`,

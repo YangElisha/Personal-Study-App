@@ -881,6 +881,11 @@ textarea:focus,input[type=text]:focus,select:focus{box-shadow:var(--glow)}
   -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);text-align:center;padding:24px}
 .updscreen b{display:block;font-family:var(--display);font-size:1.5em;margin-bottom:10px;color:var(--ink)}
 .updscreen p{color:var(--ink-2);line-height:1.6;margin:0}
+.aiconnect{margin-top:16px;border-top:1px solid var(--rule-2);padding-top:12px}
+.aiconnect summary{cursor:pointer;font-weight:600;color:var(--ink)}
+.aiconnect .sub{margin:10px 0}
+.aiexample{font:12.5px/1.6 var(--mono);background:var(--surface-2);border:1px solid var(--rule);border-radius:10px;
+           padding:10px 12px;margin:8px 0;white-space:pre-wrap;overflow-x:auto;color:var(--ink-2)}
 .linkbtn{background:none;border:0;color:var(--ink-3);cursor:pointer;font:inherit;font-size:.88em;margin-left:auto;
          padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
 .linkbtn:hover{color:var(--miss)}
@@ -1279,9 +1284,21 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
       <div class="card">
         <h2>AI</h2>
         <div class="kv"><span>Answering right now</span><b id="ai-now">Checking…</b></div>
+        <div class="kv"><span>Online AI</span><b id="ai-online">—</b></div>
+        <div class="kv"><span>On this PC</span><b id="ai-local">—</b></div>
         <div class="kv"><span>Internet</span><b id="netstate">—</b></div>
-        <p class="sub hide" id="ai-fix" style="margin:12px 0 0;color:var(--ink)">To use Claude again: open a terminal, run <b>claude</b>, then type <b>/login</b> — or tap the AI badge (bottom left) and choose <b>Try Claude again</b>.</p>
-        <p class="sub" style="margin:12px 0 0">Claude answers when you are online; otherwise Qwen answers on this PC. This is automatic. In <b>Ask the teacher</b> you can pick Claude or Qwen yourself.</p>
+        <p class="sub hide" id="ai-fix" style="margin:12px 0 0;color:var(--ink)"></p>
+        <p class="sub" style="margin:12px 0 0" data-ainm>Claude answers when you are online; otherwise Qwen answers on this PC. This is automatic. In <b>Ask the teacher</b> you can pick Claude or Qwen yourself.</p>
+        <details class="aiconnect">
+          <summary>Connect a different AI</summary>
+          <p class="sub">MonoSpace can use, <b>online</b>: Claude Code, OpenAI Codex, Google Gemini CLI, or any other command-line AI — each with your own sign-in, no API keys. <b>On this PC</b>: any Ollama model (Qwen, Llama, Gemma, Mistral…), or LM Studio, llama.cpp, Jan or vLLM. Add two or three lines to your settings file, save it, then press <b>Reload AI settings</b>. Examples:</p>
+          <pre class="aiexample">ONLINE_AI=codex              # or claude, gemini, custom, off
+LOCAL_AI=ollama              # or openai (LM Studio, llama.cpp, Jan, vLLM), off
+OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
+          <p class="sub">Step-by-step instructions for each AI: <b>docs/CONNECT-AI.md</b> in the MonoSpace project (also on GitHub).</p>
+          <div class="row"><button class="btn2" id="ai-open">Open settings file</button><button class="btn2" id="ai-reload">Reload AI settings</button></div>
+          <small id="ai-file" class="sub"></small>
+        </details>
       </div>
       <div id="set-study">
         <p class="eyebrow setsec">Study options</p>
@@ -1309,7 +1326,7 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
             <label class="check"><input type="checkbox" id="o-adaptive" checked>
               <span><b>Add questions when I miss one</b><small>A miss queues two more on that concept plus one from the same topic.</small></span></label>
             <label class="check"><input type="checkbox" id="o-ai" checked>
-              <span><b>Write new questions with AI on repeat misses</b><small>After the second miss on a concept, Claude writes fresh questions so you can't memorise the wording.</small></span></label>
+              <span><b>Write new questions with AI on repeat misses</b><small>After the second miss on a concept, the AI writes fresh questions so you can't memorise the wording.</small></span></label>
             <label class="check"><input type="checkbox" id="o-shuffle" checked>
               <span><b>Shuffle the answer options</b><small>Off means options stay in their original order every time.</small></span></label>
             <label class="check"><input type="checkbox" id="o-timer">
@@ -1451,9 +1468,9 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
           <div class="stat"><b>Lifetime correct</b><s id="k-acc">—</s></div>
         </div>
         <div class="card hide" id="sup-card" style="margin-bottom:18px">
-          <p class="eyebrow">Supervisor · Claude checks what Qwen wrote</p>
+          <p class="eyebrow" data-ainm>Supervisor · Claude checks what Qwen wrote</p>
           <p class="sub" id="sup-text" style="margin:0 0 12px">—</p>
-          <button class="btn2" id="btn-sup">Have Claude check them</button>
+          <button class="btn2" id="btn-sup" data-ainm>Have Claude check them</button>
         </div>
         <div class="card hide" id="cov-card" style="margin-bottom:18px">
           <p class="eyebrow">What was read from your material</p>
@@ -1577,7 +1594,7 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
     <!-- ===== BUILDER ===== -->
     <section id="v-new" class="page hide">
       <h1>New deck</h1>
-      <p class="sub" id="new-sub">Paste or drop your material. Claude reads it, pulls out the concepts, and writes the questions.</p>
+      <p class="sub" id="new-sub" data-ainm>Paste or drop your material. Claude reads it, pulls out the concepts, and writes the questions.</p>
         <div class="bqueue hide" id="bqueue">
           <div class="bqhead"><p class="eyebrow" style="margin:0">Build queue</p>
             <button class="link" id="bq-clear">Clear finished</button></div>
@@ -2451,8 +2468,8 @@ function ask(title, text, value, okLabel){
 function confirmDlg(title, text, okLabel){
   return new Promise(res => {
     modalDone = v => res(v === true);
-    $("m-title").textContent = title;
-    $("m-text").textContent = text || "";
+    $("m-title").textContent = nm(title);
+    $("m-text").textContent = nm(text || "");
     $("m-text").classList.toggle("hide", !text);
     $("m-input").classList.add("hide");
     $("m-ok").textContent = okLabel || "Delete";
@@ -2511,7 +2528,35 @@ function openSwatches(el, folder){
   }, 0);
 }
 let toastT;
-function toast(m){ const t = $("toast"); t.textContent = m; t.classList.add("on");
+/* WHICH AIs ARE CONNECTED (docs/CONNECT-AI.md). The app was written for Claude (online) and Qwen
+   (on this PC); anyone can connect others — Codex, Gemini, any Ollama model, LM Studio… The
+   server says what they are called (GET /api/ai/route) and nm() shows those names wherever the
+   app says "Claude" or "Qwen". With Claude and Qwen connected it changes nothing. */
+const AIN = {cloud:"Claude", local:"Qwen", signin:"open a terminal, run claude, then type /login",
+             online:"claude", localKind:"ollama", localModel:""};
+const safeName = x => String(x || "").replace(/[<>&"]/g, "").trim().slice(0, 40);
+function aiNamesFrom(r){
+  if(!r || !r.local_name) return;
+  const before = AIN.cloud + "|" + AIN.local;
+  AIN.cloud = safeName(r.cloud_name) || "Online AI"; AIN.local = safeName(r.local_name) || "Local AI";
+  AIN.signin = r.signin_help || AIN.signin; AIN.online = r.online || AIN.online;
+  AIN.localKind = r.local || AIN.localKind; AIN.localModel = r.local_model || "";
+  if(before !== AIN.cloud + "|" + AIN.local) renameStatic();
+}
+function nm(s){
+  s = String(s == null ? "" : s);
+  if(AIN.cloud === "Claude" && AIN.local === "Qwen") return s;
+  return s.replace(/\bClaude Code\b/g, AIN.cloud).replace(/\bClaude\b/g, AIN.cloud).replace(/\bQwen\b/g, AIN.local);
+}
+/* fixed labels in the page that name an AI carry data-ainm */
+function renameStatic(){
+  document.querySelectorAll("[data-ainm]").forEach(e => {
+    if(e.dataset.ainmOrig === undefined) e.dataset.ainmOrig = e.innerHTML;
+    e.innerHTML = nm(e.dataset.ainmOrig);
+  });
+  if(typeof chatPickShow === "function" && $("chat-pick-note")) chatPickShow();
+}
+function toast(m){ m = nm(m); const t = $("toast"); t.textContent = m; t.classList.add("on");
   clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove("on"), 2600); }
 
 let LIB = null, DECK = null, PROG = null, S = null;
@@ -2587,7 +2632,7 @@ async function claudeRawCall(content, maxTokens, tier, only){
   const t0 = performance.now(), kind = aiKind(content);
   try{
     const r = await aiRequest(content, maxTokens, tier, only);
-    actLog({type:"ai", ok:true, kind, model:r.model, fallback:r.fallback, ms:r.ms || Math.round(performance.now() - t0),
+    actLog({type:"ai", ok:true, kind, model:r.model, name:r.name || undefined, fallback:r.fallback, ms:r.ms || Math.round(performance.now() - t0),
             tin:r.tin, tout:r.tout, stop:r.stop, only:only || undefined,
             prompt:previewContent(content), reply:trimNice(r.text, 900)});
     return r;
@@ -2638,7 +2683,7 @@ async function aiRequest(content, maxTokens, tier, only){
     lastStop = d.stop_reason || null;
     if(only !== "qwen") modelBadge(d);        // picking Qwen in the chat doesn't change the app's AI
     return {text: d.content.filter(b => b.type === "text").map(b => b.text).join(""),
-            stop: d.stop_reason || null, model: d.model_used || null,
+            stop: d.stop_reason || null, model: d.model_used || null, name: d.ai_name || null,
             fallback: d.fallback_from ? (d.fallback_reason || "Claude failed") : null, ms: d.elapsed_ms || null,
             tin: (d.usage && d.usage.input_tokens) || 0, tout: (d.usage && d.usage.output_tokens) || 0};
   }
@@ -2754,15 +2799,15 @@ function modelBadge(d){
     else document.body.appendChild(b);
   }
   const r = BADGE.route, model = BADGE.model || (r ? r.model : null);
-  const name = model === "claude" ? "Claude" : model === "qwen" ? "Qwen" : "…";
+  const name = model === "claude" ? AIN.cloud : model === "qwen" ? AIN.local : "…";
   const signedOut = (r && r.pause_reason === "signin") || /signed out/i.test(BADGE.fallback || "");
   const why = signedOut ? " · Claude signed out"
             : BADGE.fallback ? " (Claude failed)"
             : model === "qwen" && r && r.model === "qwen" ? (r.claude_paused ? " · Claude paused" : " · offline") : "";
   const dot = el("i", "bdot " + (BADGE.fallback || signedOut ? "warn" : model === "claude" ? "ok" : "local"));
-  b.replaceChildren(dot, "AI: " + name + why);
+  b.replaceChildren(dot, "AI: " + name + nm(why));
   if(BADGE.errs) b.append(el("span", "berr", String(BADGE.errs)));
-  b.title = (BADGE.fallback ? BADGE.fallback + "\n\n" : "") + "Tap to see the AI activity log";
+  b.title = nm(BADGE.fallback ? BADGE.fallback + "\n\n" : "") + "Tap to see the AI activity log";
 }
 /* ============ UPDATES (server/update.py) ============
    A newer build in the project's dist folder shows "Update ready" in the sidebar and in
@@ -2870,7 +2915,7 @@ function groupSummary(g){
   }
   const who = [claude ? plural(claude, "Claude request") : "", qwen ? plural(qwen, "Qwen request") : ""].filter(Boolean).join(" · ");
   const took = evs.length > 1 ? secs(evs[evs.length - 1].at - evs[0].at) : "";
-  return {state, line:[label, took, who || (ai.length ? "" : "no AI"), problems ? plural(problems, "problem") : ""].filter(Boolean).join(" · ")};
+  return {state, line:nm([label, took, who || (ai.length ? "" : "no AI"), problems ? plural(problems, "problem") : ""].filter(Boolean).join(" · "))};
 }
 function renderLog(){
   const r = BADGE.route;
@@ -2879,14 +2924,14 @@ function renderLog(){
   st.appendChild(el("i", "bdot " + (!r ? "" : claudeOn ? "ok" : "local")));
   const txt = el("span");
   const signin = r && r.pause_reason === "signin";
-  txt.append(el("b", "", !r ? "Checking…" : claudeOn ? "Claude is on" : signin ? "Claude Code is signed out"
-                        : r.claude_paused ? "Claude is paused (usage limit)" : "Offline — Qwen only"));
-  txt.append(!r ? "" : claudeOn ? " · it double-checks anything Qwen writes"
-           : signin ? " · Qwen is answering. To fix it: open a terminal, run claude, then type /login."
-           : " · what Qwen writes is marked for Claude to check later");
+  txt.append(el("b", "", nm(!r ? "Checking…" : claudeOn ? "Claude is on" : signin ? "Claude is signed out"
+                        : r.claude_paused ? "Claude is paused (usage limit)" : r.online === "off" ? "Qwen on this PC" : "Offline — Qwen only")));
+  txt.append(!r ? "" : nm(claudeOn ? " · it double-checks anything Qwen writes"
+           : signin ? " · Qwen is answering. To fix it: " + AIN.signin + "."
+           : r.online === "off" ? " · no online AI is connected" : " · what Qwen writes is marked for Claude to check later"));
   st.appendChild(txt);
   if(r && r.claude_paused){
-    const again = el("button", "btn2 sm", "Try Claude again");
+    const again = el("button", "btn2 sm", "Try " + AIN.cloud + " again");
     again.onclick = async () => {
       again.disabled = true;
       try{ BADGE.route = await (await fetch("/api/ai/claude/retry", {method:"POST"})).json(); }catch(e){}
@@ -2940,23 +2985,23 @@ function groupSteps(g){
     row.appendChild(el("time", "", hhmm(e.at || 0)));
     const body = el("div");
     if(e.type === "ai"){
-      const who = !e.ok ? "Failed" : e.model === "claude" ? "Claude"
+      const who = !e.ok ? "Failed" : e.name && !e.fallback ? e.name : e.model === "claude" ? "Claude"
                 : !e.fallback ? "Qwen" : /signed out/i.test(e.fallback) ? "Qwen (Claude signed out)"
                 : /usage limit reached earlier/i.test(e.fallback) ? "Qwen (Claude paused)" : "Qwen (Claude failed)";
       const det = el("details");
-      det.appendChild(el("summary", "", who + " · " + kindOf(e) + (e.ms ? " · " + (e.ms / 1000).toFixed(1) + " s" : "")));
+      det.appendChild(el("summary", "", nm(who) + " · " + kindOf(e) + (e.ms ? " · " + (e.ms / 1000).toFixed(1) + " s" : "")));
       const more = [e.error && "Error: " + e.error, e.fallback && "Why Claude didn't answer: " + e.fallback,
                     e.prompt && "Asked:\n" + e.prompt, e.reply && "Answered:\n" + e.reply].filter(Boolean).join("\n\n");
-      det.appendChild(el("pre", "", more || "(nothing more)"));
+      det.appendChild(el("pre", "", nm(more) || "(nothing more)"));
       body.appendChild(det);
     } else if(e.type === "sup" && (e.before || e.after)){
       const det = el("details");
-      det.appendChild(el("summary", "", e.msg));
-      det.appendChild(el("pre", "", "Qwen wrote:\n" + (e.before || "") + "\n\nClaude's version:\n" + (e.after || "")));
+      det.appendChild(el("summary", "", nm(e.msg)));
+      det.appendChild(el("pre", "", nm("Qwen wrote:\n") + (e.before || "") + nm("\n\nClaude's version:\n") + (e.after || "")));
       body.appendChild(det);
     } else {
-      body.textContent = e.type === "crash" ? "Crash report saved" + (e.file ? " (" + e.file + ")" : "") + ": " + (e.error || e.title)
-                       : e.type === "retry" ? e.note : e.type === "error" ? "Error: " + e.error : (e.msg || e.note || "");
+      body.textContent = nm(e.type === "crash" ? "Crash report saved" + (e.file ? " (" + e.file + ")" : "") + ": " + (e.error || e.title)
+                       : e.type === "retry" ? e.note : e.type === "error" ? "Error: " + e.error : (e.msg || e.note || ""));
     }
     row.appendChild(body); box.appendChild(row);
   });
@@ -2984,7 +3029,7 @@ function reportMarkdown(title, err, since, job){
   const L = [];
   L.push("# MonoSpace report: " + title, "");
   L.push("- When: " + new Date().toString());
-  L.push("- App: MonoSpace (FastAPI + SQLite server on this PC, app/index.html UI; Claude via the official `claude -p`, Qwen via Ollama when offline or if Claude fails)");
+  L.push("- App: MonoSpace (FastAPI + SQLite server on this PC, app/index.html UI). Online AI: " + AIN.cloud + " (" + AIN.online + ", through its own CLI); on this PC: " + AIN.local + " (" + AIN.localKind + (AIN.localModel ? " · " + AIN.localModel : "") + "), used offline or when the online AI fails");
   L.push("- AI right now: " + (r ? r.model + (r.claude_paused ? " (Claude paused after a usage limit)" : "") + ", Qwen context " + r.num_ctx : "unknown"));
   if(job) L.push("- Build: " + job);
   L.push("- Browser: " + navigator.userAgent);
@@ -3013,7 +3058,7 @@ function reportMarkdown(title, err, since, job){
     });
   }
   L.push("", "## What I need", "Explain what went wrong in plain words, and what to change (in MonoSpace or in how I use it) so it doesn't happen again.");
-  return L.join("\n");
+  return nm(L.join("\n"));
 }
 let lastCrashAt = 0;
 async function crashReport(title, err, since, job){
@@ -3033,7 +3078,7 @@ async function crashReport(title, err, since, job){
 $("log-close").onclick = closeLog;
 $("logscrim").onclick = closeLog;
 /* ============ SUPERVISOR — Claude checks what Qwen wrote ============ */
-const SUPERVISE_RULES = `You are the supervisor. A small offline model (Qwen) wrote these study notes from a university module while you were unavailable. Check each entry against its SOURCE (the module text; it may be partial) and your own knowledge.
+const SUPERVISE_RULES = `You are the supervisor. A small model running offline on the student's PC wrote these study notes from a university module while you were unavailable. Check each entry against its SOURCE (the module text; it may be partial) and your own knowledge.
 - Fix anything wrong, invented, vague, garbled or not supported by the module. Keep the module's own terms and spelling; never rename a correct term.
 - Check every question: exactly one right answer, the marked answer really is right, the "why" is correct. Rewrite any fill-in-the-blank with underscores ("___") as a direct question.
 - Do not add new concepts. Be concise.
@@ -3111,21 +3156,21 @@ function renderSupCard(){
   const fixed = DECK.concepts.filter(c => c.checked && c.review && !c.doubt);
   const doubt = DECK.concepts.filter(c => c.doubt);
   card.classList.toggle("hide", !waiting.length && !fixed.length && !doubt.length);
-  $("sup-text").textContent = [
+  $("sup-text").textContent = nm([
     waiting.length ? plural(waiting.length, "concept") + " in this deck " + (waiting.length === 1 ? "was" : "were") +
       " written by Qwen (offline, or while Claude was unavailable) and " + (waiting.length === 1 ? "hasn't" : "haven't") + " been checked by Claude yet." : "",
     fixed.length ? "Claude corrected " + plural(fixed.length, "concept") + " Qwen wrote (what Qwen wrote is kept)." : "",
     doubt.length ? "Claude doubts " + (doubt.length === 1 ? "this is" : "these are") + " in your module: " + doubt.map(c => c.name).join(", ") + " — have a look under Terms." : ""
-  ].filter(Boolean).join(" ");
+  ].filter(Boolean).join(" "));
   $("btn-sup").classList.toggle("hide", !waiting.length);
 }
 async function superviseDeck(){
   const deck = DECK; if(!deck) return;
   const list = deck.concepts.filter(c => c.by === "qwen" && !c.checked);
   if(!list.length) return;
-  const btn = $("btn-sup"); btn.disabled = true; btn.textContent = "Claude is checking…";
+  const btn = $("btn-sup"); btn.disabled = true; btn.textContent = nm("Claude is checking…");
   const src = String(deck.source || "");
-  LOGCTX = {job:"Claude's check · " + deck.name, jobId:uid()};
+  LOGCTX = {job:nm("Claude's check · ") + deck.name, jobId:uid()};
   try{
     const res = await superviseConcepts(list, c => srcAround(c.name, src) || c.fact || "",
                                         (m, e) => actLog({type:"sup", msg:m, err:!!e}));
@@ -3143,7 +3188,7 @@ async function superviseDeck(){
     toast(res.msg.replace(/^Supervisor: /, "Claude's check: "));
   } finally {
     LOGCTX = null; actFlush();
-    btn.disabled = false; btn.textContent = "Have Claude check them";
+    btn.disabled = false; btn.textContent = nm("Have Claude check them");
     if(DECK === deck) openDeck(deck.id);
   }
 }
@@ -3677,13 +3722,22 @@ async function renderSettings(){
   $("ai-now").textContent = "Checking…";
   const [route, health] = await Promise.all([aiRoute(),
     fetch("/api/health", {cache:"no-store"}).then(r => r.ok ? r.json() : null).catch(() => null)]);
-  $("ai-now").textContent = !route ? "Unknown — the server isn't answering"
-    : route.model === "claude" ? "Claude"
-    : route.pause_reason === "signin" ? "Qwen — Claude Code is signed out"
-    : route.claude_paused ? "Qwen — Claude is paused (usage limit)" : "Qwen, on this PC";
-  $("ai-fix").classList.toggle("hide", !(route && route.claude_paused));
+  showAiSettings(route);
   $("about-ver").textContent = "MonoSpace" + (health && health.version ? " " + health.version : "");
   checkUpdate();
+}
+
+function showAiSettings(route){
+  $("ai-now").textContent = !route ? "Unknown — the server isn't answering"
+    : nm(route.model === "claude" ? "Claude"
+    : route.pause_reason === "signin" ? "Qwen — Claude is signed out"
+    : route.claude_paused ? "Qwen — Claude is paused (usage limit)" : "Qwen, on this PC");
+  $("ai-online").textContent = !route ? "—" : route.online === "off" ? "None — on this PC only"
+    : AIN.cloud + " (" + ({claude:"Claude Code", codex:"Codex CLI", gemini:"Gemini CLI", custom:"your command"}[route.online] || route.online) + ")";
+  $("ai-local").textContent = !route ? "—" : route.local === "off" ? "None"
+    : AIN.local + " (" + (route.local === "openai" ? "OpenAI-compatible server" : "Ollama") + (route.local_model ? " · " + route.local_model : "") + ")";
+  $("ai-fix").textContent = "To use " + AIN.cloud + " again: " + AIN.signin + " — or tap the AI badge (bottom left) and choose Try " + AIN.cloud + " again.";
+  $("ai-fix").classList.toggle("hide", !(route && route.claude_paused));
 }
 
 /* ============================================================
@@ -3842,13 +3896,13 @@ function renderTerms(){
     };
     tools.append(star, del);
     const st = document.createElement("div"); st.className = "tstatus";
-    st.textContent = (c.steps ? c.steps.length + "-step process · " : "") +
+    st.textContent = nm((c.steps ? c.steps.length + "-step process · " : "") +
                      (isNew(p) ? "not studied yet" : isDue(p) ? "due for review now"
                    : (isLong(p) ? "long-term · next review " : "learning · next review ") + whenText(p.due - Date.now()))
                    + " · " + c.qs.length + " question" + (c.qs.length === 1 ? "" : "s")
                    + (c.doubt ? " · ⚠ Claude: " + c.review
                       : c.by !== "qwen" ? "" : c.checked ? (c.review ? " · corrected by Claude" : " · checked by Claude")
-                      : " · written by Qwen, not checked by Claude yet");
+                      : " · written by Qwen, not checked by Claude yet"));
     row.append(t, dfn, tools, st);
     list.appendChild(row); autoGrow(t); autoGrow(dfn);
   });
@@ -3945,7 +3999,7 @@ function showNew(){
   const o = document.createElement("option"); o.value = "__new"; o.textContent = "+ New folder…"; sel.appendChild(o);
 }
 function plog(m, err){ actLog({type:"build", msg:String(m), err:!!err || undefined});
-  const d = document.createElement("div"); d.textContent = m; if(err) d.className = "err";
+  const d = document.createElement("div"); d.textContent = nm(m); if(err) d.className = "err";
   $("prog-log").appendChild(d); $("prog-log").scrollTop = 9e9; }
 function pbar(p, head){ $("prog-bar").style.width = p + "%";
   if(head) $("prog-head").textContent = JOB ? "“" + JOB.name + "” · " + head : head;
@@ -3968,6 +4022,20 @@ async function enqueueBuild(){
     const o = document.createElement("option"); o.value = f.id; o.textContent = f.name;
     $("n-folder").insertBefore(o, $("n-folder").lastChild); $("n-folder").value = f.id;
     renderNav();
+  }
+  // building needs an AI: without one the deck is a rough copy of the slides at best (checked with
+  // every AI off: a two-column module gave 6 fragments, pasted notes one lump, picture slides nothing)
+  const route = await aiRoute();
+  if(route && route.model !== "claude" && !route.local_ok){
+    const go = await choiceDlg("No AI is connected",
+      "Building a deck needs an AI to read the module and write definitions, explanations and questions. " +
+      "Without one you get, at best, a rough copy of the slides' own wording — and notes or picture slides can't be built. " +
+      (route.local === "off" && route.online === "off" ? "Connect one in Settings → AI → Connect a different AI."
+        : (route.local === "off" ? "Go online for " + AIN.cloud
+           : "Start " + AIN.local + " (" + (route.local === "openai" ? "your local AI server" : "Ollama") + ")" +
+             (route.online === "off" ? "" : " or go online for " + AIN.cloud)) +
+          ", or connect another AI in Settings → AI."), "Build a rough deck anyway", "Cancel");
+    if(!go) return;
   }
   const busy = !!JOB || QUEUE.some(j => j.state === "waiting");
   QUEUE.push({id:uid(), name, folderId, material, uploads:uploads.slice(),
@@ -7143,8 +7211,8 @@ function choiceDlg(title, text, yes, no){
     const cancel = $("m-cancel"), ok = $("m-ok");
     const oldNo = cancel.textContent;
     modalDone = v => { cancel.textContent = oldNo; res(v === true); };
-    $("m-title").textContent = title;
-    $("m-text").textContent = text || "";
+    $("m-title").textContent = nm(title);
+    $("m-text").textContent = nm(text || "");
     $("m-text").classList.toggle("hide", !text);
     $("m-input").classList.add("hide");
     ok.textContent = yes; cancel.textContent = no;
@@ -7324,10 +7392,11 @@ let CHAT = {open:false, msgs:[], focus:null, model:"claude"};     // model: the 
 function chatPickShow(){
   document.querySelectorAll("#chat-pick button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === CHAT.model));
   const r = BADGE.route;
-  $("chat-pick-note").textContent = CHAT.model === "qwen" ? "Runs on this PC — works offline"
+  document.querySelectorAll("#chat-pick button").forEach(b => b.textContent = b.dataset.m === "qwen" ? AIN.local : AIN.cloud);
+  $("chat-pick-note").textContent = nm(CHAT.model === "qwen" ? "Runs on this PC — works offline"
     : r && r.model !== "claude" ? (r.pause_reason === "signin" ? "Claude is signed out — Qwen answers for now"
                                    : r.claude_paused ? "Claude is paused — Qwen answers for now" : "Offline — Qwen answers for now")
-    : "Qwen answers if Claude can't";
+    : "Qwen answers if Claude can't");
 }
 function chatContext(budget){
   if(!DECK) return "";
@@ -7376,8 +7445,8 @@ function chatShow(){
     const d = document.createElement("div"); d.className = "msg " + (m.role === "user" ? "me" : "ai");
     if(m.role === "user") d.textContent = m.content; else paras(d, m.content);
     if(m.role !== "user" && m.model){
-      d.appendChild(el("small", "msgwho", (m.model === "claude" ? "Claude" : "Qwen") +
-        (m.fallback ? (/signed out/i.test(m.fallback) ? " · Claude is signed out" : " · Claude couldn't answer") : "")));
+      d.appendChild(el("small", "msgwho", (m.name || (m.model === "claude" ? AIN.cloud : AIN.local)) +
+        nm(m.fallback ? (/signed out/i.test(m.fallback) ? " · Claude is signed out" : " · Claude couldn't answer") : "")));
     }
     log.appendChild(d);
   });
@@ -7407,7 +7476,7 @@ function openChat(focusId){
   setTimeout(() => $("chat-input").focus(), 80);
 }
 async function aiRoute(){
-  try{ const r = await fetch("/api/ai/route", {cache:"no-store"}); return r.ok ? await r.json() : null; }
+  try{ const r = await fetch("/api/ai/route", {cache:"no-store"}); const d = r.ok ? await r.json() : null; aiNamesFrom(d); return d; }
   catch(e){ return null; }
 }
 function closeChat(){ $("chatdrawer").classList.remove("on"); $("chatscrim").classList.remove("on"); }
@@ -7419,7 +7488,7 @@ async function chatSend(){
   chatShow();
   const log = $("chatlog");
   const wait = document.createElement("div"); wait.className = "msg ai thinking";
-  wait.textContent = (CHAT.model === "qwen" ? "Qwen" : "Claude") + " is thinking…"; log.appendChild(wait); log.scrollTop = log.scrollHeight;
+  wait.textContent = (CHAT.model === "qwen" ? AIN.local : AIN.cloud) + " is thinking…"; log.appendChild(wait); log.scrollTop = log.scrollHeight;
   try{
     /* LOCAL PORT: Qwen has OLLAMA_NUM_CTX tokens for prompt AND reply. When Qwen will
        answer, shrink the module text (and, if needed, drop the oldest messages) so it fits:
@@ -7445,7 +7514,7 @@ ${history}
 
 Reply to their last message. No preamble, no headings.`, 900, CHAT.model === "qwen" ? "qwen" : undefined);
     wait.remove();
-    CHAT.msgs.push({role:"assistant", content:String(who.text).trim(), model:who.model, fallback:who.fallback || undefined});
+    CHAT.msgs.push({role:"assistant", content:String(who.text).trim(), model:who.model, name:who.name || undefined, fallback:who.fallback || undefined});
     chatShow(); chatQuick();
   }catch(e){
     wait.remove();
@@ -9043,6 +9112,19 @@ $("btn-folder").onclick = async () => {
   refreshView();
 };
 $("bk-close").onclick = closeBackup;
+$("ai-open").onclick = async () => {
+  try{
+    const r = await fetch("/api/settings/open", {method:"POST"}); const d = await r.json();
+    $("ai-file").textContent = d.path ? "Opened " + d.path + " — save it, then press Reload AI settings." : (d.message || "");
+  }catch(e){ toast("Could not open the settings file"); }
+};
+$("ai-reload").onclick = async () => {
+  try{
+    const r = await (await fetch("/api/ai/reload", {method:"POST"})).json();
+    aiNamesFrom(r); BADGE.route = r; BADGE.model = null; BADGE.fallback = null; modelBadge(); showAiSettings(r);
+    toast("AI settings reloaded — online: " + (r.online === "off" ? "none" : AIN.cloud) + " · on this PC: " + (r.local === "off" ? "none" : AIN.local));
+  }catch(e){ toast("Could not reload the AI settings"); }
+};
 $("nav-update").onclick = runUpdate;
 $("upd-btn").onclick = runUpdate;
 $("chat-pick").onclick = e => { const b = e.target.closest("button[data-m]"); if(!b) return; CHAT.model = b.dataset.m; chatPickShow(); };
@@ -9326,7 +9408,7 @@ function setSource(src){
   }
   $("new-sub").textContent = terms
     ? "Type or paste your own terms and definitions, the way you would in Quizlet. Everything is built on your machine."
-    : "Paste or drop your material. Claude reads it, pulls out the concepts, and writes the questions.";
+    : nm("Paste or drop your material. Claude reads it, pulls out the concepts, and writes the questions.");
   document.querySelectorAll("[data-src]").forEach(b => b.setAttribute("aria-pressed", b.dataset.src === src));
 }
 document.querySelectorAll("[data-src]").forEach(b => b.onclick = () => setSource(b.dataset.src));

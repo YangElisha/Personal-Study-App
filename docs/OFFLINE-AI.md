@@ -1,5 +1,8 @@
 # OFFLINE AI — Ollama + Qwen on your PC
 
+> Qwen is the default. Any other Ollama model, or LM Studio / llama.cpp / Jan / vLLM, can take its
+> place, and the online AI can be Codex or Gemini instead of Claude: see [CONNECT-AI.md](CONNECT-AI.md).
+
 ## Your hardware → your model
 
 NVIDIA GeForce RTX with **8 GB** dedicated memory, **16 GB** system RAM (plus an AMD 780M

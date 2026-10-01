@@ -4,6 +4,36 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — connect other AIs: Codex, Gemini, any CLI; any Ollama model or OpenAI-compatible local server (2026-10-01)
+- **Online AI** (`ONLINE_AI`): `claude` (default; old `CLAUDE_CLI=on` still works), `codex` (OpenAI
+  Codex CLI: `codex exec`, empty temp folder, `--sandbox read-only`, pictures as `--image` files,
+  answer from `--output-last-message`), `gemini` (Gemini CLI, text only — pictures go to the local
+  AI), `custom` (any CLI via `ONLINE_AI_COMMAND` with `{prompt_file}` `{output_file}` `{images}`
+  `{workdir}` `{model}`), or `off`. Always the company's own program and the user's own sign-in —
+  no API keys. Sign-out and usage-limit handling, pausing and "Try … again" work for each.
+- **AI on this PC** (`LOCAL_AI`): `ollama` with any model (`OLLAMA_MODEL`), or `openai` — any
+  OpenAI-compatible server (LM Studio, llama.cpp, Jan, vLLM) at `LOCAL_AI_URL`. Thinking is switched
+  off (`reasoning_effort: "none"`; a server that rejects it is asked again without): measured on
+  Ollama's /v1 with qwen3.5:9b, thinking returned an empty answer; off, a full answer in 3.5 s and a
+  slide picture read exactly in 5.2 s. `off` is possible too.
+- **Names everywhere**: the app shows the connected AIs' names (badge, Ask the teacher switch,
+  replies, activity log, supervisor, Settings, dialogs) instead of "Claude"/"Qwen"; with Claude and
+  Qwen nothing changes. Replies carry `ai_name`; `/api/ai/route` gives `cloud_name`, `local_name`,
+  `local_ok`, `signin_help`.
+- **Settings → AI**: which AIs are connected, "Connect a different AI" with examples, **Open
+  settings file** and **Reload AI settings** (`POST /api/ai/reload`, no restart needed).
+- **No AI connected?** Building now warns first ("Building a deck needs an AI…"), with "Build a rough
+  deck anyway" / Cancel. Checked with every AI off: a two-column module gave 6 fragments, pasted
+  notes one lump, a picture module nothing — previously built silently.
+- Settings files may have a comment after a value (`ONLINE_AI=codex   # or claude`).
+- **docs/CONNECT-AI.md**: step by step for Claude, Codex, Gemini, any CLI, Ollama models, LM Studio,
+  llama.cpp, Jan, vLLM; troubleshooting; every setting. **README** rewritten to be straight about it:
+  building decks needs an AI (a local one recommended); studying is fully offline with no AI.
+- Tests: Codex/Gemini/custom with a stand-in CLI (argv, stdin, image files, answer file vs printed
+  noise, sign-out, usage limit), an OpenAI-compatible stand-in server (text, pictures, thinking
+  stripped), names, reload, route. Codex and Gemini were not installed here, so their real CLIs are
+  untested; if their options change, `ONLINE_AI=custom` takes the working command.
+
 ### Fixed — "___" in AI-written questions (2026-10-01)
 - Questions the AI wrote itself sometimes contain a blank as three underscores ("usable and ___
   with other systems"). Only four or more were turned into a slot, so these showed as a line.

@@ -39,6 +39,9 @@ class FakeOllama:
             def log_message(self, *a):
                 pass
 
+            def do_GET(self):
+                self._send(200, {"models": [{"name": "qwen3.5:9b"}]})
+
             def do_POST(self):
                 body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
                 outer.requests.append(body)
@@ -402,7 +405,8 @@ def test_malformed_body(ai_client):
 # ---- GET /api/ai/route: lets the app size a prompt for Qwen -------------------------------
 def test_route_says_qwen_with_its_context_when_claude_off(ai_client, online):
     d = ai_client(claude="off", reach=online, num_ctx=8192).get("/api/ai/route").json()
-    assert d == {"model": "qwen", "num_ctx": 8192, "claude_paused": False, "pause_reason": ""}
+    assert {k: d[k] for k in ("model", "num_ctx", "claude_paused", "pause_reason")} ==         {"model": "qwen", "num_ctx": 8192, "claude_paused": False, "pause_reason": ""}
+    assert d["local_name"] == "Qwen" and d["online"] == "off"
 
 
 def test_route_says_qwen_when_offline(ai_client, fake_claude):
