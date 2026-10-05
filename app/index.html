@@ -1180,387 +1180,468 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
 .bqrow .bqbar i{display:block;height:100%;background:var(--live);transition:width .35s}
 .bqnote{margin:10px 0 0;font-size:.8em;color:var(--ink-3)}
 /* ============================================================================
-   MonoSpace 2.0 — the design layer
-   Paper and ink, editorial type, hairlines, physical objects, one accent taken
-   from the logo. This sits on top of the layout above and changes how it looks,
-   not what it does. See DESIGN.md.
+   MonoSpace — the mockup, applied.
+   Values are taken from design/monospace-mockup.dc.html as they are: the tokens,
+   the type scale, the components. The mockup's names map onto this app's
+   variables:  --panel = --surface,  --muted = --ink-2,  --line = --rule,
+   --acc = --live,  --accink = --on-live,  --accsoft = --live-soft,
+   --sub = --surface-2.
+   No gradients, no glows, no texture, no serif headings. DESIGN.md section 1.
    ========================================================================== */
 :root{
   --display:"Schibsted Grotesk",system-ui,sans-serif;
   --body:"Schibsted Grotesk",system-ui,sans-serif;
-  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --serif:"Newsreader",Georgia,serif;
   --mono:"JetBrains Mono",ui-monospace,monospace;
   --read:var(--serif);
-  --r:14px; --rs:10px; --rp:18px;
-  --nav:268px; --bar:58px;
+  --r:12px; --rs:9px; --nav:268px; --bar:68px;
   --ease:cubic-bezier(.2,.7,.3,1); --t:.16s;
 }
-
-/* ---- the page is a surface, not a colour ------------------------------- */
-body{font-family:var(--body);letter-spacing:0}
-body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
-  background:var(--bg-grad,var(--bg))}
-body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
-  opacity:var(--grain,.035);mix-blend-mode:var(--grainmode,overlay);
-  background-image:url("data:image/svg+xml;utf8,\
-<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'>\
-<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/>\
-<feColorMatrix type='saturate' values='0'/></filter>\
-<rect width='160' height='160' filter='url(%23n)' opacity='.5'/></svg>");
-  background-size:160px 160px}
+body{font-family:var(--body);font-size:var(--fs);line-height:1.5;color:var(--ink);
+     background:var(--bg)}
+body::before,body::after{content:none !important}      /* no backdrop, no grain */
 body.grid-on{background-image:none}
-body.grid-on::before{background:var(--bg-grad,var(--bg)),
-  repeating-linear-gradient(var(--bg) 0 27px,var(--grid-line) 27px 28px)}
+*{box-sizing:border-box}
+.mono{font-family:var(--mono)}
 
-/* ---- type ------------------------------------------------------------- */
-h1,.phead h1,.dtitle h1{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;line-height:1.05;
-  font-size:clamp(32px,4vw,50px)}
-h2,.card h2,.sechead h2,.wncard h2{font-family:var(--serif);font-weight:500;letter-spacing:-.012em;
-  font-size:25px;line-height:1.2}
-h3{font-family:var(--serif);font-weight:500;letter-spacing:-.012em}
-.sub{font-size:1.02em;line-height:1.55;max-width:62ch;color:var(--ink-2)}
-.eyebrow,.navsec,.mlabel,.setsec,.crumb,.cardhint,.qlead,.xtag,.hud-note,.dcfold{
+/* ---- type (mockup 2.3) ------------------------------------------------- */
+h1,.display,.phead h1,.dtitle h1{font-family:var(--display);font-size:clamp(38px,5vw,60px);
+  font-weight:700;letter-spacing:-.04em;line-height:1.02;margin:0 0 10px}
+h2,.sec,.card h2,.sechead h2{font-family:var(--display);font-size:22px;font-weight:700;
+  letter-spacing:-.02em;margin:0 0 14px}
+h3{font-family:var(--display);font-weight:700;letter-spacing:-.02em}
+.title{font-size:40px;font-weight:700;letter-spacing:-.035em;line-height:1.08}
+.sub{color:var(--ink-2);font-size:1.02em;line-height:1.55;max-width:58ch}
+.eyebrow,.navsec,.mlabel,.setsec,.crumb,.cardhint,.qlead,.xtag,.hud-note,.dcfold,.fold{
   font-family:var(--mono);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;
-  color:var(--ink-3);font-weight:500}
+  color:var(--ink-3);font-weight:400}
+.muted{color:var(--ink-2)}
 .kbd{font-family:var(--mono);font-size:11.5px;border:1px solid var(--rule);border-radius:5px;
-     padding:2px 7px;background:var(--surface-2);color:var(--ink-2)}
-.mono,.dcstat,.duepill,.idx,.due{font-family:var(--mono)}
-/* tabular figures only where figures line up: the tnum feature widens punctuation */
-.mono,.eyebrow,.kbd,.stat s,.big s,.hud-i b,.eb-clock,.idx,.due,.dcstat,.duepill,.navcount,
-.logr,.covrow b,.fbar b,.fbar u{font-variant-numeric:tabular-nums}
-.sechead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
-  border-bottom:1px solid var(--ink);padding-bottom:12px;margin:0 0 var(--s5)}
-.sechead h2{margin:0}
+     padding:0 6px;color:var(--ink-2);background:var(--bg)}
+.sechead,.libhead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  border-bottom:1px solid var(--ink);padding-bottom:12px;margin:0 0 24px}
+.sechead h2,.libhead h2{margin:0}
 .setsec{border-bottom:1px solid var(--ink);padding-bottom:10px;margin:44px 0 16px}
+/* tabular figures only where figures line up; tnum widens punctuation */
+.mono,.eyebrow,.kbd,.stat s,.big s,.idx,.due,.dcstat,.duepill,.navcount,.logr,.ticks,
+.hud-i b,.eb-clock{font-variant-numeric:tabular-nums}
 
-/* ---- surfaces: lifted paper, no sheen, no glass ------------------------ */
-.card,.today,.bqueue,.qcard,.qitem,.xreview,.arena,.wncard,.menu,.dcard{
-  background-image:none;box-shadow:var(--lift);border-color:var(--rule)}
-.card,.today{border-radius:var(--r);padding:26px}
-.appbar{background:color-mix(in srgb,var(--bg) 78%,transparent);border-bottom:1px solid var(--rule);
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-.nav{background:color-mix(in srgb,var(--rail) 88%,transparent);border-right:1px solid var(--rail-rule);
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+/* ---- buttons (mockup .btn / .k / .g / .l) ------------------------------ */
+.btn,.btn2{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;
+  padding:0 20px;border-radius:var(--rs);border:1px solid var(--rule);background:var(--surface);
+  color:var(--ink);font-family:var(--display);font-weight:600;white-space:nowrap;box-shadow:none;
+  background-image:none;transition:var(--t) var(--ease)}
+.btn:hover,.btn2:hover{border-color:var(--ink);filter:none;transform:none;background:var(--surface)}
+.btn{background:var(--ink);color:var(--bg);border-color:var(--ink)}          /* .k */
+.btn:hover{background:var(--ink);border-color:var(--ink);opacity:.88}
+.btn.sm,.btn2.sm{min-height:38px;padding:0 15px;font-size:.9em}
+.btn.big{min-height:52px;padding:0 26px;font-size:1.04em}
+.btn.g,#btn-study{background:var(--live);color:var(--on-live);border-color:var(--live)} /* .g */
+.btn.g:hover,#btn-study:hover{background:var(--live);border-color:var(--live);opacity:.9}
+.link,.linkbtn{background:none;border:0;color:var(--ink-2);cursor:pointer;padding:0 8px;
+  min-height:44px;text-decoration:none}
+.link:hover,.linkbtn:hover{color:var(--ink)}
+.icon,.ib{width:44px;height:44px;border-radius:var(--rs);border:1px solid var(--rule);
+  background:var(--surface);display:grid;place-items:center;box-shadow:none}
+.icon:hover,.ib:hover{border-color:var(--ink)}
+.icon.sm{width:36px;height:36px}
+/* chips: the mockup has no chip, so they follow .btn at a smaller size */
+.chip{font-family:var(--mono);font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;
+  min-height:40px;padding:0 14px;border-radius:99px;border:1px solid var(--rule);
+  background:var(--surface);color:var(--ink-2);box-shadow:none}
+.chip:hover{border-color:var(--ink);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);box-shadow:none}
 
-/* ---- the rail ---------------------------------------------------------- */
-.brand{gap:11px;font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.035em}
-.brandlogo{width:30px;height:30px;border-radius:9px;
-  box-shadow:0 1px 2px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.06)}
-.navbtn{border-radius:var(--rs);font-weight:500;min-height:42px;padding:0 12px;gap:11px}
+/* ---- panels and the inverted block (mockup .panel / .invert) ----------- */
+.card,.panel,.today,.bqueue,.qitem,.xreview,.wncard,.menu,.arena{background:var(--surface);
+  background-image:none;border:1px solid var(--rule);border-radius:var(--r);box-shadow:none}
+.card,.panel{padding:26px}
+.today{background:var(--ink);border-color:var(--ink);color:var(--bg);padding:34px}
+.today .tbig,.today .tbig b,.today h2,.today h3,.today p,.today span,.today small,
+.today .ring b,.today .ring small{color:inherit}
+.today .sub,.today .eyebrow,.today .ring small{color:inherit;opacity:.65}
+.today .tbig b{font-family:var(--display);font-size:2.8em;font-weight:700;letter-spacing:-.05em}
+.today .btn{background:var(--bg);color:var(--ink);border-color:var(--bg)}
+.today .btn2{background:transparent;color:inherit;border-color:rgba(127,127,127,.55)}
+.today .btn2:hover{border-color:currentColor;background:transparent}
+.today .ring .t{stroke:rgba(127,127,127,.4)}
+.today .ring .v{stroke:var(--live)}
+.today .track{background:rgba(127,127,127,.4)}
+
+/* ---- the top bar and the shelf ---------------------------------------- */
+.appbar{background:var(--bg);border-bottom:1px solid var(--rule);backdrop-filter:none;
+  -webkit-backdrop-filter:none}
+.nav{background:var(--rail);border-right:1px solid var(--rail-rule);backdrop-filter:none;
+  -webkit-backdrop-filter:none}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;
+  font-size:20px;letter-spacing:-.04em;min-height:44px}
+.brandlogo{width:28px;height:28px;border-radius:8px;box-shadow:none}
+.navbtn{min-height:44px;padding:0 12px;border-radius:var(--rs);font-weight:500;gap:11px}
 .navbtn[aria-current="true"]{background:var(--rail-2);color:var(--rail-ink);font-weight:600;
   box-shadow:inset 2px 0 0 var(--live)}
 .navbtn[aria-current="true"] svg{color:var(--live);opacity:1}
-.navsec{color:var(--rail-ink-2);padding:0 6px}
-.navcount{background:color-mix(in srgb,var(--miss) 24%,transparent);color:var(--rail-ink);
-  font-family:var(--mono);letter-spacing:.04em}
-.navupdate{color:var(--live) !important}
+.navcount{font-family:var(--mono);letter-spacing:.04em}
 .deckbtn{border-radius:0 var(--rs) var(--rs) 0;border-left:2px solid transparent}
 .deckbtn[aria-current="true"],.deckbtn:hover{border-left-color:var(--fc,var(--live))}
-.fdot{border-radius:3px}
+.fdot{border-radius:2px}
 
-/* ---- buttons, chips, fields ------------------------------------------- */
-.btn,.btn2{min-height:44px;border-radius:var(--rs);font-family:var(--display);font-weight:600;
-  letter-spacing:-.005em;box-shadow:none;background-image:none;transition:var(--t) var(--ease)}
-.btn{background:var(--ink);color:var(--bg);border:1px solid var(--ink)}
-.btn:hover{background:var(--ink-2);border-color:var(--ink-2);filter:none;transform:none}
-.btn.sm{min-height:36px;padding:0 14px;font-size:.9em}
-/* No button is filled with the accent. The ink button is the primary action everywhere,
-   and the accent is kept for progress, state and mastery, where it means something. */
-.btn2{background:var(--surface);color:var(--ink);border:1px solid var(--rule)}
-.btn2:hover{border-color:var(--ink);background:var(--surface)}
-.btn2.warn:hover{border-color:var(--miss);color:var(--miss)}
-.chip{font-family:var(--mono);font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;
-  min-height:40px;padding:0 14px;border-radius:99px;background:var(--surface);border:1px solid var(--rule);
-  color:var(--ink-2);box-shadow:none}
-.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);box-shadow:none}
-.link,.linkbtn{color:var(--ink-2);text-decoration-color:var(--rule);text-underline-offset:3px}
-.link:hover,.linkbtn:hover{color:var(--ink);text-decoration-color:currentColor}
-textarea,input[type=text],input[type=password],input[type=number],select{border-radius:var(--rs);
-  background:var(--surface);border:1px solid var(--rule);min-height:44px}
-textarea:focus,input:focus,select:focus{border-color:var(--ink);box-shadow:none;background:var(--surface)}
-.seg{border-radius:10px;background:var(--surface-2);border:1px solid var(--rule)}
-.seg button{border-radius:7px;font-weight:600;white-space:nowrap;min-height:38px}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
-.tab{font-weight:600;color:var(--ink-2);border-bottom-width:2px}
+/* ---- fields, segmented controls, option cards (mockup 4) -------------- */
+textarea,input[type=text],input[type=password],input[type=number],select{width:100%;min-height:44px;
+  border:1px solid var(--rule);border-radius:var(--rs);background:var(--surface);color:var(--ink);
+  padding:10px 14px;box-shadow:none}
+textarea:focus,input:focus,select:focus{outline:0;border-color:var(--ink);box-shadow:none}
+.lbl,label.f{font-weight:600;font-size:14px;display:block;margin-bottom:8px;color:var(--ink)}
+.drop{border:1px dashed var(--ink-2);border-radius:var(--r);padding:44px 24px;text-align:center;
+  background:var(--surface)}
+.drop.on{border-color:var(--ink);background:var(--surface-2)}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:10px;padding:3px;
+  background:var(--surface-2);max-width:100%;overflow-x:auto}
+.seg button{min-height:38px;padding:0 16px;border:0;border-radius:7px;background:transparent;
+  color:var(--ink-2);font-weight:600;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);
+  box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.tabs{display:flex;gap:28px;border-bottom:1px solid var(--rule);flex-wrap:wrap;margin-bottom:26px}
+.tab{min-height:48px;padding:0;border:0;border-bottom:2px solid transparent;background:transparent;
+  color:var(--ink-2);font-weight:600;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
 .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
-.icon{border-radius:var(--rs);background:var(--surface);border:1px solid var(--rule);box-shadow:none}
-.icon:hover{border-color:var(--ink)}
+/* a switch, for the on/off rows */
+.sw{width:48px;height:28px;border-radius:99px;border:0;background:var(--rule);position:relative;
+  flex:none;padding:0;cursor:pointer}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:99px;
+  background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .15s}
+.sw[aria-pressed="true"],.sw.on{background:var(--live)}
+.sw[aria-pressed="true"]::after,.sw.on::after{left:23px}
+/* a settings row */
+.sr,.kv,.actrow{display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:20px 0;border-top:1px solid var(--rule);min-height:76px;flex-wrap:wrap}
+.kv{min-height:56px;padding:14px 0}
+.sr:first-of-type,.kv:first-child{border-top:0}
+.ok{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.ok::before{content:"";width:8px;height:8px;border-radius:99px;background:var(--live)}
 
-/* ---- DECK CARDS BECOME NOTEBOOK COVERS --------------------------------- */
-.cgrid{grid-template-columns:repeat(auto-fill,minmax(216px,1fr));gap:34px 24px;margin-bottom:var(--s7)}
-.dcard{position:relative;aspect-ratio:4/5;min-height:262px;justify-content:space-between;gap:10px;
-  padding:20px 17px 17px 34px;border:0;border-radius:2px 12px 12px 2px;overflow:hidden;
-  color:#F4F1E8;background:var(--cloth,#1F3A5F);background-image:none;
+/* ---- NOTEBOOK COVERS (mockup .cover) ---------------------------------- */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:36px 28px;
+  margin-bottom:var(--s7,48px)}
+.dcard{position:relative;aspect-ratio:3/4;border-radius:3px 10px 10px 3px;
+  padding:18px 16px 16px 30px;display:flex;flex-direction:column;justify-content:space-between;
+  gap:8px;color:#F4F1E8;background:var(--cloth,#1F3A5F);background-image:none;border:0;
+  overflow:hidden;text-align:left;cursor:pointer;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 18px 28px -16px rgba(0,0,0,.45),
              0 2px 5px rgba(0,0,0,.18);
-  transition:transform .18s var(--ease)}
-.dcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:17px;border-radius:0;
-  background:linear-gradient(90deg,rgba(0,0,0,.42) 0%,rgba(0,0,0,.2) 62%,rgba(255,255,255,.07) 100%);
-  box-shadow:inset -1px 0 0 rgba(255,255,255,.14)}
-.dcard::after{content:"";position:absolute;inset:0;pointer-events:none;
-  background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 1px,transparent 1px 3px),
-                   repeating-linear-gradient(90deg,rgba(0,0,0,.045) 0 1px,transparent 1px 3px),
-                   linear-gradient(170deg,rgba(255,255,255,.07) 0%,transparent 34%,rgba(0,0,0,.22) 100%)}
-.dcard:hover{transform:translateY(-6px);border:0;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 26px 36px -18px rgba(0,0,0,.55),
-             0 2px 6px rgba(0,0,0,.2)}
+  transition:transform .18s}
+.dcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;border-radius:0;
+  background:rgba(0,0,0,.24);box-shadow:inset -1px 0 0 rgba(255,255,255,.16)}
+.dcard::after{content:none}
+.dcard:hover{transform:translateY(-5px);border:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 18px 28px -16px rgba(0,0,0,.45),
+             0 2px 5px rgba(0,0,0,.18)}
 .dcard>*{position:relative;z-index:1}
-.dcfold{color:inherit;opacity:.78;margin:0;font-size:10.5px;letter-spacing:.08em;
+/* the mono meta lines, top and bottom */
+.dcfold,.dcstat{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);
+  font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.8;margin:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dctop{display:flex;align-items:flex-start;gap:8px}
-/* the deck name is a paper label glued to the cloth */
-.dcname{flex:1;min-width:0;text-align:left;background:var(--paper);color:var(--paper-ink);
-  border:0;border-radius:2px;padding:12px 12px 11px;font-family:var(--display);font-weight:700;
-  font-size:15px;line-height:1.18;letter-spacing:-.01em;cursor:pointer;overflow-wrap:anywhere;
-  box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 2px 4px rgba(0,0,0,.35),0 0 0 1px rgba(0,0,0,.08)}
-.dcname:hover{filter:brightness(1.04)}
-.dcmore{flex:0 0 auto;width:30px;height:30px;border-radius:8px;border:0;color:inherit;
+.dctop{display:block;position:relative}
+.dcmore{position:absolute;right:0;top:0}
+/* the paper label */
+.dcname{flex:1;min-width:0;text-align:left;background:#F3EFE4;color:#16171A;border:0;
+  border-radius:2px;padding:10px 10px 9px;font-family:var(--display);font-weight:700;font-size:15px;
+  line-height:1.15;letter-spacing:-.01em;cursor:pointer;overflow-wrap:anywhere;box-shadow:none}
+.dcmore{flex:0 0 auto;width:28px;height:28px;border-radius:7px;border:0;color:inherit;
   background:rgba(0,0,0,.26);display:grid;place-items:center;cursor:pointer;opacity:.75}
-.dcmore:hover{opacity:1;background:rgba(0,0,0,.4)}
-.dctop{align-items:flex-start}
-.duepill{flex:0 0 auto;align-self:flex-start;margin-top:4px;font-family:var(--mono);font-size:10px;
-  letter-spacing:.06em;text-transform:uppercase;background:var(--paper-ink);color:var(--paper);
-  border:0;border-radius:99px;padding:4px 9px;white-space:nowrap}
+.dcmore:hover{opacity:1}
+/* the due count belongs with the other mono meta, at the foot of the cover */
+.duepill{order:-1;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  background:transparent;color:inherit;border:0;padding:0;white-space:nowrap;opacity:.95}
 .duepill.zero{display:none}
-.dcard .track,.dcard .mbar{height:3px;background:rgba(0,0,0,.4);border-radius:0;margin-top:auto;
-  box-shadow:inset 0 1px 0 rgba(0,0,0,.25)}
-.dcard .track i,.dcard .mbar i{background:rgba(255,255,255,.92);box-shadow:none}
-.dcard .dprog .pct,.dcard .pct{color:inherit;opacity:.8;font-family:var(--mono);font-size:10.5px;
-  letter-spacing:.06em;text-transform:uppercase}
+.dcname{padding-right:34px}
+.dcard .track,.dcard .mbar{height:4px;background:rgba(0,0,0,.3);border-radius:4px;margin-top:auto}
+.dcard .track i,.dcard .mbar i{background:rgba(244,241,232,.9)}
 .dcfoot{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.dcstat{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
-  color:inherit;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dcfoot .btn{min-height:32px;padding:0 14px;font-size:.82em;border-radius:99px;
-  background:var(--paper);color:var(--paper-ink);border-color:var(--paper);
-  box-shadow:0 1px 2px rgba(0,0,0,.3)}
-.dcfoot .btn:hover{background:#fff;border-color:#fff;filter:none}
-.libhead{border-bottom:1px solid var(--ink);padding-bottom:10px}
-.libhead h2{font-family:var(--serif)}
+/* the whole cover opens the deck, as in the mockup; Study lives in the menu */
+.dcfoot .btn{display:none}
+.dcfoot{justify-content:space-between}
 
-/* ---- the home page ----------------------------------------------------- */
-.phead{margin-bottom:var(--s6);align-items:flex-end}
-/* "today" is the one inverted block on the page */
-.today{background:var(--ink);color:var(--bg);border:1px solid var(--ink);padding:34px;
-  box-shadow:var(--lift-ink)}
-/* The inverted block: every child inherits its colour, and the rules that set one
-   explicitly need the same or greater weight to be overridden. */
-.today .tbig,.today .tbig b,.today h2,.today h3,.today p,.today span,.today small,
-.today .ring b,.today .ring small{color:inherit}
-.today .sub,.today .eyebrow,.today .ring small{color:inherit;opacity:.68}
-.today .tbig b{font-family:var(--display);font-size:2.6em;letter-spacing:-.045em}
-.today .ring .t{stroke:rgba(127,127,127,.45)}
-.today .ring .v{stroke:var(--live)}
-.today .btn{background:var(--bg);color:var(--ink);border-color:var(--bg)}
-.today .btn:hover{background:var(--bg);opacity:.9}
-.today .btn2{background:transparent;color:inherit;border-color:rgba(127,127,127,.55)}
-.today .btn2:hover{border-color:currentColor;background:transparent}
-.today .track{background:rgba(127,127,127,.4)}
-.glance .stat{background:none;border:0;border-radius:0;padding:0;box-shadow:none}
-.glance{gap:0 48px;display:flex;flex-wrap:wrap;border-bottom:1px solid var(--rule);padding-bottom:24px}
-.stat b{font-family:var(--mono);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;
-  color:var(--ink-3);font-weight:500}
-.stat s{font-family:var(--display);font-weight:700;letter-spacing:-.03em}
-
-/* ---- rows and tables --------------------------------------------------- */
-.kv{border-bottom:1px solid var(--rule);padding:14px 0;min-height:56px;align-items:center}
-.actrow{border-top:1px solid var(--rule);min-height:60px}
-.unitrow,.lesson{background:none;border:0;border-top:1px solid var(--rule);
-  border-left:3px solid transparent;border-radius:0;padding:22px 2px 22px 15px;box-shadow:none;
-  min-height:84px}
-.unitrow:hover:not(.locked),.lesson:hover:not(.locked){background:var(--surface-2);transform:none;
-  box-shadow:none;border-color:var(--rule);border-left-color:transparent}
-.unitrow.current,.lesson.current{border-left-color:var(--ink)}
-.unitrow.passed,.lesson.passed{border-left-color:var(--live)}
-.unitrow .num,.lesson .num{font-family:var(--mono);font-weight:400;font-size:1.1em}
-.unitrow .mid b,.lesson .mid b{font-family:var(--serif);font-weight:500;font-size:1.16em}
-.snaplist .kv{font-size:.95em}
-
-/* ---- the study guide reads as a document ------------------------------- */
-.doc,.gblock,.xdeep,.wstep{font-family:var(--read)}
-.gsec>h3{background:none;border-left:0;border-bottom:1px solid var(--ink);border-radius:0;
-  padding:0 0 12px;margin:0 0 6px;font-family:var(--serif);font-weight:500;font-size:26px}
-.gitem{background:none;border:0;border-left:0;border-bottom:1px solid var(--rule);border-radius:0;
-  padding:30px 0 28px;box-shadow:none}
-.ghead h4{font-family:var(--serif);font-weight:600;font-size:1.34em;letter-spacing:-.015em}
-.gblock{background:none;border:0;padding:0;margin-top:18px;font-size:1.16em;line-height:1.68}
-.gblock b.lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;color:var(--ink-3);
-  font-weight:500}
-.gwarn{background:var(--hp);color:var(--hpi);border:0;border-radius:2px;padding:14px 16px;
-  font-family:var(--body);font-size:.94em}
-.gwarn b.lbl{color:inherit;opacity:.72}
-.gex{background:none;border:0}
-.gterm,.hterm{background:var(--hy);color:var(--hyi);border:0;border-radius:2px;padding:0 3px;
-  font-weight:inherit}
-.gpill{background:none;border:0;padding:0;font-family:var(--mono);font-size:10.5px;
-  letter-spacing:.09em;color:var(--ink-3);display:inline-flex;align-items:center;gap:8px}
-.gpill::before{content:"";width:10px;height:10px;border-radius:99px;background:var(--sc);flex:none}
-
-/* ---- questions and cards ----------------------------------------------- */
-.qtext{font-family:var(--serif);font-weight:500;letter-spacing:-.005em}
-.focus .qtext{font-size:1.68em;line-height:1.26}
-.face span,.fq{font-family:var(--serif);font-weight:400}
-.face{border-radius:var(--rp);box-shadow:var(--lift-card)}
-.opt{border-radius:var(--rs);min-height:52px}
-.opt:hover:not(:disabled){border-color:var(--ink);background:var(--surface-2);transform:none}
-
-/* ---- menus, drawers, modals -------------------------------------------- */
-.menu,.popmenu{border-radius:var(--r);box-shadow:var(--shadow-2);background-image:none}
-.drawer,.chatdrawer,.logdrawer,.bmodal,.explain,.qmodal,.modal{background-image:none;
-  border-radius:0}
-.bmodal,.explain,.qmodal,.modal,.wncard{border-radius:var(--r)}
-.msg.me{background:var(--ink);color:var(--bg)}
-.msg.ai{background:none;border:0;font-family:var(--read);font-size:1.14em;line-height:1.62;
-  padding:0;color:var(--ink)}
-.toast{background:var(--ink);color:var(--bg);border:0;border-radius:99px;
-  backdrop-filter:none;-webkit-backdrop-filter:none}
-
-/* ---- the deck page ------------------------------------------------------ */
-.dhero{background:none;border:0;border-radius:0;box-shadow:none;padding:0;margin-bottom:var(--s6)}
-.dhero .dtop{align-items:end;padding-bottom:22px;border-bottom:1px solid var(--rule)}
-.dactions{border-top:0;padding-top:0;margin-top:20px}
+/* ---- progress, stats, heatmap ----------------------------------------- */
+.track,.prog{height:4px;background:var(--rule);border-radius:4px;overflow:hidden}
+.track>i,.prog>i{display:block;height:100%;background:var(--live)}
 .dprog .pct{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--ink-3)}
-.dprog .track,.track{height:3px;background:var(--rule);border-radius:0}
-.dprog .track i,.track>i{background:var(--live)}
-/* numbers belong on a hairline, not in five boxes */
-.stats{display:flex;flex-wrap:wrap;gap:0 48px;margin-bottom:var(--s6);border-bottom:1px solid var(--rule);
-  padding-bottom:24px}
-.stats .stat{background:none;border:0;border-radius:0;padding:0;box-shadow:none;min-width:106px;
-  display:flex;flex-direction:column;gap:3px}
-.stats .stat s{font-size:34px;line-height:1.1}
-/* one square per concept, actually square */
-.lamp{border-radius:2px;width:15px;height:15px}
+.stats,.glance,.big:not(.btn){display:flex;flex-wrap:wrap;gap:0 48px;margin-bottom:32px;
+  border-bottom:1px solid var(--rule);padding-bottom:24px}
+.stats .stat,.glance .stat,.big:not(.btn) div{background:none;border:0;border-radius:0;padding:0;
+  box-shadow:none;min-width:110px;display:flex;flex-direction:column;gap:2px;text-align:left}
+.stat b,.big:not(.btn) b{font-family:var(--mono);font-size:11.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:400;margin:0}
+.stat s,.big:not(.btn) s{text-decoration:none;font-family:var(--display);font-weight:700;
+  font-size:34px;letter-spacing:-.03em;line-height:1.1}
+.lamp{border-radius:3px;width:15px;height:15px;border:1px solid var(--rule)}
 .lamp[data-s="done"]{background:var(--live);border-color:var(--live);box-shadow:none}
 .lamp[data-s="live"]{background:var(--ink);border-color:var(--ink);box-shadow:none}
-/* the forecast reads as a chart, not a set of blocks */
-.fbar i{border-radius:2px;background:var(--live)}
+.fbar i{border-radius:3px;background:var(--live)}
 .fbar i.none{background:var(--rule)}
 .fbar b,.fbar u{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3);text-decoration:none}
+
+/* ---- tables of records (mockup .tbl / .tr) ---------------------------- */
+.unitrow,.lesson{background:none;border:0;border-top:1px solid var(--rule);
+  border-left:3px solid transparent;border-radius:0;padding:20px 2px 20px 15px;box-shadow:none;
+  min-height:68px}
+.unitrow:hover:not(.locked),.lesson:hover:not(.locked){background:var(--surface-2);transform:none;
+  box-shadow:none;border-left-color:transparent}
+.unitrow.current,.lesson.current{border-left-color:var(--ink)}
+.unitrow.passed,.lesson.passed{border-left-color:var(--live)}
+.unitrow .num,.lesson .num{font-family:var(--mono);font-weight:400;font-size:13px;color:var(--ink-3)}
+.unitrow .mid b,.lesson .mid b{font-family:var(--display);font-weight:600;font-size:17px}
+.unitrow .state,.lesson .state{font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-3)}
+
+/* ---- the study guide as a document (mockup .doc / .drow / .mnote) ----- */
+.doc,.gblock,.xdeep,.wstep,.read{font-family:var(--read);font-size:19px;line-height:1.7}
+.gsec>h3{background:none;border-left:0;border-bottom:1px solid var(--ink);border-radius:0;
+  padding:0 0 12px;margin:0 0 6px;font-family:var(--display);font-weight:700;font-size:26px;
+  letter-spacing:-.025em}
+.gitem{background:none;border:0;border-left:0;border-bottom:1px solid var(--rule);border-radius:0;
+  padding:28px 0 26px;box-shadow:none}
+.ghead h4{font-family:var(--display);font-weight:700;font-size:1.18em;letter-spacing:-.015em}
+.gblock{background:none;border:0;padding:0;margin-top:16px}
+.gblock b.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:400;margin-bottom:5px;display:block}
+.gex,.gdef,.gdeep{background:none;border:0}
+.gwarn{background:var(--hp);color:var(--hpi);border:0;border-radius:2px;padding:12px 14px;
+  font-family:var(--body);font-size:.94em;line-height:1.55}
+.gwarn b.lbl{color:inherit;opacity:.7}
+.gterm,.hterm{background:var(--hy);color:var(--hyi);border:0;border-radius:2px;padding:1px 2px;
+  font-weight:inherit}
+.gpill{background:none;border:0;padding:0;font-family:var(--mono);font-size:11px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);display:inline-flex;
+  align-items:center;gap:8px}
+.gpill::before{content:"";width:10px;height:10px;border-radius:99px;background:var(--sc);flex:none}
+.gchips span{background:var(--surface);border:1px solid var(--rule);border-radius:99px;
+  padding:4px 11px;font-family:var(--body);font-size:.88em}
+
+/* ---- questions and flashcards (mockup .fcard / .fq / .fa / .rate) ----- */
+.qcard{background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);
+  box-shadow:none;background-image:none}
+.qtext{font-family:var(--display);font-weight:500;font-size:1.14em;line-height:1.35;
+  letter-spacing:-.015em}
+.focus .qtext{font-size:1.5em;line-height:1.3}
+.focus .qcard{border-radius:16px;padding:56px 48px 40px;min-height:340px;display:flex;
+  flex-direction:column;justify-content:center;
+  box-shadow:0 1px 0 var(--rule),0 40px 60px -36px rgba(0,0,0,.4)}
+.focus .qcard .qhead{position:absolute;top:20px;left:48px;right:48px;margin:0}
+.opt{border-radius:var(--rs);min-height:52px;background:var(--surface-2);border:1px solid var(--rule)}
+.opt:hover:not(:disabled){border-color:var(--live);background:var(--live-soft);transform:translateX(3px)}
+.face{border-radius:16px;box-shadow:0 1px 0 var(--rule),0 40px 60px -36px rgba(0,0,0,.4);
+  background:var(--surface)}
+.face span,.fq{font-family:var(--serif);font-weight:400;font-size:38px;line-height:1.25;
+  letter-spacing:-.01em}
+.face.back span{font-size:28px;line-height:1.4}
+.face small{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
   color:var(--ink-3)}
 
-/* ---- the study stage ----------------------------------------------------
-   Studying is one place. Every mode is a tab on the same centred stage, with
-   one tick of progress and one way out. DESIGN.md section 5.4.             */
+/* ---- the study stage (mockup .stage / .modes / .ticks / .rate) -------- */
 .stage{max-width:880px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:22px}
 .stage.wide{max-width:1200px}
 .stage>*{width:100%;min-width:0}
-.modes{display:flex;gap:26px;justify-content:center;border-bottom:1px solid var(--rule);
-       flex-wrap:wrap;margin-bottom:4px}
-.modes .tab{min-height:50px;background:none;border:0;border-bottom:2px solid transparent;
-            padding:0;cursor:pointer;color:var(--ink-2);font-weight:600;margin-bottom:-1px}
+.modes{display:flex;gap:28px;justify-content:center;border-bottom:1px solid var(--rule);
+  flex-wrap:wrap;margin-bottom:4px}
+.modes .tab{min-height:48px;background:none;border:0;border-bottom:2px solid transparent;
+  padding:0;cursor:pointer;color:var(--ink-2);font-weight:600;margin-bottom:-1px}
 .modes .tab:hover{color:var(--ink)}
 .modes .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
-.stagehead{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
-.stagehead .crumb{border:0;padding:0;margin:0;max-width:none;white-space:normal}
+.stagehead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.stagehead .crumb{border:0;padding:0;margin:0;max-width:none;white-space:normal;font-size:13.5px;
+  text-transform:none;letter-spacing:0;color:var(--ink-2);font-family:var(--body)}
 .stagetools{display:flex;gap:8px;align-items:center}
 .ticks{display:flex;gap:4px}
-.ticks i{flex:1 1 0;min-width:2px;height:4px;border-radius:3px;background:var(--rule);
-         transition:background .3s}
+.ticks i{flex:1 1 0;min-width:2px;height:4px;border-radius:3px;background:var(--rule)}
 .ticks i.d{background:var(--live)}
 .ticks i.c{background:var(--ink)}
-.statline{display:flex;gap:28px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;
-          letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);align-items:baseline}
+.statline{display:flex;gap:26px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);align-items:baseline}
 .statline s{text-decoration:none;font-family:var(--display);font-weight:700;font-size:18px;
-            letter-spacing:-.02em;color:var(--ink);margin-right:7px}
-.stagefoot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
-           border-top:1px solid var(--rule);padding-top:18px;margin-top:4px}
-.rate{flex:1 1 150px;min-height:68px;border-radius:var(--rs);border:1px solid var(--rule);
-      background:var(--surface);display:flex;flex-direction:column;align-items:center;
-      justify-content:center;gap:5px;font-family:var(--display);font-weight:600;font-size:1.02em;
-      cursor:pointer;transition:var(--t) var(--ease);color:var(--ink);padding:0 16px;text-align:center}
-.rate small{font-weight:400;color:var(--ink-3);font-size:10.5px;font-family:var(--mono);
-            letter-spacing:.08em;text-transform:uppercase}
+  letter-spacing:-.02em;color:var(--ink);margin-right:6px}
+.stagefoot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  border-top:1px solid var(--rule);padding-top:18px;margin-top:4px}
+.rate{flex:1 1 140px;min-height:64px;border-radius:10px;border:1px solid var(--rule);
+  background:var(--surface);display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;font-family:var(--display);font-weight:600;cursor:pointer;
+  color:var(--ink);padding:0 14px;text-align:center}
+.rate small{font-weight:400;color:var(--ink-2);font-size:12px;font-family:var(--mono)}
 .rate:hover{border-color:var(--ink)}
 .rate.good{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .rate.good small{color:inherit;opacity:.6}
-/* one at a time: the question is a large paper card */
-.focus .qcard{padding:76px 48px 48px;min-height:400px;display:flex;flex-direction:column;
-  justify-content:center;border-radius:var(--rp);box-shadow:var(--lift-card)}
-.focus .qcard .qhead{position:absolute;top:24px;left:48px;right:48px;margin:0}
-/* a lesson reads as a page, not a form */
-.lessonname{font-family:var(--serif);font-weight:500;font-size:clamp(30px,4vw,46px);margin:0;
-            line-height:1.05;letter-spacing:-.02em}
-.lessonbody{display:flex;flex-wrap:wrap;gap:20px 48px;align-items:flex-start}
-.lessonmain{flex:1 1 400px;min-width:0;max-width:66ch}
-.lessonmargin{flex:0 1 250px;min-width:180px;max-width:270px;display:flex;flex-direction:column;
-              gap:14px;padding-top:6px}
-.lessonmargin .eyebrow{margin:0;border-top:1px solid var(--rule);padding-top:11px;display:block}
-.lessonmargin>span+span{margin-top:-8px}
-.read{font-family:var(--read);font-size:1.2em;line-height:1.7;margin:0 0 18px}
-.read p{margin:0 0 14px}
-.read p:last-child{margin:0}
-@media(max-width:640px){
-  .modes{gap:18px;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}
-  .modes .tab{white-space:nowrap}
-  .statline{gap:18px}
-  .rate{flex:1 1 100%}
-  .focus .qcard{padding:60px 22px 26px;min-height:320px}
-  .focus .qcard .qhead{left:22px;right:22px;top:20px}
-}
 
-/* ---- sticky notes -------------------------------------------------------
-   Paper you pin things to. They live with their deck and gather on the wall. */
-.wall{display:flex;flex-wrap:wrap;gap:30px 24px}
-.sticky{position:relative;padding:30px 18px 18px;border-radius:2px 2px 16px 2px;width:234px;
-        box-shadow:0 16px 22px -16px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.14);
-        display:flex;flex-direction:column;gap:9px;transition:transform .15s var(--ease)}
+/* ---- the lesson, as a document ---------------------------------------- */
+.lessonname{font-family:var(--display);font-weight:700;font-size:clamp(32px,4.4vw,52px);
+  letter-spacing:-.035em;line-height:1.06;margin:0}
+.lessonbody{display:flex;flex-wrap:wrap;gap:28px 56px;align-items:flex-start}
+.lessonmain{flex:999 1 340px;min-width:0;max-width:620px}
+.lessonmargin{flex:1 1 200px;min-width:180px;max-width:260px;display:flex;flex-direction:column;
+  gap:10px;padding-top:6px;font-family:var(--body);font-size:14px;line-height:1.5}
+.lessonmargin .eyebrow{margin:0;border-top:1px solid var(--rule);padding-top:10px;display:block}
+
+/* ---- STICKY NOTES (mockup .sticky) ------------------------------------ */
+.wall{display:flex;flex-wrap:wrap;gap:28px 24px}
+.sticky{position:relative;padding:28px 18px 16px;border-radius:2px 2px 16px 2px;width:232px;
+  box-shadow:0 16px 22px -16px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.14);
+  display:flex;flex-direction:column;gap:8px;transition:transform .15s}
 .sticky:hover{transform:rotate(0deg) translateY(-3px) !important}
 .sticky.y{background:#FFE680;color:#2E2600}
 .sticky.p{background:#FFC2D4;color:#3D1020}
 .sticky.b{background:#BDDFFF;color:#0E2A44}
 .sticky.g{background:#C4EECE;color:#0E3320}
-.sticky .tape{position:absolute;top:-10px;left:50%;width:66px;height:20px;margin-left:-33px;
-              background:rgba(255,255,255,.6);border:1px solid rgba(0,0,0,.07);transform:rotate(-2deg)}
-.sticky .x{position:absolute;top:0;right:0;width:44px;height:44px;border:0;background:none;
-           font-size:22px;line-height:1;opacity:.5;color:inherit;border-radius:8px;cursor:pointer}
+.sticky .tape{position:absolute;top:-10px;left:50%;width:64px;height:20px;margin-left:-32px;
+  background:rgba(255,255,255,.6);border:1px solid rgba(0,0,0,.07);transform:rotate(-2deg)}
+.sticky .x{position:absolute;top:0;right:0;width:44px;height:44px;border:0;background:transparent;
+  font-size:22px;line-height:1;opacity:.55;color:inherit;border-radius:8px;cursor:pointer}
 .sticky .x:hover{opacity:1}
-.sttag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.72}
-.sttxt{font-size:16px;font-weight:500;line-height:1.4;overflow-wrap:anywhere}
-.cdot{width:44px;height:44px;border:0;background:none;display:grid;place-items:center;padding:0;
-      border-radius:99px;cursor:pointer}
-.cd{width:22px;height:22px;border-radius:99px;display:block;border:1px solid rgba(0,0,0,.18)}
+.sttag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+  opacity:.7}
+.sttxt{font-size:16px;font-weight:500;line-height:1.38;display:block;overflow-wrap:anywhere}
+.cdot{width:44px;height:44px;border:0;background:transparent;display:grid;place-items:center;
+  padding:0;border-radius:99px;cursor:pointer}
+.cd{width:22px;height:22px;border-radius:99px;display:block;border:1px solid rgba(0,0,0,.15)}
 .cd.y{background:#FFE680}.cd.p{background:#FFC2D4}.cd.b{background:#BDDFFF}.cd.g{background:#C4EECE}
 .cdot[aria-pressed="true"] .cd{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
-.empty-wall{border:1px dashed var(--rule);border-radius:var(--r);padding:30px 26px;
-            display:flex;gap:18px;align-items:center;flex-wrap:wrap;color:var(--ink-2)}
-.empty-wall b{display:block;font-family:var(--serif);font-weight:500;font-size:1.25em;
-              color:var(--ink);margin-bottom:4px;letter-spacing:-.01em}
+.empty-wall{border:1px dashed var(--rule);border-radius:var(--r);padding:28px 24px;display:flex;
+  gap:18px;align-items:center;flex-wrap:wrap;color:var(--ink-2)}
+.empty-wall b{display:block;font-family:var(--display);font-weight:700;font-size:1.15em;
+  letter-spacing:-.02em;color:var(--ink);margin-bottom:4px}
 .msgtools{margin-top:12px;display:flex;gap:14px;flex-wrap:wrap;font-family:var(--body)}
-@media(max-width:640px){.wall .sticky{width:100%;max-width:300px}}
+
+/* ---- heatmap (mockup .hm) --------------------------------------------- */
+.hmwrap{overflow-x:auto;padding-bottom:6px}
+.hm{display:grid;grid-template-rows:repeat(7,14px);grid-auto-flow:column;grid-auto-columns:14px;
+  gap:4px;width:max-content}
+.hm i{border-radius:3px;background:var(--surface-2);border:1px solid var(--rule)}
+.hm i.l1{background:var(--live-soft);border-color:var(--live-soft)}
+.hm i.l2{background:color-mix(in srgb,var(--live) 45%,var(--bg));border-color:transparent}
+.hm i.l3{background:color-mix(in srgb,var(--live) 72%,var(--bg));border-color:transparent}
+.hm i.l4{background:var(--live);border-color:var(--live)}
+
+/* ---- drawers, menus, modals, toast ------------------------------------ */
+.menu,.popmenu{border-radius:var(--r);box-shadow:0 12px 24px -10px rgba(0,0,0,.5);
+  background-image:none;background:var(--surface);border:1px solid var(--rule)}
+.drawer,.chatdrawer,.logdrawer{background:var(--surface);background-image:none;
+  border-left:1px solid var(--rule);box-shadow:-30px 0 50px -28px rgba(0,0,0,.45)}
+.bmodal,.explain,.qmodal,.modal,.wncard{background:var(--surface);background-image:none;
+  border:1px solid var(--rule);border-radius:var(--r);box-shadow:0 20px 44px -24px rgba(0,0,0,.5)}
+.msg.me{background:var(--ink);color:var(--bg);border-radius:12px 12px 2px 12px}
+.msg.ai{background:none;border:0;padding:0;font-family:var(--read);font-size:19px;line-height:1.55;
+  color:var(--ink)}
+.qchip,.chatquick button{min-height:44px;padding:0 16px;border:1px solid var(--rule);
+  border-radius:99px;background:var(--surface);font-weight:500;font-size:14px}
+.qchip:hover,.chatquick button:hover{border-color:var(--ink)}
+.toast{background:var(--ink);color:var(--bg);border:0;border-radius:99px;backdrop-filter:none;
+  -webkit-backdrop-filter:none;box-shadow:0 20px 44px -24px rgba(0,0,0,.5)}
+.tag{font-family:var(--mono);font-size:12px;padding:2px 8px;border:1px solid var(--rule);
+  border-radius:6px;background:var(--surface-2);color:var(--ink-2)}
+
+/* ---- the mockup's top bar (section 3) ---------------------------------- */
+.appbar{position:fixed;top:0;left:0;right:0;height:auto;min-height:var(--bar);z-index:50;
+  background:var(--bg);border-bottom:1px solid var(--rule);display:block;padding:0}
+.navin{max-width:1200px;margin:0 auto;padding:0 32px;display:flex;align-items:center;gap:4px;
+  min-height:var(--bar);flex-wrap:nowrap}
+.brand{display:flex;align-items:baseline;gap:8px;border:0;background:transparent;
+  font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.04em;min-height:44px;
+  padding:0;margin-right:14px;color:var(--ink);cursor:pointer;flex:0 0 auto;white-space:nowrap}
+.brand span{display:inline-block}
+/* the mockup's wordmark: MonoSpace with the underscore in the accent */
+.brand i{font-style:normal;color:var(--live);margin-left:-2px;font-family:var(--mono);
+  font-weight:500;font-size:.9em;line-height:1}
+.brandlogo{align-self:center}
+.brandlogo{width:26px;height:26px;border-radius:7px;box-shadow:none}
+.nl{min-height:44px;padding:0 11px;flex:0 0 auto;white-space:nowrap;border:0;background:transparent;color:var(--ink-2);font-weight:500;
+  border-radius:8px;position:relative;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.nl:hover{color:var(--ink)}
+.nl[aria-current="true"]{color:var(--ink);font-weight:600}
+.nl[aria-current="true"]::after{content:"";position:absolute;left:14px;right:14px;bottom:2px;height:2px;
+  background:var(--ink);border-radius:2px}
+.burger{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 10px;border:0;
+  flex:0 0 auto;white-space:nowrap;
+  background:transparent;color:var(--ink-2);font-weight:500;border-radius:8px;cursor:pointer}
+.burger:hover{color:var(--ink);background:transparent}
+.appbar .crumb{padding-left:12px;margin-left:6px;border-left:1px solid var(--rule);max-width:30ch;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srch{display:flex;align-items:center;gap:9px;min-height:44px;width:190px;flex:0 1 190px;padding:0 12px;
+  border:1px solid var(--rule);border-radius:10px;background:var(--surface);color:var(--ink-2)}
+.srch input{border:0;outline:0;background:transparent;font:inherit;color:var(--ink);flex:1;min-width:0;
+  min-height:auto;padding:0}
+.av{width:44px;height:44px;border-radius:99px;border:1px solid var(--rule);background:var(--surface);
+  font-family:var(--display);font-weight:700;font-size:13px;display:grid;place-items:center;
+  letter-spacing:.02em;cursor:pointer;color:var(--ink)}
+.av:hover{border-color:var(--ink)}
+#top-ask{flex:0 0 auto;padding:0 15px}
+.av,#top-theme{flex:0 0 auto}
+@media(max-width:1180px){.srch{display:none}#top-ask span{display:none}}
+@media(max-width:1000px){.appbar .crumb{display:none}.burger span{display:none}}
+@media(max-width:760px){
+  .navin{padding:0 14px;gap:2px;overflow-x:auto}
+  #top-ask{padding:0 11px}
+}
+/* ---- the shelf, off-canvas at every width ------------------------------ */
+.shell{display:block;padding-top:var(--bar)}
+main{grid-column:auto;min-width:0}
+.nav{position:fixed;top:var(--bar);bottom:0;left:0;width:min(300px,88vw);z-index:48;
+  transform:translateX(-102%);transition:transform .26s var(--ease);
+  box-shadow:0 20px 44px -24px rgba(0,0,0,.5);padding:20px 16px 28px;display:flex;
+  flex-direction:column}
+.nav.on{transform:none}
+.page{max-width:1200px;margin:0 auto;padding:48px 32px 96px}
+@media(max-width:640px){.page{padding:30px 16px 90px}}
 
 /* ---- motion ------------------------------------------------------------ */
 @media (prefers-reduced-motion:reduce){
   *{animation:none !important;transition:none !important}
-  .dcard:hover{transform:none !important}
+  .dcard:hover,.sticky:hover{transform:none !important}
+}
+@media(max-width:640px){
+  .cgrid{grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:26px 14px}
+  .wall .sticky{width:100%;max-width:300px}
+  .modes{gap:18px;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}
+  .modes .tab{white-space:nowrap}
+  .rate{flex:1 1 100%}
+  .focus .qcard{padding:52px 20px 24px;min-height:300px}
+  .focus .qcard .qhead{left:20px;right:20px}
 }
 </style>
 <script src="splash.js"></script>
 
 <header class="appbar">
-  <button class="burger" id="burger" aria-label="Menu">
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
-      <path d="M3 5h14M3 10h14M3 15h14" stroke-linecap="round"/></svg>
-  </button>
-  <span class="crumb" id="crumb"></span>
+  <div class="navin">
+    <button class="brand" id="brand" title="Home"><img class="brandlogo" src="vendor/brand/logo-128.png"
+      alt="" onerror="this.hidden=true"><span>MonoSpace</span><i>_</i></button>
+    <button class="nl" id="nav-home"><span>Home</span></button>
+    <button class="nl" id="nav-library"><span>Library</span></button>
+    <button class="nl" id="nav-review"><span>Review</span><em class="navcount hide" id="nav-duecount"></em></button>
+    <button class="nl" id="nav-new"><span>Build</span><em class="navcount hide" id="nav-queue" title="Decks building or waiting"></em></button>
+    <button class="burger" id="burger" aria-label="Your shelf: subjects, backups and appearance">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+        <path d="M4 3h3v14H4zM8.5 3h3v14h-3zM13 3.6l3 .8-3.4 13.2-2.9-.8z" stroke-linejoin="round"/></svg>
+      <span>Shelf</span>
+    </button>
+    <span class="crumb" id="crumb"></span>
+    <span style="flex:1"></span>
+    <label class="srch"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="top-search" placeholder="Search decks" aria-label="Search decks">
+      <span class="kbd">Ctrl K</span></label>
+    <button class="btn" id="top-ask"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a8 8 0 01-11.5 7.2L4 20l1-4.5A8 8 0 1121 12z"/></svg>Ask a teacher</button>
+    <button class="ib" id="top-theme" aria-label="Light or dark"><svg width="18" height="18"
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg></button>
+    <button class="av" id="nav-settings" title="Settings">ME</button>
+  </div>
 </header>
 
 <div class="shell">
-  <nav class="nav" id="nav" aria-label="MonoSpace">
-    <button class="brand" id="brand" title="Home"><img class="brandlogo" src="vendor/brand/logo-128.png" alt=""
-      onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i hidden></i><span>MonoSpace</span></button>
-    <div class="navmain">
-      <button class="navbtn" id="nav-home">
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-          <path d="M3 8l7-5 7 5v9H3z" stroke-linejoin="round"/></svg><span>Home</span></button>
-      <button class="navbtn" id="nav-library">
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-          <path d="M4 3v14M8 3v14M12 4l4 12.5" stroke-linecap="round"/></svg><span>Library</span></button>
-      <button class="navbtn" id="nav-review">
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-          <path d="M16 10a6 6 0 1 1-2-4.5M16 3v3.5h-3.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Review</span><em class="navcount hide" id="nav-duecount"></em></button>
-      <button class="navbtn" id="nav-new">
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-          <path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg><span>New deck</span><em class="navcount hide" id="nav-queue" title="Decks building or waiting"></em></button>
+  <nav class="nav" id="nav" aria-label="Your shelf">
+    <p class="navsec" style="margin-bottom:14px">The shelf</p>
+    <div class="navmain hide">
     </div>
     <div class="navsubj">
       <div class="navsec"><span>Subjects</span>
@@ -1574,9 +1655,6 @@ textarea:focus,input:focus,select:focus{border-color:var(--ink);box-shadow:none;
       <button class="navbtn" id="btn-custom">
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
           <circle cx="10" cy="10" r="7"/><path d="M10 3v14"/></svg><span>Appearance</span></button>
-      <button class="navbtn" id="nav-settings">
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-          <circle cx="10" cy="10" r="2.6"/><path d="M10 2.5v2.2M10 15.3v2.2M2.5 10h2.2M15.3 10h2.2M4.7 4.7l1.6 1.6M13.7 13.7l1.6 1.6M4.7 15.3l1.6-1.6M13.7 6.3l1.6-1.6" stroke-linecap="round"/></svg><span>Settings</span></button>
       <button class="navbtn navupdate hide" id="nav-update" title="A newer MonoSpace is ready — see what's new">
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M10 15V4M5.5 8.5 10 4l4.5 4.5M4 16.5h12" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Update ready</span></button>
@@ -2575,24 +2653,25 @@ Availability: Information is there when it is needed"></textarea>
   ];
   const PRESETS = {
     light:{
-      /* Paper, with the logo's violet as the accent */
-      "Paper":{bg:"#F7F5F2",surface:"#FFFFFF",ink:"#16141B",ink2:"#5E5867",live:"#5B46D9",hit:"#1E7A54",miss:"#B3303F",rail:"#F2EFEB"},
-      "Linen":{bg:"#F3F0E9",surface:"#FFFDF9",ink:"#1F1B16",ink2:"#6A6257",live:"#6A4FD8",hit:"#3F6B2E",miss:"#A93434",rail:"#EEEAE1"},
+      /* the mockup, exactly: DESIGN.md 2.1 */
+      "Paper":{bg:"#F6F6F3",surface:"#FFFFFF",ink:"#111312",ink2:"#5C615D",live:"#17604B",hit:"#17604B",miss:"#9B2226",rail:"#F1F1ED"},
+      "Forest light":{bg:"#EAF0E8",surface:"#F8FBF6",ink:"#13201A",ink2:"#56655B",live:"#2E7D4F",hit:"#2E7D4F",miss:"#A32F32",rail:"#E3EBE1"},
+      "Rose":{bg:"#F8F1EE",surface:"#FFFFFF",ink:"#221413",ink2:"#6B5553",live:"#B3363F",hit:"#2F7A5C",miss:"#B3363F",rail:"#F3E8E4"},
       "MonoSpace Light":{bg:"#F2F3F6",surface:"#FFFFFF",ink:"#0C0D12",ink2:"#515564",live:"#4A55D0",hit:"#0A7650",miss:"#C0244B",rail:"#F7F8FA"},
       "Neutral":{bg:"#E4E0DA",surface:"#F4F1EC",ink:"#1C1A17",ink2:"#57524B",live:"#46557F",hit:"#36703F",miss:"#AC313C",rail:"#ECE8E2"},
       "Sea":{bg:"#E6EFF1",surface:"#FFFFFF",ink:"#0A2229",ink2:"#4A6B73",live:"#0E7C86",hit:"#1F7A4D",miss:"#B83252",rail:"#F4FAFB"},
       "Rose":{bg:"#F4ECF1",surface:"#FFFFFF",ink:"#20101C",ink2:"#6E5567",live:"#A02E6E",hit:"#2F7A5C",miss:"#C0304A",rail:"#FCF6FA"}
     },
     dark:{
-      /* Nebula is the brand: the violet of the logo on its own space black */
-      "Nebula":{bg:"#0B0A11",surface:"#15131E",ink:"#ECEAF4",ink2:"#9A94AD",live:"#A99BFF",hit:"#5FCFA7",miss:"#FF8A9E",rail:"#100E17"},
-      "Orbit":{bg:"#080A12",surface:"#111622",ink:"#E7EDF7",ink2:"#8E9AB0",live:"#7FA8FF",hit:"#4FC79A",miss:"#FF7D92",rail:"#0B0E18"},
+      /* the mockup, exactly: DESIGN.md 2.1 */
+      "Midnight":{bg:"#0D0E0D",surface:"#151716",ink:"#F1F2EE",ink2:"#9BA19C",live:"#5FCFA7",hit:"#5FCFA7",miss:"#FF8A93",rail:"#111312"},
+      "Dusk":{bg:"#14121C",surface:"#1C1A27",ink:"#EDEAF7",ink2:"#9C96B4",live:"#A99BFF",hit:"#6FD3A6",miss:"#FF8A9E",rail:"#181622"},
       "MonoSpace":{bg:"#08080C",surface:"#111117",ink:"#ECEDF3",ink2:"#A3A6B4",live:"#A9B6F8",hit:"#5DD3A0",miss:"#FF7D92",rail:"#0A0A0F"},
       "Carbon":{bg:"#0C0C0E",surface:"#17171B",ink:"#EDEDF0",ink2:"#9A9AA6",live:"#B79CFF",hit:"#5CCB8F",miss:"#FF7A7A",rail:"#101013"},
       "Forest":{bg:"#08110D",surface:"#132019",ink:"#E6F1EA",ink2:"#90A89A",live:"#5FC98A",hit:"#7BD6A0",miss:"#FF8585",rail:"#0B1710"}
     }
   };
-  const DEF = {light:"Paper", dark:"Nebula"};   // 2.0: the palette the logo asks for
+  const DEF = {light:"Paper", dark:"Midnight"};   // the mockup's defaults
   const hex2 = h => { h = h.replace("#",""); if(h.length===3) h = h.split("").map(c=>c+c).join("");
                       return [0,2,4].map(i => parseInt(h.slice(i,i+2),16)); };
   const to2 = r => "#" + r.map(v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
@@ -2627,29 +2706,24 @@ Availability: Information is there when it is needed"></textarea>
       S("--shadow-1","0 1px 2px rgba(0,0,0,"+(dark?".35":".05")+"),0 2px 8px rgba(0,0,0,"+(dark?".3":".05")+")");
       S("--shadow-2","0 4px 10px rgba(0,0,0,"+(dark?".5":".08")+"),0 18px 40px rgba(0,0,0,"+(dark?".45":".1")+")");
       S("--fs",this.fs+"px");
-      /* 2.0: the one atmosphere in the app is the accent, bloomed behind the top of the page
-         the way the logo's planet glows. Everything here is derived from the eight colours. */
-      S("--bg-grad","radial-gradient(1100px 560px at 50% -260px,"+rgba(c.live,dark?.16:.10)+",transparent 72%),"+
-        "radial-gradient(760px 440px at 94% 6%,"+rgba(c.live,dark?.07:.05)+",transparent 70%),"+
-        c.bg);
-      S("--grain", dark ? ".05" : ".028");
-      S("--grainmode", dark ? "overlay" : "multiply");
-      S("--lift", dark ? "0 1px 2px rgba(0,0,0,.5),0 14px 34px -22px rgba(0,0,0,.9)"
-                       : "0 1px 2px rgba(20,16,30,.045),0 12px 30px -22px rgba(20,16,30,.3)");
-      S("--lift-card", dark ? "0 1px 0 "+mix(c.surface,c.ink,.1)+",0 40px 70px -44px rgba(0,0,0,1)"
-                            : "0 1px 0 "+mix(c.surface,c.ink,.1)+",0 40px 64px -44px rgba(20,16,30,.45)");
-      S("--lift-ink", dark ? "0 20px 50px -28px "+rgba(c.live,.4)
-                           : "0 20px 44px -28px rgba(20,16,30,.5)");
+      /* The mockup has no backdrop, no gradient and no texture: the page is its colour.
+         DESIGN.md section 1, "what to avoid". */
+      S("--bg-grad", c.bg);
+      S("--grain", "0");
       S("--read", T.readFont === "sans" ? "var(--display)" : "var(--serif)");
-      /* paper things: the label glued to a cover, and the three highlight colours */
-      S("--paper", dark ? "#E8E3D6" : "#F3EFE4"); S("--paper-ink", "#16171A");
+      /* the paper label on a cover, and the three highlight colours (DESIGN.md 2.1) */
+      S("--paper", "#F3EFE4"); S("--paper-ink", "#16171A");
       S("--hy", dark?"#6B5A10":"#F8E16C"); S("--hyi", dark?"#FFF3B8":"#3A3000");
       S("--hp", dark?"#6B2A40":"#F6C4D2"); S("--hpi", dark?"#FFD9E3":"#4A1426");
+      S("--hb", dark?"#1F4670":"#BCD8F5"); S("--hbi", dark?"#D6E8FB":"#0F2A47");
+      /* hairlines, subtle fills and the accent's faint fill, derived as the mockup derives them */
+      S("--rule", mix(c.bg, c.ink, .14)); S("--rule-2", mix(c.bg, c.ink, .08));
+      S("--surface-2", mix(c.surface, c.ink, .05));
+      S("--live-soft", mix(c.bg, c.live, .14));
+      S("--ink-3", mix(c.ink2, c.bg, .34));
       S("--rule",mix(c.surface,c.ink,dark?.12:.14)); S("--rule-2",mix(c.surface,c.ink,dark?.07:.08));
-      S("--glass",rgba(c.surface,dark?.72:.78)); S("--glass-rail",rgba(c.rail,dark?.66:.74));
-      S("--sheen",dark?"linear-gradient(180deg,rgb(255 255 255 / .035),rgb(255 255 255 / 0) 60%)"
-                      :"linear-gradient(180deg,rgb(255 255 255 / .7),rgb(255 255 255 / 0) 60%)");
-      S("--hl",dark?"inset 0 1px 0 rgb(255 255 255 / .05)":"inset 0 1px 0 rgb(255 255 255 / .9)");
+      S("--glass",c.surface); S("--glass-rail",c.rail);
+      S("--sheen","none"); S("--hl","none");
       S("--shadow-1",(dark?"inset 0 1px 0 rgb(255 255 255 / .045),0 1px 2px rgba(0,0,0,.45),0 10px 28px -12px rgba(0,0,0,.6)"
                            :"0 1px 2px rgba(15,18,30,.05),0 8px 24px -12px rgba(15,18,30,.12)"));
       S("--shadow-2",(dark?"inset 0 1px 0 rgb(255 255 255 / .06),0 6px 16px rgba(0,0,0,.45),0 24px 60px -12px rgba(0,0,0,.65)"
@@ -3977,14 +4051,16 @@ function deckCard(r, showFolder){
   more.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><circle cx="4.5" cy="10" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="15.5" cy="10" r="1.5"/></svg>';
   more.onclick = e => { e.stopPropagation(); popMenu(more, [
     ["Open", () => openDeck(d.id)],
+    ["Study", () => studyDeck(d.id)],
     ["Rename", async () => { await openDeck(d.id); if(DECK && DECK.id === d.id && DECK.kind !== "skill") $("btn-rename").click(); }],
     ["Move to…", () => moveMenu(more, d)],
     ["Delete", () => deleteDeckById(d.id, d.name), true]]); };
-  top.append(name, el("span", "duepill" + (due ? "" : " zero"), due ? due + " due" : "Up to date"), more);
+  top.append(name, more);
   if(showFolder && f) c.appendChild(el("p", "dcfold", f.name));
   c.appendChild(top);
   c.appendChild(progressBar(r));
   const foot = el("div", "dcfoot");
+  foot.appendChild(el("span", "duepill" + (due ? "" : " zero"), due ? due + " due" : ""));
   const st = el("span", "dcstat", deckStatus(r));
   const go1 = el("button", "btn sm", d.kind === "skill" ? "Open" : "Study");
   go1.onclick = e => { e.stopPropagation(); studyDeck(d.id); };
@@ -9723,6 +9799,12 @@ $("nav-new").onclick = showNew;
 $("nav-library").onclick = () => renderLibrary();
 $("nav-review").onclick = () => renderReview();
 $("nav-backups").onclick = () => renderBackups();
+$("top-ask").onclick = () => DECK ? openChat(CHAT.focus) : toast("Open a deck first, then ask");
+$("top-theme").onclick = () => Theme.set(Theme.resolved() === "dark" ? "light" : "dark");
+$("top-search").onkeydown = e => {
+  if(e.key === "Enter"){ const q = e.target.value.trim(); $("nav-library").click();
+    setTimeout(() => { const s = $("lib-search"); if(s){ s.value = q; s.dispatchEvent(new Event("input")); } }, 60); }
+};
 $("nav-settings").onclick = () => renderSettings();
 $("home-lib").onclick = () => renderLibrary();
 $("lib-new").onclick = showNew;
