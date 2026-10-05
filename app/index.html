@@ -409,7 +409,7 @@ textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var
 .sp-track.low i{background:var(--miss)}
 /* ---- exam ---- */
 /* ---- ask the teacher ---- */
-.askbtn{position:fixed;right:20px;bottom:20px;z-index:60;background:var(--live);color:var(--on-live);
+.askbtn{display:none !important;position:fixed;right:20px;bottom:20px;z-index:60;background:var(--live);color:var(--on-live);
         border:0;border-radius:100px;padding:13px 20px;font-family:var(--display);font-weight:600;
         font-size:.92em;cursor:pointer;box-shadow:var(--shadow-2);transition:.15s;display:none}
 .askbtn.on{display:block}
@@ -1404,14 +1404,23 @@ textarea:focus,input:focus,select:focus{outline:0;border-color:var(--ink);box-sh
 .gitem{background:none;border:0;border-left:0;border-bottom:1px solid var(--rule);border-radius:0;
   padding:28px 0 26px;box-shadow:none}
 .ghead h4{font-family:var(--display);font-weight:700;font-size:1.18em;letter-spacing:-.015em}
-.gblock{background:none;border:0;padding:0;margin-top:16px}
+/* the reading column keeps the mockup's measure, so lines stay readable */
+.gblock{background:none;border:0;padding:0;margin-top:16px;max-width:620px}
+.gitem .gchips,.gitem .gsteps{max-width:620px}
+/* the jump-to bar is a hairline bar, not a second panel (mockup .tocbar) */
+.gbar{background:none;border:0;border-bottom:1px solid var(--rule);border-radius:0;
+  box-shadow:none;padding:0 0 14px;margin:0 0 30px;gap:12px}
+.gbar input{max-width:520px}
+.glegend{gap:16px}
 .gblock b.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
   color:var(--ink-3);font-weight:400;margin-bottom:5px;display:block}
 .gex,.gdef,.gdeep{background:none;border:0}
 .gwarn{background:var(--hp);color:var(--hpi);border:0;border-radius:2px;padding:12px 14px;
   font-family:var(--body);font-size:.94em;line-height:1.55}
 .gwarn b.lbl{color:inherit;opacity:.7}
-.gterm,.hterm{background:var(--hy);color:var(--hyi);border:0;border-radius:2px;padding:1px 2px;
+/* a cross-link in the guide is a highlight; a blank slot in a question is the app's own
+   token and keeps its dashed outline, so it still reads as something to fill in */
+.gterm{background:var(--hy);color:var(--hyi);border:0;border-radius:2px;padding:1px 2px;
   font-weight:inherit}
 .gpill{background:none;border:0;padding:0;font-family:var(--mono);font-size:11px;
   letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);display:inline-flex;
@@ -1548,9 +1557,12 @@ textarea:focus,input:focus,select:focus{outline:0;border-color:var(--ink);box-sh
   font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.04em;min-height:44px;
   padding:0;margin-right:14px;color:var(--ink);cursor:pointer;flex:0 0 auto;white-space:nowrap}
 .brand span{display:inline-block}
-/* the mockup's wordmark: MonoSpace with the underscore in the accent */
-.brand i{font-style:normal;color:var(--live);margin-left:-2px;font-family:var(--mono);
-  font-weight:500;font-size:.9em;line-height:1}
+/* the mockup's wordmark: MonoSpace with the underscore in the accent. Drawn rather than
+   set, so it is the same bar at every size and in every font fallback. */
+.brand i{font-size:0;line-height:0;display:inline-block;width:11px;height:3px;border-radius:1px;
+  background:var(--live);margin-left:1px;align-self:baseline;position:relative;top:1px}
+/* the page carries its own breadcrumb; the bar does not need a second one */
+.appbar .crumb{display:none}
 .brandlogo{align-self:center}
 .brandlogo{width:26px;height:26px;border-radius:7px;box-shadow:none}
 .nl{min-height:44px;padding:0 11px;flex:0 0 auto;white-space:nowrap;border:0;background:transparent;color:var(--ink-2);font-weight:500;
@@ -1565,7 +1577,7 @@ textarea:focus,input:focus,select:focus{outline:0;border-color:var(--ink);box-sh
 .burger:hover{color:var(--ink);background:transparent}
 .appbar .crumb{padding-left:12px;margin-left:6px;border-left:1px solid var(--rule);max-width:30ch;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.srch{display:flex;align-items:center;gap:9px;min-height:44px;width:190px;flex:0 1 190px;padding:0 12px;
+.srch{display:flex;align-items:center;gap:9px;min-height:44px;width:212px;flex:0 1 212px;padding:0 13px;
   border:1px solid var(--rule);border-radius:10px;background:var(--surface);color:var(--ink-2)}
 .srch input{border:0;outline:0;background:transparent;font:inherit;color:var(--ink);flex:1;min-width:0;
   min-height:auto;padding:0}
@@ -1591,6 +1603,41 @@ main{grid-column:auto;min-width:0}
 .nav.on{transform:none}
 .page{max-width:1200px;margin:0 auto;padding:48px 32px 96px}
 @media(max-width:640px){.page{padding:30px 16px 90px}}
+
+/* ---- spacing, to the mockup's rhythm (DESIGN.md 2.4) -------------------
+   page padding 48/32/96, sections 56px apart, a section head 24px above its
+   content, panels 28px inside.                                            */
+.page{padding:48px 32px 96px}
+@media(max-width:640px){.page{padding:30px 16px 90px}}
+.phead{margin:0 0 32px}
+.card,.panel{padding:28px}
+.card+.card{margin-top:20px}
+/* a section head opens a section: 56px above it, 24px below */
+.sechead,.setsec{margin:56px 0 24px}
+.page>.sechead:first-child,.page>*:first-child+.sechead{margin-top:0}
+.phead+.sechead,.today+.sechead{margin-top:56px}
+/* the blocks a section head introduces must not add their own bottom rule */
+.glance{border-bottom:0;padding-bottom:0;margin-bottom:0}
+.cgrid{margin-bottom:0}
+.libbar{margin:0 0 40px}
+.libsec{margin:0 0 56px}
+.libsec:last-child{margin-bottom:0}
+#wallsec{margin-top:0}
+.wall{margin-top:0}
+/* the deck page: the title is on the page, not in a panel (mockup 5.2) */
+.dhero{background:none;border:0;border-radius:0;box-shadow:none;padding:0;margin:0 0 34px}
+.dtop{align-items:end;padding-bottom:22px;border-bottom:1px solid var(--rule)}
+.dactions{margin-top:20px;padding-top:0;border-top:0}
+.tabs{margin:34px 0 28px}
+#t-overview>.stats{margin-bottom:0;border-bottom:0;padding-bottom:0}
+#t-overview>.card{margin-top:34px}
+#t-overview>.stats+.card{margin-top:34px}
+/* rows keep the mockup's heights */
+.tr,.kv,.actrow{min-height:68px}
+.sr{min-height:76px;padding:20px 0}
+/* the cover label carries a quiet second line, as the mockup's does */
+.dcname small{display:block;font-family:var(--mono);font-weight:400;font-size:10.5px;
+  color:#5C5A52;letter-spacing:.04em;margin-top:5px;text-transform:none}
 
 /* ---- motion ------------------------------------------------------------ */
 @media (prefers-reduced-motion:reduce){
@@ -1626,7 +1673,7 @@ main{grid-column:auto;min-width:0}
     <span style="flex:1"></span>
     <label class="srch"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-      <input id="top-search" placeholder="Search decks" aria-label="Search decks">
+      <input id="top-search" placeholder="Search" aria-label="Search decks">
       <span class="kbd">Ctrl K</span></label>
     <button class="btn" id="top-ask"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1903,30 +1950,6 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
         <button class="tab" data-tab="manage" aria-selected="false">Manage</button>
       </div>
       <div id="t-overview">
-        <div class="card" id="stk-card" style="margin-bottom:18px">
-          <div style="margin-bottom:16px">
-            <p class="eyebrow" style="margin:0 0 4px">Stickies — your wall</p>
-            <p class="sub" style="margin:0" id="stk-count">Jot something you keep forgetting. It stays
-              with this deck and shows up on your wall.</p>
-          </div>
-          <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:22px">
-            <div style="flex:1 1 280px;min-width:0">
-              <label class="f" for="stk-text">New sticky</label>
-              <textarea id="stk-text" style="min-height:84px;font-family:var(--body);font-size:1em"
-                        placeholder="Left smaller, right larger. Say it out loud."></textarea>
-            </div>
-            <div class="row" style="gap:4px">
-              <div class="row" style="gap:0" id="stk-colors" role="group" aria-label="Sticky colour">
-                <button class="cdot" data-stk="y" aria-pressed="true" aria-label="Yellow"><span class="cd y"></span></button>
-                <button class="cdot" data-stk="p" aria-pressed="false" aria-label="Pink"><span class="cd p"></span></button>
-                <button class="cdot" data-stk="b" aria-pressed="false" aria-label="Blue"><span class="cd b"></span></button>
-                <button class="cdot" data-stk="g" aria-pressed="false" aria-label="Green"><span class="cd g"></span></button>
-              </div>
-              <button class="btn" id="stk-add">Stick it</button>
-            </div>
-          </div>
-          <div class="wall" id="stk-wall"></div>
-        </div>
         <div class="stats">
           <div class="stat"><b>Due now</b><s id="k-due">0</s></div>
           <div class="stat"><b>New</b><s id="k-new">0</s></div>
@@ -1954,6 +1977,30 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
         <div class="card">
           <p class="eyebrow">Concept board — one square per concept</p>
           <div class="lamps" id="d-lamps"></div>
+        </div>
+        <div class="card" id="stk-card" style="margin-bottom:18px">
+          <div style="margin-bottom:16px">
+            <p class="eyebrow" style="margin:0 0 4px">Stickies — your wall</p>
+            <p class="sub" style="margin:0" id="stk-count">Jot something you keep forgetting. It stays
+              with this deck and shows up on your wall.</p>
+          </div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:22px">
+            <div style="flex:1 1 280px;min-width:0">
+              <label class="f" for="stk-text">New sticky</label>
+              <textarea id="stk-text" style="min-height:84px;font-family:var(--body);font-size:1em"
+                        placeholder="Left smaller, right larger. Say it out loud."></textarea>
+            </div>
+            <div class="row" style="gap:4px">
+              <div class="row" style="gap:0" id="stk-colors" role="group" aria-label="Sticky colour">
+                <button class="cdot" data-stk="y" aria-pressed="true" aria-label="Yellow"><span class="cd y"></span></button>
+                <button class="cdot" data-stk="p" aria-pressed="false" aria-label="Pink"><span class="cd p"></span></button>
+                <button class="cdot" data-stk="b" aria-pressed="false" aria-label="Blue"><span class="cd b"></span></button>
+                <button class="cdot" data-stk="g" aria-pressed="false" aria-label="Green"><span class="cd g"></span></button>
+              </div>
+              <button class="btn" id="stk-add">Stick it</button>
+            </div>
+          </div>
+          <div class="wall" id="stk-wall"></div>
         </div>
       </div>
       <div id="t-guide" class="hide">
@@ -4044,6 +4091,7 @@ function deckCard(r, showFolder){
   c.style.setProperty("--cloth", clothOf(d));
   const top = el("div", "dctop");
   const name = el("button", "dcname", d.name);
+  if(d.nCon) name.appendChild(el("small", "", plural(d.nCon, d.kind === "skill" ? "lesson" : "concept")));
   name.title = "Open " + d.name;
   name.onclick = () => openDeck(d.id);
   const more = el("button", "dcmore");
