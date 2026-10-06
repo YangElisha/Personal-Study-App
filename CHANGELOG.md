@@ -4,6 +4,13 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Changed — the logo (redesign 2.0, 2026-10-06)
+- The header logo is now the wordmark and a solid cursor in the theme's accent ("MonoSpace▌"),
+  chosen from three mock-ups. It replaces the purple orb image (from the old dark design) and the
+  loose underscore that sat apart from the word. Drawn in CSS and sized in em, so it lines up at
+  any text size and takes each theme's accent. The app icon, installer icon and loading screen
+  still use the orb.
+
 ### Fixed / added — clean-up before going public (2026-10-01)
 - **Removed the Claude.ai leftovers**: the hidden "Anthropic API key" card, its storage and its
   buttons (never used since the local port; anything a browser may hold is left alone), and the

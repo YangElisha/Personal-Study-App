@@ -1557,10 +1557,13 @@ textarea:focus,input:focus,select:focus{outline:0;border-color:var(--ink);box-sh
   font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.04em;min-height:44px;
   padding:0;margin-right:14px;color:var(--ink);cursor:pointer;flex:0 0 auto;white-space:nowrap}
 .brand span{display:inline-block}
-/* the mockup's wordmark: MonoSpace with the underscore in the accent. Drawn rather than
-   set, so it is the same bar at every size and in every font fallback. */
-.brand i{font-size:0;line-height:0;display:inline-block;width:11px;height:3px;border-radius:1px;
-  background:var(--live);margin-left:1px;align-self:baseline;position:relative;top:1px}
+/* The logo (2026-10-06): the wordmark and a solid cursor in the accent, like a terminal caret
+   at the end of a line. Drawn, not typed, and sized in em, so it sits on the text at any size
+   and in every theme (it takes the theme's accent). */
+.brand{align-items:center;gap:0;font-size:22px;font-weight:800;letter-spacing:-.045em;line-height:1}
+.brand .bw{line-height:1}
+.brand .caret{display:inline-block;width:.44em;height:.74em;margin-left:.13em;border-radius:.07em;
+  background:var(--live);transform:translateY(.03em);flex:none}
 /* the page carries its own breadcrumb; the bar does not need a second one */
 .appbar .crumb{display:none}
 .brandlogo{align-self:center}
@@ -1658,8 +1661,7 @@ main{grid-column:auto;min-width:0}
 
 <header class="appbar">
   <div class="navin">
-    <button class="brand" id="brand" title="Home"><img class="brandlogo" src="vendor/brand/logo-128.png"
-      alt="" onerror="this.hidden=true"><span>MonoSpace</span><i>_</i></button>
+    <button class="brand" id="brand" title="Home" aria-label="MonoSpace, home"><span class="bw">MonoSpace</span><span class="caret" aria-hidden="true"></span></button>
     <button class="nl" id="nav-home"><span>Home</span></button>
     <button class="nl" id="nav-library"><span>Library</span></button>
     <button class="nl" id="nav-review"><span>Review</span><em class="navcount hide" id="nav-duecount"></em></button>
