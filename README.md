@@ -76,7 +76,7 @@ recover, but it's better not to need them. The choice is saved in
 `%APPDATA%\MonoSpace\settings.env`, which has the same settings as the developer `.env` (open it in
 Notepad to change them, then restart MonoSpace).
 
-MonoSpace opens in its own window. Closing it stops MonoSpace (it asks first if a deck is still
+MonoSpace opens full screen in its own window (**F11** leaves full screen and goes back in). Closing it stops MonoSpace (it asks first if a deck is still
 being built). Starting it again while it's open brings the open window to the front. New versions
 are announced inside the app (see [Updates](docs/RELEASING.md)). You need Microsoft Edge (built into Windows);
 without it, MonoSpace opens in your default browser. Logs are in `%LOCALAPPDATA%\MonoSpace\logs`.

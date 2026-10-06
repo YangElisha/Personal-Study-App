@@ -11099,6 +11099,22 @@ $("btn-folder").onclick = async () => {
   LIB.folders.push(nf); await store.set("library", LIB); renderNav();
   refreshView();
 };
+/* FULL SCREEN (2026-10-06): the desktop window opens full screen. F11 leaves it and goes back in.
+   Only the desktop window has window.pywebview; in a browser F11 is the browser's own. */
+document.addEventListener("keydown", e => {
+  const api = window.pywebview && window.pywebview.api;
+  if(e.key !== "F11" || !api || !api.toggle_fullscreen) return;
+  e.preventDefault();
+  api.toggle_fullscreen().then(on => toast(on ? "Full screen — F11 to leave it" : "Windowed — F11 for full screen"));
+});
+window.addEventListener("pywebviewready", async () => {
+  try{
+    if(!(await window.pywebview.api.is_fullscreen())) return;
+    if(localStorage.getItem("ms-f11-told")) return;       // said once on this PC, then never again
+    localStorage.setItem("ms-f11-told", "1");
+    toast("Full screen — press F11 to leave it, Alt+F4 to close");
+  }catch(e){}
+});
 /* Teach it back */
 $("btn-explain").onclick = () => { leaveMode(); openTeachBack(); };
 $("tb-start").onclick = () => tbBegin();

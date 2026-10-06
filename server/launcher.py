@@ -279,10 +279,28 @@ def package_version(name: str) -> str:
         return "?"
 
 
-# How the window opens (2026-10-06): filling the screen, not parked in a corner. It used to be a
-# fixed 1400x900 wherever Windows felt like putting it. MONOSPACE_WINDOW=window opens it as a
-# normal window instead; either way the restored size is centred on the screen you work on.
-WINDOW_MODE = os.environ.get("MONOSPACE_WINDOW", "maximized").strip().lower()
+# How the window opens (2026-10-06): full screen — nothing but MonoSpace, no title bar, no taskbar.
+# It used to be a fixed 1400x900 wherever Windows felt like putting it. F11 leaves full screen and
+# goes back into it (the page asks through WindowApi below); out of it, the window is centred on
+# the screen you work on. MONOSPACE_WINDOW=maximized or =window opens it that way instead.
+WINDOW_MODE = os.environ.get("MONOSPACE_WINDOW", "fullscreen").strip().lower()
+
+
+class WindowApi:
+    """What the page may ask of its own window. Reached as window.pywebview.api in the app."""
+
+    def __init__(self) -> None:
+        self._win = None
+        self.fullscreen = WINDOW_MODE == "fullscreen"
+
+    def toggle_fullscreen(self) -> bool:
+        if self._win is not None:
+            self._win.toggle_fullscreen()
+            self.fullscreen = not self.fullscreen
+        return self.fullscreen
+
+    def is_fullscreen(self) -> bool:
+        return self.fullscreen
 
 
 def work_area() -> tuple[int, int, int, int]:
@@ -321,9 +339,12 @@ def native_window(url: str, profile: Path) -> bool:
         webview.settings["ALLOW_DOWNLOADS"] = True          # "Download backup"
         webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
         w, h, x, y = window_box(1400, 900)
+        api = WindowApi()
         win = webview.create_window(APP, url, width=w, height=h, min_size=(900, 600),
-                                    maximized=WINDOW_MODE != "window", x=x, y=y,
+                                    fullscreen=WINDOW_MODE == "fullscreen",
+                                    maximized=WINDOW_MODE == "maximized", x=x, y=y, js_api=api,
                                     background_color="#000000", text_select=True)
+        api._win = win
         win.events.closing += lambda: ok_to_close(url)      # False keeps the window open
         from server import update
         update.QUIT_HOOK = win.destroy                       # an update closes the window, then installs

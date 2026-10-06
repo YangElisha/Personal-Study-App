@@ -4,6 +4,15 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+## 2.0.2 — 2026-10-06
+
+### Changed — MonoSpace opens full screen (redesign 2.0, 2026-10-06)
+- The desktop window opens **full screen**: nothing but MonoSpace, no title bar, no taskbar. 2.0.1
+  opened it maximized, which still left both. **F11** leaves full screen (to a centred window with its
+  title bar) and goes back in; Alt+F4 closes. Said once, in a toast, the first time on a PC.
+- `MONOSPACE_WINDOW=maximized` or `=window` in the settings file opens it that way instead.
+
+
 ## 2.0.1 — 2026-10-06
 
 ### Fixed — the window opens filling the screen (redesign 2.0, 2026-10-06)
