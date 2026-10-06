@@ -1566,6 +1566,52 @@ textarea:focus,input:focus,select:focus{outline:0;border-color:var(--ink);box-sh
 
 /* ---- STICKY NOTES (mockup .sticky) ------------------------------------ */
 .wall{display:flex;flex-wrap:wrap;gap:28px 24px}
+/* the pinboard: a tab on the right edge, a board that slides out, notes that float */
+.pintab{position:fixed;right:0;top:38vh;z-index:60;display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:16px 9px;border:1px solid var(--rule);border-right:0;border-radius:12px 0 0 12px;background:var(--surface);
+  color:var(--ink);cursor:pointer;box-shadow:-6px 8px 18px -12px rgb(0 0 0 / .35);transition:padding .2s,background .2s}
+.pintab:hover{padding-right:14px;background:var(--surface-2)}
+.pintab .pt-t{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.02em}
+.pintab .pt-n{font-style:normal;font-family:var(--mono);font-size:11px;background:#FFE680;color:#2E2600;border-radius:99px;padding:3px 6px;
+  writing-mode:vertical-rl;transform:rotate(180deg)}
+.pintab .pt-n.soon{background:var(--miss);color:#fff}
+.pinscrim{position:fixed;inset:0;z-index:61;background:rgb(0 0 0 / .18);opacity:0;pointer-events:none;transition:opacity .2s}
+.pinscrim.on{opacity:1;pointer-events:auto}
+.pinboard{position:fixed;top:0;right:0;bottom:0;width:min(380px,92vw);z-index:62;display:flex;flex-direction:column;
+  background:#C9A87A;background:color-mix(in srgb,#B98B55 55%,var(--bg));border-left:1px solid var(--rule);
+  box-shadow:-18px 0 40px -20px rgb(0 0 0 / .45);transform:translateX(104%);transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+.pinboard.on{transform:none}
+.pb-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px;background:var(--surface);border-bottom:1px solid var(--rule)}
+.pb-head b{display:block;font-family:var(--display);font-size:1.2em}
+.pb-head small{color:var(--ink-2);font-size:.82em}
+.pb-head .x{background:none;border:0;font-size:1.5em;color:var(--ink-2);cursor:pointer;line-height:1}
+.pb-body{flex:1;overflow-y:auto;padding:16px 18px 30px}
+.pb-new{background:var(--surface);border-radius:12px;padding:12px 14px;margin:0 0 18px;box-shadow:0 6px 14px -10px rgb(0 0 0 / .4)}
+.pb-new summary{cursor:pointer;font-weight:700;font-family:var(--display)}
+.pb-new textarea{width:100%;min-height:70px;margin:10px 0 8px;font:inherit}
+.pb-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 10px}
+.pb-row select{flex:1;min-width:0}
+.pb-date{display:flex;gap:6px;align-items:center;font-size:.88em;color:var(--ink-2)}
+.pb-date input{padding:6px 8px;min-height:0}
+.pb-sec{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#3B2A14;margin:6px 0 10px;font-weight:600}
+.pb-list{display:flex;flex-direction:column;gap:14px;margin:0 0 18px}
+.pb-empty{color:#3B2A14;font-size:.9em;line-height:1.5}
+.pnote.sticky{width:auto;padding:14px 14px 10px;cursor:default}
+.pb-drag .pnote{cursor:grab}
+.pnote.dragging{opacity:.5}
+.pnote.past{opacity:.55}
+.pn-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.pn-when{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.04em}
+.pn-when.soon{background:rgb(0 0 0 / .78);color:#fff;border-radius:5px;padding:2px 6px}
+.pn-tools{display:flex;gap:12px;justify-content:flex-end;opacity:.0;transition:opacity .15s}
+.pnote:hover .pn-tools,.pnote:focus-within .pn-tools,.pnote.floating .pn-tools{opacity:1}
+.pn-b{background:none;border:0;padding:4px 0;font:inherit;font-size:.78em;color:inherit;opacity:.75;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.pn-b:hover{opacity:1}
+#floatnotes .floating{position:fixed;z-index:58;width:236px;cursor:grab;touch-action:none;
+  box-shadow:0 22px 34px -18px rgb(0 0 0 / .6),0 2px 4px rgb(0 0 0 / .15);animation:ms-stick .45s cubic-bezier(.2,.8,.2,1)}
+#floatnotes .floating.held{cursor:grabbing;box-shadow:0 30px 44px -18px rgb(0 0 0 / .6)}
+@keyframes ms-stick{from{opacity:0;transform:scale(.8) rotate(-6deg)}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.pinboard{transition:none}#floatnotes .floating{animation:none}}
 .sticky{position:relative;padding:28px 18px 16px;border-radius:2px 2px 16px 2px;width:232px;
   box-shadow:0 16px 22px -16px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.14);
   display:flex;flex-direction:column;gap:8px;transition:transform .15s}
@@ -1703,6 +1749,8 @@ main{grid-column:auto;min-width:0}
 .libsec:last-child{margin-bottom:0}
 #wallsec{margin-top:0}
 .wall{margin-top:0}
+.rvsoon{display:inline-block;align-self:flex-start;width:fit-content;margin-top:4px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.04em;
+  background:#FFE680;color:#2E2600;border-radius:5px;padding:2px 7px}
 /* the deck page: the title is on the page, not in a panel (mockup 5.2) */
 .dhero{background:none;border:0;border-radius:0;box-shadow:none;padding:0;margin:0 0 34px}
 .dtop{align-items:end;padding-bottom:22px;border-bottom:1px solid var(--rule)}
@@ -2767,6 +2815,40 @@ Availability: Information is there when it is needed"></textarea>
 </div>
 <div class="updscreen hide" id="updscreen"><div><b>Updating MonoSpace…</b>
   <p>It closes now, installs the new version and opens again by itself — about half a minute.<br>Your decks and progress are not touched.</p></div></div>
+<button class="pintab" id="pintab" aria-controls="pinboard" aria-expanded="false" title="Your pinboard: notes, quizzes and exams">
+  <span class="pt-t">Pinboard</span><em class="pt-n hide" id="pintab-n"></em></button>
+<div class="pinscrim" id="pinscrim"></div>
+<aside class="pinboard" id="pinboard" aria-label="Pinboard">
+  <div class="pb-head"><div><b>Pinboard</b><small>Reminders, quizzes and exams. Drag a note to reorder it.</small></div>
+    <button class="x" id="pb-close" aria-label="Close">&times;</button></div>
+  <div class="pb-body">
+    <details class="pb-new" id="pb-new">
+      <summary>+ New note</summary>
+      <textarea id="pb-text" placeholder="e.g. Quiz on process models — know waterfall vs incremental"></textarea>
+      <div class="pb-row">
+        <div class="seg" id="pb-kind" role="group" aria-label="What is it">
+          <button type="button" data-k="" aria-pressed="true">Note</button>
+          <button type="button" data-k="quiz" aria-pressed="false">Quiz</button>
+          <button type="button" data-k="exam" aria-pressed="false">Exam</button>
+        </div>
+        <label class="pb-date">On <input type="date" id="pb-date"></label>
+      </div>
+      <div class="pb-row">
+        <select id="pb-for" aria-label="Attach to"></select>
+        <div class="row" style="gap:0" id="pb-colors" role="group" aria-label="Colour">
+          <button class="cdot" data-c="y" aria-pressed="true" aria-label="Yellow"><span class="cd y"></span></button>
+          <button class="cdot" data-c="p" aria-pressed="false" aria-label="Pink"><span class="cd p"></span></button>
+          <button class="cdot" data-c="b" aria-pressed="false" aria-label="Blue"><span class="cd b"></span></button>
+          <button class="cdot" data-c="g" aria-pressed="false" aria-label="Green"><span class="cd g"></span></button>
+        </div>
+      </div>
+      <button class="btn sm" id="pb-add">Pin it</button>
+    </details>
+    <div id="pb-soon"></div>
+    <div id="pb-notes"></div>
+  </div>
+</aside>
+<div id="floatnotes" aria-label="Notes kept on screen"></div>
 <div class="hovercard" id="hovercard"></div>
 <div class="swatchpop" id="swatchpop"></div>
 <div class="popmenu" id="popmenu" role="menu"></div>
@@ -4180,6 +4262,7 @@ function dropTarget(node, fid, onEnter){
   });
 }
 async function renderNav(){
+  if(LIB){ try{ renderPinboard(); renderFloatNotes(); }catch(e){} }
   const mine = ++navToken;
   const rows = await deckRows();
   if(mine !== navToken) return;
@@ -4639,7 +4722,9 @@ async function renderReview(){
   go("v-review", "Review");
   const rows = await deckRows();
   if(mine !== homeToken) return;
-  const due = rows.filter(r => r.due > 0).sort((a,b) => b.due - a.due);
+  const soonBy = upcomingByDeck();
+  const due = rows.filter(r => r.due > 0).sort((a,b) =>
+    ((soonBy[a.d.id] || {days:99}).days - (soonBy[b.d.id] || {days:99}).days) || b.due - a.due);
   const total = due.reduce((a,r) => a + r.due, 0);
   $("rv-title").textContent = total ? plural(total, "term") + " to review" : "All caught up";
   const body = $("rv-body"); body.replaceChildren();
@@ -4659,6 +4744,8 @@ async function renderReview(){
     const nm = el("button", "rvname", r.d.name); nm.onclick = () => openDeck(r.d.id);
     mid.append(nm, el("span", "rvfold", (f ? f.name : "—") + " · " + deckStatus(r)));
     const n = el("span", "duepill", r.due + " to review");
+    const up = soonBy[r.d.id];
+    if(up) mid.appendChild(el("span", "rvsoon", kindName(up.kind) + " " + (up.days === 0 ? "today" : up.days === 1 ? "tomorrow" : "in " + up.days + " days")));
     const b = el("button", "btn sm", "Review"); b.onclick = () => reviewDeck(r.d.id);
     row.append(el("span", "rvdot"), mid, n, b);
     list.appendChild(row);
@@ -8670,6 +8757,159 @@ function renderStickies(){
   host.replaceChildren();
   mine.forEach(s => host.appendChild(stickyEl(s, () => { renderStickies(); renderWall(); })));
 }
+/* ============ THE PINBOARD (redesign 2.0, 2026-10-06) ============
+   The same stickies, everywhere: a tab on the right edge opens the board. A note can carry a date
+   and be a quiz or an exam ("Coming up", with a countdown) and be attached to a subject or deck —
+   whose terms then come first in Review until the date. Notes can be dragged to reorder, and
+   "kept on screen": they float over the app wherever you drag them until sent back. Stored on the
+   same stickies (LIB.stickies), with optional fields: date "YYYY-MM-DD", kind "quiz"|"exam",
+   folderId, float {x, y}. */
+let pinColor = "y", pinKind = "";
+const dayStart = d => { const t = new Date(d); t.setHours(0, 0, 0, 0); return t; };
+function daysUntil(date){ return Math.round((dayStart(date + "T00:00") - dayStart(Date.now())) / 864e5); }
+function whenLabel(date){
+  const n = daysUntil(date);
+  if(n === 0) return "today"; if(n === 1) return "tomorrow"; if(n === -1) return "yesterday";
+  if(n < 0) return (-n) + " days ago";
+  const wd = new Date(date + "T00:00").toLocaleDateString([], {weekday:"short", day:"numeric", month:"short"});
+  return n < 7 ? "in " + n + " days · " + wd : wd + " · in " + n + " days";
+}
+const kindName = k => k === "exam" ? "Exam" : k === "quiz" ? "Quiz" : "Note";
+function noteTarget(n){
+  if(n.deckId){ const d = LIB.decks.find(x => x.id === n.deckId); if(d) return d.name; }
+  if(n.folderId){ const f = LIB.folders.find(x => x.id === n.folderId); if(f) return f.name; }
+  return n.deckName || "";
+}
+/* Decks with a quiz or exam coming up in the next three weeks: deck id -> {days, kind}. */
+function upcomingByDeck(){
+  const out = {};
+  stickies().forEach(n => {
+    if(!n.date || !n.kind) return;
+    const days = daysUntil(n.date);
+    if(days < 0 || days > 21) return;
+    const ids = n.deckId ? [n.deckId] : n.folderId ? LIB.decks.filter(d => d.folderId === n.folderId).map(d => d.id) : [];
+    ids.forEach(id => { if(!out[id] || days < out[id].days) out[id] = {days, kind:n.kind}; });
+  });
+  return out;
+}
+function pinNoteEl(n, opts){
+  const d = el("div", "pnote sticky " + (n.color || "y") + (n.date && daysUntil(n.date) < 0 ? " past" : ""));
+  d.dataset.id = n.id;
+  const top = el("div", "pn-top");
+  const label = (n.kind ? kindName(n.kind) : "") + (n.date ? (n.kind ? " · " : "") + whenLabel(n.date) : "");
+  if(label) top.appendChild(el("span", "pn-when" + (n.date && daysUntil(n.date) <= 2 && daysUntil(n.date) >= 0 ? " soon" : ""), label));
+  const tgt = noteTarget(n);
+  if(tgt) top.appendChild(el("span", "sttag", tgt));
+  d.appendChild(top);
+  d.appendChild(el("span", "sttxt", n.text));
+  const tools = el("div", "pn-tools");
+  const fl = el("button", "pn-b", n.float ? "Back to board" : "Keep on screen");
+  fl.title = n.float ? "Put it back on the pinboard" : "Float this note over the app while you study";
+  fl.onclick = e => { e.stopPropagation(); toggleFloat(n); };
+  const x = el("button", "pn-b", "Remove"); x.onclick = async e => { e.stopPropagation();
+    LIB.stickies = stickies().filter(k => k.id !== n.id); await store.set("library", LIB); pinsChanged(); toast("Note removed"); };
+  tools.append(fl, x);
+  d.appendChild(tools);
+  if(opts && opts.draggable){
+    d.draggable = true;
+    d.addEventListener("dragstart", e => { d.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", n.id); });
+    d.addEventListener("dragend", () => d.classList.remove("dragging"));
+  }
+  return d;
+}
+function renderPinboard(){
+  const all = stickies();
+  const n = all.length, soonN = all.filter(k => k.date && daysUntil(k.date) >= 0 && daysUntil(k.date) <= 7).length;
+  const badge = $("pintab-n"); badge.textContent = soonN ? soonN + " soon" : n ? String(n) : "";
+  badge.classList.toggle("hide", !n); badge.classList.toggle("soon", !!soonN);
+  if(!$("pinboard").classList.contains("on")) return;
+  // attach to: nothing, the open deck, a subject
+  const sel = $("pb-for"), keep = sel.value; sel.replaceChildren();
+  const opt = (v, t) => { const o = el("option", "", t); o.value = v; sel.appendChild(o); };
+  opt("", "Not attached");
+  if(DECK && DECK.id) opt("d:" + DECK.id, "This deck: " + DECK.name);
+  orderedFolders().filter(f => !isArchive(f)).forEach(f => opt("f:" + f.id, "Subject: " + f.name));
+  if([...sel.options].some(o => o.value === keep)) sel.value = keep;
+  // coming up: dated notes, soonest first (past ones fade at the end)
+  const dated = all.filter(k => k.date).sort((a, b) => {
+    const da = daysUntil(a.date), db = daysUntil(b.date);
+    return (da < 0) - (db < 0) || (da < 0 ? db - da : da - db); });
+  const soon = $("pb-soon"); soon.replaceChildren();
+  if(dated.length){ soon.appendChild(el("p", "pb-sec", "Coming up"));
+    const list = el("div", "pb-list"); dated.forEach(k => list.appendChild(pinNoteEl(k))); soon.appendChild(list); }
+  const notes = $("pb-notes"); notes.replaceChildren();
+  const plain = all.filter(k => !k.date);
+  notes.appendChild(el("p", "pb-sec", "Notes"));
+  const list = el("div", "pb-list pb-drag");
+  plain.forEach(k => list.appendChild(pinNoteEl(k, {draggable:true})));
+  if(!plain.length) list.appendChild(el("p", "pb-empty", dated.length ? "No other notes." : "Nothing pinned yet. Add a reminder of what to focus on — or a quiz or exam with its date."));
+  // drag to reorder
+  list.addEventListener("dragover", e => {
+    const dragging = list.querySelector(".dragging"); if(!dragging) return;
+    e.preventDefault();
+    const after = [...list.querySelectorAll(".pnote:not(.dragging)")].find(c => e.clientY < c.getBoundingClientRect().top + c.offsetHeight / 2);
+    after ? list.insertBefore(dragging, after) : list.appendChild(dragging);
+  });
+  list.addEventListener("drop", async e => {
+    e.preventDefault();
+    const order = [...list.querySelectorAll(".pnote")].map(c => c.dataset.id);
+    const byId = new Map(stickies().map(k => [k.id, k]));
+    LIB.stickies = stickies().filter(k => k.date).concat(order.map(id => byId.get(id)).filter(Boolean));
+    await store.set("library", LIB); renderWall(); renderStickies();
+  });
+  notes.appendChild(list);
+}
+function renderFloatNotes(){
+  const host = $("floatnotes"); if(!host || !LIB) return;
+  host.replaceChildren();
+  stickies().filter(n => n.float).forEach(n => {
+    const d = pinNoteEl(n);
+    d.classList.add("floating");
+    const x = Math.max(8, Math.min(innerWidth - 248, n.float.x)), y = Math.max(70, Math.min(innerHeight - 120, n.float.y));
+    d.style.left = x + "px"; d.style.top = y + "px"; d.style.transform = "rotate(" + (n.tilt || 0) + "deg)";
+    // drag it anywhere on screen
+    d.addEventListener("pointerdown", e => {
+      if(e.target.closest("button")) return;
+      e.preventDefault(); d.setPointerCapture(e.pointerId); d.classList.add("held");
+      const ox = e.clientX - d.offsetLeft, oy = e.clientY - d.offsetTop;
+      const move = ev => { d.style.left = Math.max(0, Math.min(innerWidth - d.offsetWidth, ev.clientX - ox)) + "px";
+                           d.style.top = Math.max(60, Math.min(innerHeight - 60, ev.clientY - oy)) + "px"; };
+      const up = async () => { d.removeEventListener("pointermove", move); d.removeEventListener("pointerup", up); d.classList.remove("held");
+        n.float = {x:d.offsetLeft, y:d.offsetTop}; await store.set("library", LIB); };
+      d.addEventListener("pointermove", move); d.addEventListener("pointerup", up);
+    });
+    host.appendChild(d);
+  });
+}
+async function toggleFloat(n){
+  if(n.float) delete n.float;
+  else { const k = stickies().filter(x => x.float).length; n.float = {x:innerWidth - 300 - k * 24, y:110 + k * 34}; }
+  await store.set("library", LIB);
+  pinsChanged();
+  if(n.float){ closePinboard(); toast("Kept on screen — drag it anywhere. “Back to board” puts it away."); }
+}
+function pinsChanged(){ renderPinboard(); renderFloatNotes(); renderWall(); renderStickies(); }
+function openPinboard(){ $("pinboard").classList.add("on"); $("pinscrim").classList.add("on");
+  $("pintab").setAttribute("aria-expanded", "true"); renderPinboard(); }
+function closePinboard(){ $("pinboard").classList.remove("on"); $("pinscrim").classList.remove("on");
+  $("pintab").setAttribute("aria-expanded", "false"); }
+async function addPinNote(){
+  const text = $("pb-text").value.trim();
+  if(!text) return toast("Write the note first");
+  const date = $("pb-date").value || "", target = $("pb-for").value;
+  const n = {id:uid(), text, color:pinColor, tilt:stickies().length % 2 ? 1.3 : -1.1, at:Date.now()};
+  if(pinKind) n.kind = pinKind;
+  if(date) n.date = date;
+  if(target.startsWith("d:")){ const d = LIB.decks.find(x => x.id === target.slice(2));
+    if(d){ n.deckId = d.id; n.deckName = d.name; n.folderId = d.folderId; } }
+  else if(target.startsWith("f:")){ const f = LIB.folders.find(x => x.id === target.slice(2)); if(f){ n.folderId = f.id; n.deckName = f.name; } }
+  if(pinKind && !date) return toast("Give the " + kindName(pinKind).toLowerCase() + " a date");
+  stickies().unshift(n);
+  await store.set("library", LIB);
+  $("pb-text").value = ""; $("pb-date").value = "";
+  pinsChanged();
+  toast(n.date ? kindName(n.kind) + " " + whenLabel(n.date) + " — pinned" : "Pinned");
+}
 /* Make a sticky on the open deck. Used by the composer and by the teacher's answers. */
 async function pinSticky(text, tag){
   if(!DECK) return toast("Open a deck first");
@@ -8680,7 +8920,7 @@ async function pinSticky(text, tag){
     folderId: meta ? meta.folderId : null, color: stickyColor, text,
     tilt: stickies().length % 2 ? 1.3 : -1.1, at: Date.now()});
   await store.set("library", LIB);
-  renderStickies(); renderWall();
+  renderStickies(); renderWall(); renderPinboard(); renderFloatNotes();
   toast("Pinned to your wall");
 }
 async function addSticky(){
@@ -10217,6 +10457,16 @@ async function delFolder(fid){
 }
 
 $("brand").onclick = () => renderHome();
+$("pintab").onclick = () => $("pinboard").classList.contains("on") ? closePinboard() : openPinboard();
+$("pinscrim").onclick = closePinboard;
+$("pb-close").onclick = closePinboard;
+$("pb-add").onclick = addPinNote;
+$("pb-kind").onclick = e => { const b = e.target.closest("button[data-k]"); if(!b) return; pinKind = b.dataset.k;
+  document.querySelectorAll("#pb-kind button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+$("pb-colors").onclick = e => { const b = e.target.closest("button[data-c]"); if(!b) return; pinColor = b.dataset.c;
+  document.querySelectorAll("#pb-colors button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+document.addEventListener("keydown", e => { if(e.key === "Escape" && $("pinboard").classList.contains("on")) closePinboard(); });
+window.addEventListener("resize", () => renderFloatNotes());
 document.querySelectorAll(".card > .eyebrow:first-child, .card > div:first-child > .eyebrow:first-child").forEach(e => {
   if(e.children.length || e.hasAttribute("data-ainm")) return;
   const m = e.textContent.match(/^(.*?)\s+[—·]\s+(.+)$/);

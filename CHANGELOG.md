@@ -4,6 +4,18 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — the pinboard: notes everywhere, quiz and exam dates, notes that float (redesign 2.0, 2026-10-06)
+- A tab on the right edge (with a count, or "N soon" for dates this week) slides out the pinboard on every
+  screen. New note: text, Note / Quiz / Exam, a date, attach to the open deck or a subject, colour.
+  **Coming up** lists dated notes soonest first with countdowns ("Quiz · in 2 days · Thu, Oct 8"); past
+  ones fade. Undated **Notes** can be dragged to reorder. Any note can be **kept on screen**: it floats
+  over the app, draggable anywhere (position saved), until "Back to board".
+- **Review** puts decks with a quiz or exam in the next three weeks first, labelled "Quiz in 2 days".
+- Same stickies as the deck's "Stickies" card and the Home wall (LIB.stickies; new optional fields: date,
+  kind, folderId, float).
+- docs/FUTURE.md: future features, starting with "Teach it back" (you explain, an AI student asks).
+
+
 ### Changed — Settings and Backups in plain words (redesign 2.0, 2026-10-06)
 - Written for students, not developers: "Your AI helper", "While you study", "Give me more on what I
   miss", "Mark spelling strictly", "Tell me when there's a new version"… Every option is kept.
