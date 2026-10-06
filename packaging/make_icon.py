@@ -8,7 +8,7 @@ Writes:
   assets/monospace.png          512 px, same artwork as the icon
   app/vendor/brand/logo-128.png the orb + ring on a transparent background (served by the app)
   app/vendor/brand/logo-512.png
-  assets/cover.png              1600x800 README cover (orb, wordmark, tagline; splash style)
+  assets/cover.png              1600x800 README cover (notebooks, wordmark, tagline)
 
 Sizes up to 64 px are not plain downscales: the source ring is ~4 px wide at 1024, which vanishes
 when shrunk. They use a tighter crop (16-32 px), a slightly brightened orb, and a ring and moon
@@ -131,62 +131,117 @@ def tracked_width(text: str, f, track: float) -> float:
     return sum(f.getlength(ch) for ch in text) + track * (len(text) - 1)
 
 
+def notebook(w: int, h: int, cloth, label: str, ribbon: float) -> Image.Image:
+    """One notebook cover: cloth, a dark spine, a paper label, and the bookmark ribbon."""
+    im = Image.new("RGB", (w, h), cloth)
+    d = ImageDraw.Draw(im)
+    d.rectangle((0, 0, int(w * .085), h), fill=tuple(max(0, c - 26) for c in cloth))
+    d.line((int(w * .085), 0, int(w * .085), h), fill=tuple(min(255, c + 24) for c in cloth), width=2)
+    # the bookmark ribbon, as long as the deck is known
+    rx = int(w * .035)
+    d.rectangle((rx, 0, rx + int(w * .022), int(h * ribbon)), fill=(214, 160, 60))
+    # the paper label: the type is fitted to it, never spilling over the edge
+    m = int(w * .11)
+    lx0, ly0, lx1 = int(w * .17), m, w - m
+    pad = int(w * .055)
+    lines = label.split(chr(10))
+    size = max(11, int(h * .055))
+    while size > 9:
+        fl = font("schibstedgrotesk-400-800-n-latin.woff2", size, 700)
+        if max(fl.getlength(t) for t in lines) <= (lx1 - lx0) - 2 * pad:
+            break
+        size -= 1
+    step = int(size * 1.18)
+    ly1 = ly0 + int(pad * .7) + step * len(lines) + int(pad * .5)
+    d.rounded_rectangle((lx0, ly0, lx1, ly1), radius=4, fill=(243, 239, 228))
+    for i, t in enumerate(lines):
+        d.text((lx0 + pad, ly0 + int(pad * .55) + i * step), t, font=fl, fill=(22, 23, 26))
+    fm = font("ibmplexmono-400-latin.woff2", max(8, int(h * .030)))
+    d.text((lx0, ly1 + int(h * .035)), "25 CONCEPTS", font=fm, fill=(206, 202, 193))
+    # the progress rule near the foot
+    d.rectangle((int(w * .17), int(h * .80), w - m, int(h * .80) + 3), fill=(0, 0, 0))
+    d.rectangle((int(w * .17), int(h * .80), int(w * .17) + int((w - m - w * .17) * ribbon),
+                 int(h * .80) + 3), fill=(236, 233, 224))
+    return im
+
+
 def cover(src: Image.Image) -> Image.Image:
+    """The README cover: the MonoSpace look itself — ink, paper, notebooks on a shelf.
+
+    Rewritten 2026-10-06 for 2.0. It used to be the purple orb from the first branding; the app
+    has been the M-and-cursor wordmark on ink since the redesign, and the cover said otherwise.
+    """
     W, H, S = 1600, 800, 2                               # drawn at 2x, downscaled
     w, h = W * S, H * S
-    bg = Image.new("RGB", (w, h), (3, 3, 6))
-    # soft indigo glow behind the orb, and a vignette
+    INK, PAPER, ACCENT, MUTED = (16, 16, 18), (244, 241, 232), (196, 118, 55), (122, 120, 116)
+    bg = Image.new("RGB", (w, h), INK)
+    d = ImageDraw.Draw(bg)
+    # faint ruled paper, the app's own background
+    for y in range(0, h, 26 * S):
+        d.line((0, y, w, y), fill=(24, 24, 27), width=1)
+    # a warm pool of light behind the notebooks
     glow = Image.new("L", (w, h), 0)
-    ox, oy = int(w * .29), int(h * .5)
-    ImageDraw.Draw(glow).ellipse((ox - 700, oy - 700, ox + 700, oy + 700), fill=255)
-    glow = glow.filter(ImageFilter.GaussianBlur(320))
-    bg = Image.composite(Image.new("RGB", (w, h), (22, 18, 48)), bg, glow)
+    ImageDraw.Draw(glow).ellipse((int(w * .04), int(h * .10), int(w * .62), int(h * 1.05)), fill=255)
+    bg = Image.composite(Image.new("RGB", (w, h), (34, 30, 27)), bg,
+                         glow.filter(ImageFilter.GaussianBlur(170)))
     d = ImageDraw.Draw(bg)
-    rnd = random.Random(7)
-    for _ in range(300):                                 # starfield
-        x, y = rnd.random() * w, rnd.random() * h
-        r = rnd.choice([1, 1, 1, 1.5, 2, 2.5])
-        v = rnd.randint(60, 190)
-        d.ellipse((x - r, y - r, x + r, y + r), fill=(v, v, min(255, v + 18)))
-    # the faint horizon arc
-    arc = Image.new("L", (w, h), 0)
-    R = w * .62
-    acx, acy = w * .5, R + h * .06
-    ImageDraw.Draw(arc).ellipse((acx - R, acy - R, acx + R, acy + R), outline=255, width=3 * S)
-    arc_glow = arc.filter(ImageFilter.GaussianBlur(10 * S))
-    bg = Image.composite(Image.new("RGB", (w, h), (150, 150, 200)), bg,
-                         ImageChops.add(arc.point(lambda v: v * 70 // 255),
-                                        arc_glow.point(lambda v: v * 60 // 255)))
-    # the orb (screen-blended so the stars stay visible around it)
-    orb = crop(src, 0.70).resize((int(h * .92), int(h * .92)), Image.LANCZOS)
-    layer = Image.new("RGB", (w, h), (0, 0, 0))
-    layer.paste(orb, (ox - orb.width // 2, oy - orb.height // 2))
-    bg = ImageChops.screen(bg, layer)
-    # wordmark + tagline
+
+    # three notebooks standing on a shelf, the way the Library draws them
+    cloths = [(31, 58, 95), (122, 46, 44), (46, 82, 62)]
+    labels = ["Information\nAssurance", "Software\nProcesses", "Discrete\nMaths"]
+    ribbons = [.78, .46, .95]
+    nw, nh = int(w * .125), int(h * .56)
+    x, base = int(w * .075), int(h * .80)
+    for i, (cloth, label, rb) in enumerate(zip(cloths, labels, ribbons)):
+        nb = notebook(nw, nh, cloth, label, rb)
+        tilt = (-2.5, 1.5, -1.0)[i]
+        nb = nb.rotate(tilt, Image.BICUBIC, expand=True, fillcolor=INK)
+        sh = Image.new("L", (nb.width + 40 * S, nb.height + 40 * S), 0)
+        ImageDraw.Draw(sh).rectangle((20 * S, 24 * S, nb.width + 10 * S, nb.height + 30 * S), fill=150)
+        sh = sh.filter(ImageFilter.GaussianBlur(14 * S))
+        bg.paste(Image.new("RGB", sh.size, (0, 0, 0)), (x - 20 * S, base - nb.height - 20 * S), sh)
+        bg.paste(nb, (x, base - nb.height))
+        x += int(nw * 1.22)
     d = ImageDraw.Draw(bg)
-    title = "MONOSPACE"
-    tx = int(w * .55)
-    probe = font("spacegrotesk-var-latin.woff2", 100, 400)       # fit the wordmark to 38% of W
-    size = round(100 * (w * .38) / tracked_width(title, probe, 42))
-    ft = font("spacegrotesk-var-latin.woff2", size, 400)
-    tw = tracked_width(title, ft, .42 * size)
-    ty = h * .40
-    tracked(d, tx, ty, title, ft, .42 * size, (246, 246, 250))
-    sub = "SPATIAL STUDY & CONCEPT HORIZONS"
-    fs = font("ibmplexmono-400-latin.woff2", 17 * S)
-    track_s = (tw - sum(fs.getlength(c) for c in sub)) / (len(sub) - 1)   # same width as title
-    tracked(d, tx, ty + size * 1.45, sub, fs, track_s, (160, 162, 190))
-    d.line((tx, ty + size * 1.45 + 62 * S, tx + 56 * S, ty + size * 1.45 + 62 * S),
-           fill=(120, 118, 190), width=2 * S)
-    fl = font("ibmplexmono-400-latin.woff2", 14 * S)
-    tracked(d, tx, ty + size * 1.45 + 86 * S, "OFFLINE  ·  LOCAL-FIRST  ·  WINDOWS", fl,
-            2.6 * S, (112, 114, 138))
+    d.line((int(w * .06), base + 4 * S, int(w * .56), base + 4 * S), fill=(60, 58, 55), width=3 * S)
+
+    # the wordmark: MonoSpace and the accent cursor, as the app's header draws it.
+    # Sized to the column it has, so neither the word nor the cursor can run off the edge.
+    tx = int(w * .60)
+    room = int(w * .93) - tx
+    size = int(h * .135)
+    while size > 20:
+        ft = font("schibstedgrotesk-400-800-n-latin.woff2", size, 800)
+        if ft.getlength("MonoSpace") + size * .30 <= room:
+            break
+        size -= 2
+    ty = int(h * .38)
+    d.text((tx, ty), "MonoSpace", font=ft, fill=PAPER)
+    tw = ft.getlength("MonoSpace")
+    cw, ch = int(size * .20), int(size * .66)
+    d.rectangle((tx + tw + int(size * .10), ty + int(size * .32),
+                 tx + tw + int(size * .10) + cw, ty + int(size * .32) + ch), fill=ACCENT)
+
+    line = "A STUDY APP THAT RUNS ON YOUR OWN PC"
+    fsize = int(17 * S)
+    while fsize > 9 and sum(font("ibmplexmono-400-latin.woff2", fsize).getlength(c) for c in line) > tw:
+        fsize -= 1
+    fs = font("ibmplexmono-400-latin.woff2", fsize)
+    track_s = max(0.0, (tw - sum(fs.getlength(c) for c in line)) / (len(line) - 1))
+    base_y = ty + int(size * 1.30)
+    tracked(d, tx, base_y, line, fs, track_s, (176, 171, 163))
+    d.line((tx, base_y + int(size * .52), tx + 56 * S, base_y + int(size * .52)), fill=ACCENT, width=3 * S)
+    foot = "OFFLINE  ·  NO ACCOUNT  ·  WINDOWS"
+    fl = font("ibmplexmono-400-latin.woff2", int(14 * S))
+    while sum(fl.getlength(c) for c in foot) + 2.6 * S * (len(foot) - 1) > tw and fl.size > 8:
+        fl = font("ibmplexmono-400-latin.woff2", fl.size - 1)
+    tracked(d, tx, base_y + int(size * .78), foot, fl, 2.6 * S, MUTED)
     return bg.resize((W, H), Image.LANCZOS)
 
 
 # ---- the app icon (2026-10-06): "M" and the accent cursor, matching the header logo ----------
 # Drawn as shapes on a 32-unit grid (the header's wordmark + caret, as a monogram), supersampled,
-# so every size is crisp. The orb artwork above still makes the README cover and logo-*.png.
+# so every size is crisp. The orb artwork still makes logo-*.png (the loading screen).
 ICON_TILE = (27, 25, 22)          # warm near-black (the paper theme's ink)
 ICON_M = (244, 239, 230)          # paper
 ICON_CARET = (196, 118, 55)       # the accent, a touch lighter so it reads on the dark tile
