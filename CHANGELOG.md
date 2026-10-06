@@ -4,6 +4,14 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Changed — the loading screen builds the logo (redesign 2.0, 2026-10-06)
+- "M" and the accent cursor appear together (the app icon), the cursor blinks once, then
+  "onoSpace" comes out of the cursor — nearest letters first — pushing the M left until it reads
+  "MonoSpace▌"; the tagline follows and the cursor keeps blinking. About 2.5 s of animation, shown
+  at least 4.8 s; a click or any key skips it. In the colours of the theme used last time (saved
+  by Theme.apply), paper colours the first time. Reduced motion: the finished logo, no movement.
+  Replaces the dark orb-and-moons canvas animation.
+
 ### Changed — the logo (redesign 2.0, 2026-10-06)
 - The header logo is now the wordmark and a solid cursor in the theme's accent ("MonoSpace▌"),
   chosen from three mock-ups. It replaces the purple orb image (from the old dark design) and the
