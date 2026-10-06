@@ -4,6 +4,18 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — books on a shelf; bolder card titles (redesign 2.0, 2026-10-06)
+- **Books** hold subjects ("Freshman Year · Sem 1"). The Library opens with a shelf of spines (taller for
+  longer names, the count of terms to review at the foot); a spine opens its book — the cover swings open
+  and its subjects rise in. Inside: Add subjects, Finish book / Reopen, Rename, Colour, Delete book.
+  A subject is filed by dragging its title onto a spine (spines wiggle while you drag) or by ticking it.
+  **Finished** books keep everything but their terms leave "to review" (Home, Review, badges) until
+  reopened; their spines fade and get a ✓. Deleting a book never deletes subjects. The Shelf sidebar
+  groups subjects under their books. Stored additively (LIB.books, folder.bookId).
+- **Card titles**: the label that opens a card is now a bold title in ink over a strong rule; what
+  follows a dash stays quieter beside it ("Concept board · one square per concept").
+
+
 ### Added — moving a notebook is animated (redesign 2.0, 2026-10-06)
 - Dragging lifts the notebook (dimmed, tilted). On drop — or "Move to…" — it flies from its old place
   to its new one with a small arc and lands; the others slide to open or close the gap; the subject

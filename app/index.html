@@ -1079,7 +1079,68 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .libbar .chip{font-family:var(--body);text-transform:none;letter-spacing:0;font-size:.86em;padding:6px 13px;color:var(--ink-2)}
 .libbar .chip[aria-pressed="true"]{color:var(--on-live)}
+/* CARD TITLES (2026-10-06): the label that opens a card is its title — bold, in ink, over a strong
+   rule, so the parts of a page are easy to find. What follows a dash in it ("one square per
+   concept") stays quieter beside it. Small labels elsewhere are unchanged. */
+.card > .eyebrow:first-child,.card > div:first-child > .eyebrow:first-child,.card .ctitle{
+  font-family:var(--display);font-size:18px;font-weight:700;letter-spacing:-.015em;text-transform:none;
+  color:var(--ink);line-height:1.25;margin:0 0 14px !important;padding:0 0 11px;border-bottom:2.5px solid var(--ink);
+  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.card .ctail{font-family:var(--body);font-weight:400;font-size:14px;letter-spacing:0;color:var(--ink-2)}
+.card > div:first-child > .eyebrow:first-child + .sub{margin-top:0}
 .libsec{margin:0 0 40px}
+/* the shelf: books as spines on a plank (solid colours, no gradients: DESIGN.md) */
+.shelf{margin:0 0 26px}
+.shelfbar{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 8px}
+.shelfbar .eyebrow{margin:0}
+.spines{display:flex;align-items:flex-end;gap:10px;padding:18px 8px 0;min-height:150px;overflow-x:auto;overflow-y:visible;
+  border-bottom:7px solid var(--ink);border-radius:0 0 4px 4px}
+.spine{--bc:var(--ink-2);position:relative;flex:none;width:56px;border:0;border-radius:5px 5px 2px 2px;cursor:pointer;
+  background:var(--bc);color:#FFFBF2;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  padding:12px 0 10px;box-shadow:inset 6px 0 0 rgb(0 0 0 / .18),inset -4px 0 0 rgb(0 0 0 / .12);
+  transition:transform .28s cubic-bezier(.2,.8,.2,1),filter .2s,outline-color .2s;outline:3px solid transparent;outline-offset:2px}
+.spine::before,.spine::after{content:"";position:absolute;left:8px;right:6px;height:2px;background:rgb(255 255 255 / .38)}
+.spine::before{top:9px}.spine::after{bottom:30px}
+.spine:hover{transform:translateY(-6px)}
+.spine[aria-pressed="true"]{transform:translateY(-16px)}
+.spine .sp-t{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--display);font-weight:700;font-size:12.5px;
+  letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-height:calc(100% - 34px);margin-top:6px}
+.spine .sp-f{font-family:var(--mono);font-size:11px;opacity:.9}
+.spine.finished{filter:saturate(.3)}
+.spine.finished .sp-f{font-size:13px}
+.spine.loose{--bc:var(--surface-3);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--rule)}
+.spine.loose::before,.spine.loose::after{background:var(--rule)}
+.spine.ghost{background:transparent;color:var(--ink-2);box-shadow:none;border:2px dashed var(--rule)}
+.spine.ghost::before,.spine.ghost::after{display:none}
+.spine.ghost:hover{color:var(--ink);border-color:var(--ink)}
+.spine.dropon{transform:translateY(-12px);outline-color:var(--live)}
+body.filing .spine:not(.ghost){animation:ms-wiggle .9s ease-in-out infinite}
+@keyframes ms-wiggle{0%,100%{transform:translateY(-3px)}50%{transform:translateY(-8px)}}
+.shelfhint{color:var(--ink-2);font-size:.92em;line-height:1.5;max-width:52ch;margin:0 0 14px 8px;align-self:center}
+.bookdiv{font-family:var(--mono);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2);
+  margin:6px 0 16px;display:flex;align-items:center;gap:10px}
+.bookdiv::before{content:"";width:14px;height:18px;border-radius:2px;background:var(--bc,var(--rule));flex:none}
+/* an open book: its cover swings open on top of it */
+.bookhead{--bc:var(--ink-2);position:relative;perspective:1600px;margin:0 0 30px;border-radius:14px;border:1px solid var(--rule);
+  background:var(--surface);padding:22px 24px 20px 34px}
+.bookhead::before{content:"";position:absolute;left:0;top:0;bottom:0;width:12px;border-radius:14px 0 0 14px;background:var(--bc)}
+.bookhead h2{margin:2px 0 6px}
+.bookhead .row{margin-top:14px;flex-wrap:wrap}
+.bookhead.finished::after{content:"Finished";position:absolute;right:22px;top:20px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);border:1.5px solid var(--ink-2);border-radius:6px;padding:4px 8px;transform:rotate(4deg)}
+.bookcover{position:absolute;inset:-1px;border-radius:14px;background:var(--bc);transform-origin:left center;pointer-events:none;
+  z-index:3;opacity:0;display:flex;align-items:center;padding-left:34px;backface-visibility:hidden}
+.bookcover b{color:#FFFBF2;font-family:var(--display);font-size:24px;letter-spacing:-.02em}
+.bookhead.opening .bookcover{animation:ms-cover .95s cubic-bezier(.3,.7,.2,1) both}
+@keyframes ms-cover{0%{opacity:1;transform:rotateY(0)}25%{opacity:1;transform:rotateY(-8deg)}
+  80%{opacity:1}100%{opacity:0;transform:rotateY(-118deg)}}
+.libsec.rise{animation:ms-up .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes ms-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.navbook{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--rail-ink-2);
+  margin:14px 0 4px 6px;display:flex;align-items:center;gap:8px}
+.navbook::before{content:"";width:9px;height:12px;border-radius:2px;background:var(--bc,var(--rail-rule));flex:none}
+.navbook.finished{opacity:.6}
+@media (prefers-reduced-motion:reduce){.bookhead.opening .bookcover,.libsec.rise,body.filing .spine{animation:none}}
 .libsec.archive{padding-top:8px}
 .libhead{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--rule-2)}
 .lht{flex:1;min-width:0;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
@@ -1747,6 +1808,8 @@ main{grid-column:auto;min-width:0}
         <div><h1>Library</h1><p class="sub" id="lib-sub">—</p></div>
         <div class="row"><button class="btn2" id="lib-folder">New folder</button><button class="btn" id="lib-new">New deck</button></div>
       </header>
+      <div class="shelf" id="lib-shelf"></div>
+      <div id="lib-book"></div>
       <div class="libbar">
         <input type="text" id="lib-search" placeholder="Search decks" aria-label="Search decks">
         <div class="chips" id="lib-filter" role="group" aria-label="Show a subject"></div>
@@ -3993,14 +4056,30 @@ let navToken = 0, navPending = null;
 const openFolders = new Set();
 let navSeeded = false;
 function isArchive(f){ return !!f && (f.id === "f-archive" || /^archive$/i.test(String(f.name || "").trim())); }
-function orderedFolders(){ return LIB.folders.filter(f => !isArchive(f)).concat(LIB.folders.filter(isArchive)); }
+/* BOOKS (redesign 2.0, 2026-10-06): a book holds subjects ("Freshman Year · Sem 1"), the way a
+   subject holds notebooks. Stored additively: LIB.books [{id, name, color, finished}] and an
+   optional folder.bookId — a subject without one is "not in a book", so libraries from before
+   books look exactly as they did. A finished book keeps everything; its terms just stop counting
+   in "to review" (deckRows), until it's reopened. */
+function books(){ if(!Array.isArray(LIB.books)) LIB.books = []; return LIB.books; }
+function bookOf(f){ return f && f.bookId ? books().find(b => b.id === f.bookId) || null : null; }
+function deckFinished(d){ const b = bookOf(LIB.folders.find(f => f.id === d.folderId)); return !!(b && b.finished); }
+function orderedFolders(){
+  // unfinished books (in shelf order), then subjects not in a book, then finished books, then Archive
+  const bs = books();
+  const rank = f => { if(isArchive(f)) return 1e7; const b = bookOf(f); if(!b) return 5e5;
+                      return (b.finished ? 6e5 : 0) + bs.indexOf(b) * 1000; };
+  return LIB.folders.map((f, i) => [f, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
+}
 function el(tag, cls, text){ const e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined) e.textContent = text; return e; }
 function plural(n, one, many){ return n + " " + (n === 1 ? one : (many || one + "s")); }
 async function deckRows(list){
   const rows = [];
   for(const d of (list || LIB.decks)){
     const p = await progOf(d.id);
-    rows.push({d, p, done:masteredCount(p, d), due:d.kind === "skill" ? 0 : dueCount(p), last:(p && p.last) || 0});
+    const finished = deckFinished(d);
+    rows.push({d, p, done:masteredCount(p, d), due:d.kind === "skill" || finished ? 0 : dueCount(p), finished,
+               last:(p && p.last) || 0});
   }
   return rows;
 }
@@ -4102,7 +4181,7 @@ async function renderNav(){
     if(recent) openFolders.add(recent.d.folderId);
   }
   const box = document.createDocumentFragment();
-  let totalDue = 0, archiveDone = false;
+  let totalDue = 0, archiveDone = false, navBook = null;
   for(const f of orderedFolders()){
     const fi = LIB.folders.indexOf(f);
     const decks = LIB.decks.filter(d => d.folderId === f.id);
@@ -4110,6 +4189,13 @@ async function renderNav(){
     const due = decks.reduce((a,d) => a + byId[d.id].due, 0);
     totalDue += due;
     if(isArchive(f) && !archiveDone){ archiveDone = true; box.appendChild(el("div", "navrule")); }
+    if(books().length && !isArchive(f)){
+      const bk = bookOf(f), key = bk ? bk.id : "-";
+      if(key !== navBook){ navBook = key;
+        const nb = el("div", "navbook" + (bk && bk.finished ? " finished" : ""), bk ? bk.name : "Not in a book");
+        if(bk) nb.style.setProperty("--bc", bk.color);
+        box.appendChild(nb); }
+    }
     const wrap = el("div", "folder" + (openFolders.has(f.id) ? "" : " shut") + (isArchive(f) ? " archive" : ""));
     wrap.style.setProperty("--fc", colour);
     const h = el("button", "fname");
@@ -4318,24 +4404,45 @@ async function renderLibrary(){
   const rows = await deckRows();
   if(mine !== homeToken) return;
   const byId = {}; rows.forEach(r => byId[r.d.id] = r);
-  $("lib-sub").textContent = plural(LIB.decks.length, "deck") + " in " + plural(LIB.folders.length, "subject");
+  $("lib-sub").textContent = plural(LIB.decks.length, "deck") + " in " + plural(LIB.folders.length, "subject") +
+    (books().length ? " · " + plural(books().length, "book") : "");
+  if(libBook && libBook !== "loose" && !books().some(b => b.id === libBook)) libBook = null;
+  renderShelf(byId);
+  const inBook = f => libBook === null || (libBook === "loose" ? !bookOf(f) : f.bookId === libBook);
   const chips = $("lib-filter"); chips.replaceChildren();
   const chip = (label, id) => { const b = el("button", "chip", label); b.setAttribute("aria-pressed", (libFilter || "") === (id || ""));
     b.onclick = () => { libFilter = id; renderLibrary(); }; chips.appendChild(b); };
   chip("All", "");
-  orderedFolders().forEach(f => chip(f.name, f.id));
+  orderedFolders().filter(inBook).forEach(f => chip(f.name, f.id));
   const q = libQuery.trim().toLowerCase();
   const body = $("lib-body"); body.replaceChildren();
   let shown = 0;
+  let lastBook, secN = 0;
   for(const f of orderedFolders()){
+    if(!inBook(f)) continue;
     if(libFilter && f.id !== libFilter) continue;
     const fi = LIB.folders.indexOf(f);
     let decks = LIB.decks.filter(d => d.folderId === f.id);
     if(q) decks = decks.filter(d => d.name.toLowerCase().includes(q) || f.name.toLowerCase().includes(q));
     if(q && !decks.length) continue;
-    const sec = el("section", "libsec" + (isArchive(f) ? " archive" : ""));
+    // showing everything: a book's subjects sit under its name
+    const bk = bookOf(f);
+    if(libBook === null && books().length && (bk ? bk.id : "") !== lastBook){
+      lastBook = bk ? bk.id : "";
+      const lab = el("p", "bookdiv", bk ? bk.name + (bk.finished ? " · finished" : "") : "Not in a book");
+      if(bk) lab.style.setProperty("--bc", bk.color);
+      body.appendChild(lab);
+    }
+    const sec = el("section", "libsec" + (isArchive(f) ? " archive" : "") + (libOpening ? " rise" : ""));
+    if(libOpening) sec.style.animationDelay = (220 + secN++ * 70) + "ms";
     sec.style.setProperty("--fc", folderColor(f, fi));
     const h = el("div", "libhead");
+    // a subject can be filed into a book: drag its title onto a book on the shelf
+    h.draggable = true; h.title = "Drag onto a book on the shelf to file " + f.name + " in it";
+    h.addEventListener("dragstart", e => { dragFolderId = f.id; e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", f.id); document.body.classList.add("filing"); });
+    h.addEventListener("dragend", () => { dragFolderId = null; document.body.classList.remove("filing");
+      document.querySelectorAll(".spine.dropon").forEach(x => x.classList.remove("dropon")); });
     const dot = el("button", "fdot"); dot.title = "Colour for " + f.name; dot.setAttribute("aria-label", "Colour for " + f.name);
     dot.onclick = e => { e.stopPropagation(); openSwatches(e.currentTarget, f); };
     const due = decks.reduce((a,d) => a + byId[d.id].due, 0);
@@ -4365,6 +4472,154 @@ async function renderLibrary(){
     shown += decks.length;
   }
   if(q && !shown) body.appendChild(el("p", "sub", "No deck matches “" + libQuery.trim() + "”."));
+  if(!body.childNodes.length && libBook) body.appendChild(el("p", "sub",
+    libBook === "loose" ? "Every subject is in a book." : "No subjects in this book yet — use “Add subjects”, or drag a subject's title onto it."));
+  libOpening = false;
+}
+
+/* ---- the shelf: one spine per book ---------------------------------------------------- */
+let libBook = null, libOpening = false, dragFolderId = null;
+function bookStats(b, byId){
+  const fs = LIB.folders.filter(f => b === "loose" ? !bookOf(f) : f.bookId === b.id);
+  const ds = LIB.decks.filter(d => fs.some(f => f.id === d.folderId));
+  const con = ds.reduce((a, d) => a + (d.nCon || 0), 0), done = ds.reduce((a, d) => a + ((byId[d.id] || {}).done || 0), 0);
+  const due = ds.reduce((a, d) => a + ((byId[d.id] || {}).due || 0), 0);
+  return {subjects:fs.length, decks:ds.length, pct:con ? Math.round(done / con * 100) : 0, due};
+}
+function renderShelf(byId){
+  const sh = $("lib-shelf"); sh.replaceChildren();
+  const bs = books();
+  const top = el("div", "shelfbar");
+  top.appendChild(el("p", "eyebrow", bs.length ? "Your books" : "Books"));
+  if(bs.length){
+    const all = el("button", "link", libBook === null ? "" : "Show everything");
+    all.onclick = () => openBook(null); top.appendChild(all);
+  }
+  sh.appendChild(top);
+  const row = el("div", "spines");
+  const spine = (label, opts) => {
+    const b = el("button", "spine" + (opts.cls ? " " + opts.cls : ""));
+    b.setAttribute("aria-pressed", !!opts.on);
+    if(opts.color) b.style.setProperty("--bc", opts.color);
+    b.style.height = opts.h + "px";
+    b.appendChild(el("span", "sp-t", label));
+    if(opts.foot) b.appendChild(el("span", "sp-f", opts.foot));
+    b.title = opts.title || label;
+    b.onclick = opts.go;
+    if(opts.fileTo !== undefined){            // drop a subject here to file it in this book
+      b.addEventListener("dragover", e => { if(dragFolderId){ e.preventDefault(); b.classList.add("dropon"); } });
+      b.addEventListener("dragleave", () => b.classList.remove("dropon"));
+      b.addEventListener("drop", e => { if(!dragFolderId) return; e.preventDefault(); b.classList.remove("dropon");
+        const fid = dragFolderId; dragFolderId = null; fileSubject(fid, opts.fileTo); });
+    }
+    row.appendChild(b);
+    return b;
+  };
+  bs.forEach((bk, i) => {
+    const st = bookStats(bk, byId);
+    spine(bk.name, {color:bk.color, on:libBook === bk.id, cls:bk.finished ? "finished" : "",
+      h:Math.max(132, Math.min(232, 64 + bk.name.length * 7.6)) + ((i * 13) % 3) * 6,   // taller for a longer name
+      foot:bk.finished ? "✓" : (st.due ? String(st.due) : ""),
+      title:bk.name + " · " + plural(st.subjects, "subject") + " · " + st.pct + "% long-term" +
+            (bk.finished ? " · finished" : st.due ? " · " + st.due + " to review" : ""),
+      go:() => openBook(bk.id), fileTo:bk.id});
+  });
+  if(bs.length && LIB.folders.some(f => !bookOf(f) && !isArchive(f)))
+    spine("Not in a book", {cls:"loose", on:libBook === "loose", h:112, go:() => openBook("loose"), fileTo:null,
+      title:"Subjects that aren't in a book yet"});
+  spine("+ New book", {cls:"ghost", h:112, go:newBook, title:"Group subjects into a book — one per year or semester"});
+  if(!bs.length) row.appendChild(el("p", "shelfhint", "Group your subjects into books — one per year or semester. Finish a book when the semester's done: everything stays, it just stops counting in Review."));
+  sh.appendChild(row);
+  renderBookHead(byId);
+}
+function renderBookHead(byId){
+  const box = $("lib-book"); box.replaceChildren();
+  if(!libBook) return;
+  const bk = libBook === "loose" ? null : books().find(b => b.id === libBook);
+  const head = el("div", "bookhead" + (libOpening ? " opening" : "") + (bk && bk.finished ? " finished" : ""));
+  if(bk) head.style.setProperty("--bc", bk.color);
+  const cover = el("div", "bookcover"); cover.appendChild(el("b", "", bk ? bk.name : "Not in a book"));
+  const st = bookStats(bk || "loose", byId);
+  const inner = el("div", "bh-in");
+  inner.appendChild(el("p", "eyebrow", bk ? (bk.finished ? "Book · finished" : "Book") : "Loose subjects"));
+  inner.appendChild(el("h2", "", bk ? bk.name : "Not in a book"));
+  inner.appendChild(el("p", "sub", plural(st.subjects, "subject") + " · " + plural(st.decks, "notebook") + " · " + st.pct + "% long-term" +
+    (bk && bk.finished ? " — finished: its terms aren't counted in Review. Everything is still here to study." :
+     !bk ? " — drag a subject's title onto a book to file it." : "")));
+  if(bk){
+    const act = el("div", "row");
+    const btn = (label, cls, fn) => { const b = el("button", cls, label); b.onclick = fn; act.appendChild(b); };
+    btn("Add subjects", "btn2 sm", () => editBookSubjects(bk));
+    btn(bk.finished ? "Reopen book" : "Finish book", "btn2 sm", () => finishBook(bk));
+    btn("Rename", "btn2 sm", async () => { const v = await ask("Rename book", "", bk.name, "Rename");
+      if(v && v.trim()){ bk.name = v.trim().slice(0, 60); await store.set("library", LIB); renderNav(); renderLibrary(); } });
+    btn("Colour", "btn2 sm", async () => { bk.color = PALETTE[(PALETTE.indexOf(bk.color) + 1) % PALETTE.length];
+      await store.set("library", LIB); renderLibrary(); });
+    btn("Delete book", "link danger", () => deleteBook(bk));
+    inner.appendChild(act);
+  }
+  head.append(cover, inner);
+  box.appendChild(head);
+}
+function openBook(id){
+  if(libBook === id) id = null;                    // tapping the open book closes it
+  libBook = id; libFilter = null; libOpening = !!id;
+  renderLibrary();
+}
+async function newBook(){
+  const name = await ask("New book", "A book holds subjects — for example “Freshman Year · Semester 1”.", "", "Next");
+  if(!name || !name.trim()) return;
+  const subs = orderedFolders().filter(f => !isArchive(f));
+  const bk = {id:uid(), name:name.trim().slice(0, 60), color:PALETTE[books().length * 3 % PALETTE.length], finished:false, created:Date.now()};
+  let pick = [];
+  if(subs.length){
+    pick = await pickDlg("Which subjects go in “" + bk.name + "”?", "Tick them now, or add them later.",
+      subs.map(f => ({label:f.name, detail:bookOf(f) ? "now in " + bookOf(f).name : "", checked:false})),
+      {ok:"Make the book", no:"Cancel", nullOnCancel:true});
+    if(pick === null) return;
+  }
+  books().push(bk);
+  pick.forEach(i => { subs[i].bookId = bk.id; });
+  await store.set("library", LIB);
+  renderNav();
+  openBook(bk.id);
+  toast("“" + bk.name + "” is on your shelf");
+}
+async function editBookSubjects(bk){
+  const subs = orderedFolders().filter(f => !isArchive(f));
+  const pick = await pickDlg("Subjects in “" + bk.name + "”", "Tick the subjects that belong in this book.",
+    subs.map(f => ({label:f.name, detail:bookOf(f) && f.bookId !== bk.id ? "now in " + bookOf(f).name : "", checked:f.bookId === bk.id})),
+    {ok:"Save", no:"Cancel", nullOnCancel:true});
+  if(pick === null) return;
+  subs.forEach((f, i) => { if(pick.includes(i)) f.bookId = bk.id; else if(f.bookId === bk.id) delete f.bookId; });
+  await store.set("library", LIB);
+  renderNav(); renderLibrary();
+}
+async function fileSubject(fid, bookId){
+  const f = LIB.folders.find(x => x.id === fid); if(!f) return;
+  if((f.bookId || null) === (bookId || null)) return;
+  if(bookId) f.bookId = bookId; else delete f.bookId;
+  await store.set("library", LIB);
+  renderNav(); renderLibrary();
+  const bk = bookId && books().find(b => b.id === bookId);
+  toast(bk ? "Filed “" + f.name + "” in “" + bk.name + "”" : "“" + f.name + "” is no longer in a book");
+}
+async function finishBook(bk){
+  bk.finished = !bk.finished;
+  await store.set("library", LIB);
+  renderNav(); renderLibrary();
+  toast(bk.finished ? "Finished “" + bk.name + "” — its terms won't count in Review. Everything is still there."
+                    : "Reopened “" + bk.name + "” — its terms count in Review again.");
+}
+async function deleteBook(bk){
+  if(!await confirmDlg("Delete the book “" + bk.name + "”?",
+     "Only the book goes. Its subjects and notebooks stay, just not in a book.", "Delete book")) return;
+  LIB.books = books().filter(b => b.id !== bk.id);
+  LIB.folders.forEach(f => { if(f.bookId === bk.id) delete f.bookId; });
+  libBook = null;
+  await store.set("library", LIB);
+  renderNav(); renderLibrary();
+  toast("Book removed — its subjects are still here");
 }
 
 /* ============================================================
@@ -4539,7 +4794,7 @@ async function openDeck(id){
   const upcoming = DECK.concepts.map(x => PROG.m[x.id]).filter(p => p.box > 0 && !isDue(p))
                      .map(p => p.due).sort((a,b) => a-b);
   $("k-next").textContent = (c.due + c.fresh)
-    ? (c.due ? c.due + " concept" + (c.due===1?"":"s") + " ready for review" : "Nothing to review") +
+    ? (c.due ? c.due + " term" + (c.due===1?"":"s") + " ready to review" : "Nothing to review") +
       (c.fresh ? " · " + c.fresh + " never studied" : "")
     : (upcoming.length ? "All caught up. Next review " + whenText(upcoming[0] - Date.now()) + "."
                        : "Nothing scheduled yet — study this deck to start the clock.");
@@ -5555,7 +5810,7 @@ async function resolveSlides(u, pages, first, notes, say){
   return {concepts:merged, report:first.report, typo:first.typo.concat(kept.typo||[]), flags, prose:false, unsure};
 }
 /* Asks which of several items to keep. Resolves to the chosen indexes. */
-function pickDlg(title, text, options){
+function pickDlg(title, text, options, labels){
   return new Promise(res => {
     const box = $("m-extra"); box.innerHTML = ""; box.classList.remove("hide");
     const checks = options.map((o,i) => {
@@ -5568,10 +5823,12 @@ function pickDlg(title, text, options){
     });
     const cancel = $("m-cancel"), ok = $("m-ok"), oldNo = cancel.textContent;
     modalDone = v => { cancel.textContent = oldNo; box.classList.add("hide"); box.innerHTML = "";
-      res(v === true ? checks.map((c,i) => c.checked ? i : -1).filter(i => i >= 0) : []); };
+      res(v === true ? checks.map((c,i) => c.checked ? i : -1).filter(i => i >= 0)
+                     : (labels && labels.nullOnCancel ? null : [])); };
     $("m-title").textContent = title; $("m-text").textContent = text; $("m-text").classList.remove("hide");
     $("m-input").classList.add("hide");
-    ok.textContent = "Add the ticked ones"; cancel.textContent = "Leave them all out";
+    ok.textContent = (labels && labels.ok) || "Add the ticked ones";
+    cancel.textContent = (labels && labels.no) || "Leave them all out";
     $("modal").classList.add("on"); $("mscrim").classList.add("on");
   });
 }
@@ -9951,6 +10208,13 @@ async function delFolder(fid){
 }
 
 $("brand").onclick = () => renderHome();
+document.querySelectorAll(".card > .eyebrow:first-child, .card > div:first-child > .eyebrow:first-child").forEach(e => {
+  if(e.children.length || e.hasAttribute("data-ainm")) return;
+  const m = e.textContent.match(/^(.*?)\s+[—·]\s+(.+)$/);
+  if(!m) return;
+  e.textContent = m[1];
+  e.appendChild(el("span", "ctail", m[2]));
+});
 $("nav-back").onclick = () => goBack();
 // Alt+Left and the mouse's back button (WebView2 has no history of its own here)
 document.addEventListener("keydown", e => { if(e.altKey && e.key === "ArrowLeft"){ e.preventDefault(); goBack(); } });
@@ -10024,7 +10288,9 @@ $("scrim").onclick = () => { closeNav(); if(window.__closeDrawer) window.__close
 $("btn-folder").onclick = async () => {
   const n = await ask("New folder", "Group your decks by subject.", "", "Create");
   if(!n || !n.trim()) return;
-  LIB.folders.push({id:uid(), name:n.trim(), color:PALETTE[LIB.folders.length % PALETTE.length]}); await store.set("library", LIB); renderNav();
+  const nf = {id:uid(), name:n.trim(), color:PALETTE[LIB.folders.length % PALETTE.length]};
+  if(libBook && libBook !== "loose" && !$("v-library").classList.contains("hide")) nf.bookId = libBook;   // into the open book
+  LIB.folders.push(nf); await store.set("library", LIB); renderNav();
   refreshView();
 };
 $("bk-close").onclick = closeBackup;
