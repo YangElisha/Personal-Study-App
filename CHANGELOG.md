@@ -4,6 +4,18 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+## 2.0.1 — 2026-10-06
+
+### Fixed — the window opens filling the screen (redesign 2.0, 2026-10-06)
+- MonoSpace opened as a fixed 1400×900 window wherever Windows chose to put it, usually off to one
+  side. It now opens **maximized**. Restored down, it is centred on the screen you work on and never
+  larger than the space available. `MONOSPACE_WINDOW=window` opens it as a normal window instead.
+
+### Fixed — the exe showed the wrong version (redesign 2.0, 2026-10-06)
+- `MonoSpace.exe` said 1.0.0 in its Windows file properties: the version resource was kept in step by
+  hand and was missed. `packaginguild.ps1` now stamps it from `__version__` on every build.
+
+
 ## 2.0.0 — 2026-10-06
 
 ### Changed — README: every part, and how to install it (redesign 2.0, 2026-10-06)

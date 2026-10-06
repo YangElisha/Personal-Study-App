@@ -279,6 +279,36 @@ def package_version(name: str) -> str:
         return "?"
 
 
+# How the window opens (2026-10-06): filling the screen, not parked in a corner. It used to be a
+# fixed 1400x900 wherever Windows felt like putting it. MONOSPACE_WINDOW=window opens it as a
+# normal window instead; either way the restored size is centred on the screen you work on.
+WINDOW_MODE = os.environ.get("MONOSPACE_WINDOW", "maximized").strip().lower()
+
+
+def work_area() -> tuple[int, int, int, int]:
+    """The usable desktop (x, y, width, height) — the screen minus the taskbar."""
+    import ctypes
+    from ctypes import wintypes
+    rect = wintypes.RECT()
+    user32 = ctypes.windll.user32
+    if user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(rect), 0):      # SPI_GETWORKAREA
+        return rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top
+    return 0, 0, user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+
+
+def window_box(width: int, height: int) -> tuple[int, int, int | None, int | None]:
+    """The size to open at, and the top-left that centres it. (w, h, None, None) if unknown."""
+    try:
+        ox, oy, sw, sh = work_area()
+        if sw < 200 or sh < 200:
+            return width, height, None, None
+        w = max(900, min(width, sw - 80))
+        h = max(600, min(height, sh - 80))
+        return w, h, ox + (sw - w) // 2, oy + (sh - h) // 2
+    except Exception:                                   # not Windows, or no desktop to measure
+        return width, height, None, None
+
+
 def native_window(url: str, profile: Path) -> bool:
     """Show the app in a native WebView2 window; blocks until it closes. False = unavailable."""
     try:
@@ -290,7 +320,9 @@ def native_window(url: str, profile: Path) -> bool:
         profile.mkdir(parents=True, exist_ok=True)
         webview.settings["ALLOW_DOWNLOADS"] = True          # "Download backup"
         webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
-        win = webview.create_window(APP, url, width=1400, height=900, min_size=(900, 600),
+        w, h, x, y = window_box(1400, 900)
+        win = webview.create_window(APP, url, width=w, height=h, min_size=(900, 600),
+                                    maximized=WINDOW_MODE != "window", x=x, y=y,
                                     background_color="#000000", text_select=True)
         win.events.closing += lambda: ok_to_close(url)      # False keeps the window open
         from server import update
