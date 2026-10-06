@@ -4,6 +4,13 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+## 2.0.3 — 2026-10-06
+
+### Changed — full screen removed (redesign 2.0, 2026-10-06)
+- 2.0.2 opened MonoSpace borderless full screen. That is gone: it opens **maximized** again, with its
+  title bar and the taskbar. The F11 toggle and its toast went with it.
+
+
 ## 2.0.2 — 2026-10-06
 
 ### Changed — MonoSpace opens full screen (redesign 2.0, 2026-10-06)
