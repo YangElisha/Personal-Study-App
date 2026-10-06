@@ -1164,7 +1164,14 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:
 .bmodal:not(.on),.explain:not(.on),.qmodal:not(.on),.modal:not(.on){visibility:hidden}
 /* MonoSpace: drag a deck onto another subject */
 .deckbtn[draggable=true],.dcard[draggable=true]{cursor:grab}
-.dragging{opacity:.45}
+.dragging{opacity:.4;transform:scale(.96) rotate(-1deg);filter:saturate(.5);transition:transform .2s,opacity .2s,filter .2s}
+/* the notebook being flown to its new subject rides above the others */
+.flying{position:relative;z-index:6;box-shadow:0 22px 46px -12px rgba(0,0,0,.35)!important}
+/* the subject that just received a notebook */
+.libsec.received>.libhead{animation:ms-received 1.1s cubic-bezier(.2,.8,.2,1)}
+@keyframes ms-received{0%{background:color-mix(in srgb,var(--fc,var(--live)) 34%,transparent)}
+  100%{background:transparent}}
+@media (prefers-reduced-motion:reduce){.dragging{transform:none}.libsec.received>.libhead{animation:none}}
 .folder.dropon>.fname,.libsec.dropon>.libhead{background:color-mix(in srgb,var(--fc,var(--acc)) 22%,transparent);
   outline:2px dashed var(--fc,var(--acc));outline-offset:-2px;border-radius:10px}
 .libsec.dropon .cgrid{outline:2px dashed var(--fc,var(--acc));outline-offset:6px;border-radius:14px}
@@ -4003,12 +4010,52 @@ let dragDeckId = null;
 async function moveDeck(id, fid){
   const d = LIB.decks.find(x => x.id === id), f = LIB.folders.find(x => x.id === fid);
   if(!d || !f || d.folderId === fid) return;
+  const onLib = !$("v-library").classList.contains("hide");
+  const before = onLib ? flipSnapshot() : null, y = window.scrollY;
   d.folderId = fid;
   await store.set("library", LIB);
   openFolders.add(fid);
   navSoon();
-  if(!$("v-library").classList.contains("hide")) renderLibrary();
+  if(onLib){
+    await renderLibrary();
+    window.scrollTo({top:y});                  // stay where you were, don't jump to the top
+    flipPlay(before, id, fid);
+  }
   toast("Moved “" + d.name + "” to " + f.name);
+}
+/* MOVING NOTEBOOKS (redesign 2.0, 2026-10-06): the library is re-drawn after a move, so each
+   notebook's old position is measured first and it then glides from there to its new place
+   (FLIP). The moved one flies over with a little tilt and lands; the others slide to open or
+   close the gap; the subject that receives it lights up. Reduced motion: no movement. */
+const motionOK = () => !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+function flipSnapshot(){
+  const m = new Map();
+  document.querySelectorAll("#v-library [data-deckid]").forEach(e => m.set(e.dataset.deckid, e.getBoundingClientRect()));
+  return m;
+}
+function flipPlay(before, movedId, fid){
+  if(!before || !motionOK()) return;
+  const EASE = "cubic-bezier(.2,.8,.2,1)";
+  document.querySelectorAll("#v-library [data-deckid]").forEach(e => {
+    if(!e.animate) return;
+    const a = before.get(e.dataset.deckid), b = e.getBoundingClientRect();
+    if(!a){ e.animate([{opacity:0, transform:"scale(.94)"}, {opacity:1, transform:"none"}], {duration:380, easing:EASE}); return; }
+    const dx = a.left - b.left, dy = a.top - b.top;
+    if(e.dataset.deckid === movedId){
+      e.classList.add("flying");
+      const fly = e.animate([
+        {transform:`translate(${dx}px,${dy}px) scale(1.03) rotate(-1.5deg)`},
+        {transform:`translate(${dx * .5}px,${dy * .5 - 26}px) scale(1.07) rotate(2deg)`, offset:.45},
+        {transform:"translate(0,-4px) scale(1.02) rotate(-.4deg)", offset:.82},
+        {transform:"none"}], {duration:760, easing:EASE});
+      fly.onfinish = fly.oncancel = () => e.classList.remove("flying");
+    } else if(Math.abs(dx) > 1 || Math.abs(dy) > 1){
+      e.animate([{transform:`translate(${dx}px,${dy}px)`}, {transform:"none"}], {duration:560, easing:EASE});
+    }
+  });
+  const sec = document.querySelector(`#v-library [data-fid="${fid}"]`);
+  if(sec){ sec.classList.remove("received"); void sec.offsetWidth; sec.classList.add("received");
+           setTimeout(() => sec.classList.remove("received"), 1200); }
 }
 function moveMenu(anchor, d){
   const opts = orderedFolders().filter(f => f.id !== d.folderId).map(f => [f.name, () => moveDeck(d.id, f.id)]);
@@ -4016,6 +4063,7 @@ function moveMenu(anchor, d){
 }
 function dragSource(node, id){
   node.draggable = true;
+  node.dataset.deckid = id;                     // the notebook's identity for the move animation
   node.addEventListener("dragstart", e => {
     dragDeckId = id; node.classList.add("dragging");
     e.dataTransfer.effectAllowed = "move";
@@ -4028,6 +4076,7 @@ function dragSource(node, id){
 }
 function dropTarget(node, fid, onEnter){
   let depth = 0;
+  node.dataset.fid = fid;
   node.addEventListener("dragenter", e => {
     if(!dragDeckId) return;
     e.preventDefault(); depth++; node.classList.add("dropon");

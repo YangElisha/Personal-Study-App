@@ -4,6 +4,13 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — moving a notebook is animated (redesign 2.0, 2026-10-06)
+- Dragging lifts the notebook (dimmed, tilted). On drop — or "Move to…" — it flies from its old place
+  to its new one with a small arc and lands; the others slide to open or close the gap; the subject
+  that receives it lights up in its colour. The page keeps its scroll position instead of jumping to
+  the top. Reduced motion: no movement.
+
+
 ### Changed — no "due"; a Back button (redesign 2.0, 2026-10-06)
 - Nothing is "due": the student decides when to review. Every place that said "due" now says how
   many terms are ready ("135 terms to review", "32 to review", "To review", "All caught up"), with
