@@ -372,16 +372,16 @@ textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var
 .pchip:hover{border-color:var(--live);color:var(--ink)}
 .pchip i{width:12px;height:12px;border-radius:50%;display:block}
 .swatches{display:grid;gap:9px}
-.sw{display:flex;align-items:center;gap:12px;padding:9px 11px;border:1px solid var(--rule-2);
+.swatches .sw{display:flex;align-items:center;gap:12px;padding:9px 11px;border:1px solid var(--rule-2);
     border-radius:var(--rs);background:var(--surface-2)}
-.sw input[type=color]{width:36px;height:36px;padding:0;border:1px solid var(--rule);border-radius:var(--rs);
+.swatches .sw input[type=color]{width:36px;height:36px;padding:0;border:1px solid var(--rule);border-radius:var(--rs);
                       background:none;cursor:pointer;flex:0 0 auto}
-.sw input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
-.sw input[type=color]::-webkit-color-swatch{border:0;border-radius:5px}
-.sw .lab{flex:1;min-width:0}
-.sw .lab b{display:block;font-size:.88em;font-weight:500}
-.sw .lab small{font-size:.74em;color:var(--ink-3)}
-.sw input[type=text]{width:88px;flex:0 0 auto;font-family:var(--mono);font-size:.76em;padding:8px;
+.swatches .sw input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+.swatches .sw input[type=color]::-webkit-color-swatch{border:0;border-radius:5px}
+.swatches .sw .lab{flex:1;min-width:0}
+.swatches .sw .lab b{display:block;font-size:.88em;font-weight:500}
+.swatches .sw .lab small{font-size:.74em;color:var(--ink-3)}
+.swatches .sw input[type=text]{width:88px;flex:0 0 auto;font-family:var(--mono);font-size:.76em;padding:8px;
                      text-transform:uppercase}
 .slider{width:100%;accent-color:var(--live)}
 .check{display:flex;align-items:center;gap:10px;font-size:.9em;color:var(--ink-2);cursor:pointer}
@@ -1378,13 +1378,14 @@ textarea:focus,input:focus,select:focus{outline:0;border-color:var(--ink);box-sh
   color:var(--ink-2);font-weight:600;margin-bottom:-1px}
 .tab:hover{color:var(--ink)}
 .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
-/* a switch, for the on/off rows */
-.sw{width:48px;height:28px;border-radius:99px;border:0;background:var(--rule);position:relative;
+/* a switch, for the on/off rows. Buttons only: the Appearance colour rows are divs with the
+   same class name, and an unscoped rule here squashed them into 48x28 pills (fixed 2026-10-06). */
+button.sw{width:48px;height:28px;border-radius:99px;border:0;background:var(--rule);position:relative;
   flex:none;padding:0;cursor:pointer}
-.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:99px;
+button.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:99px;
   background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .15s}
-.sw[aria-pressed="true"],.sw.on{background:var(--live)}
-.sw[aria-pressed="true"]::after,.sw.on::after{left:23px}
+button.sw[aria-pressed="true"],button.sw.on{background:var(--live)}
+button.sw[aria-pressed="true"]::after,button.sw.on::after{left:23px}
 /* a settings row */
 .sr,.kv,.actrow{display:flex;align-items:center;justify-content:space-between;gap:24px;
   padding:20px 0;border-top:1px solid var(--rule);min-height:76px;flex-wrap:wrap}

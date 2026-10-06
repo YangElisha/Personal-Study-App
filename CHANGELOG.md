@@ -4,6 +4,13 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Fixed — the colour rows in Appearance (redesign 2.0, 2026-10-06)
+- "Every colour, yours" had its rows collapsed on top of each other, with the hex boxes overlapping the
+  names. The redesign added a pill on/off switch called `.sw` — the same class name the colour rows have
+  used since the start — and it squashed every row to 48×28. The switch is now `button.sw`, and the colour
+  rows are scoped to `.swatches .sw` so neither can take over the other again.
+
+
 ### Added — the small touches: a stamp, a page turn, screens that come in (redesign 2.0, 2026-10-06)
 - A right answer is **stamped** like a marked paper: "Correct", or "Mastered" when that answer locked the
   concept in. Decoration only — nothing about marking or the ladder changed.
