@@ -184,14 +184,38 @@ def cover(src: Image.Image) -> Image.Image:
     return bg.resize((W, H), Image.LANCZOS)
 
 
+# ---- the app icon (2026-10-06): "M" and the accent cursor, matching the header logo ----------
+# Drawn as shapes on a 32-unit grid (the header's wordmark + caret, as a monogram), supersampled,
+# so every size is crisp. The orb artwork above still makes the README cover and logo-*.png.
+ICON_TILE = (27, 25, 22)          # warm near-black (the paper theme's ink)
+ICON_M = (244, 239, 230)          # paper
+ICON_CARET = (196, 118, 55)       # the accent, a touch lighter so it reads on the dark tile
+M_SHAPE = [(6.5, 22.5), (6.5, 9.5), (9.4, 9.5), (13.25, 16.4), (17.1, 9.5), (20.0, 9.5), (20.0, 22.5),
+           (17.3, 22.5), (17.3, 14.6), (14.05, 20.1), (12.45, 20.1), (9.2, 14.6), (9.2, 22.5)]
+CARET_BOX = (21.6, 12.4, 25.6, 22.5)
+
+
+def caret_icon(size: int) -> Image.Image:
+    ss = 16 if size <= 64 else 4
+    n = size * ss
+    k = n / 32
+    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle((0, 0, n - 1, n - 1), radius=7.5 * k, fill=ICON_TILE)
+    d.polygon([(x * k, y * k) for x, y in M_SHAPE], fill=ICON_M)
+    x0, y0, x1, y1 = CARET_BOX
+    d.rounded_rectangle((x0 * k, y0 * k, x1 * k, y1 * k), radius=0.6 * k, fill=ICON_CARET)
+    return img.resize((size, size), Image.LANCZOS)
+
+
 def main() -> None:
     src = Image.open(SRC).convert("RGB")
-    frames = {s: icon_frame(src, s) for s in SIZES}
+    frames = {s: caret_icon(s) for s in SIZES}
     OUT_ICO.parent.mkdir(parents=True, exist_ok=True)
     # Pillow writes one ICO frame per requested size, each from the matching appended image
     frames[256].save(OUT_ICO, format="ICO", sizes=[(s, s) for s in SIZES],
                      append_images=[frames[s] for s in SIZES if s != 256])
-    icon_frame(src, 512).save(OUT_PNG, format="PNG", optimize=True)
+    caret_icon(512).save(OUT_PNG, format="PNG", optimize=True)
     BRAND.mkdir(parents=True, exist_ok=True)
     big = unmultiply(crop(src, 0.70).resize((512, 512), Image.LANCZOS))
     big.save(BRAND / "logo-512.png", optimize=True)

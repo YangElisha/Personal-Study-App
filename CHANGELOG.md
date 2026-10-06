@@ -8,8 +8,11 @@ Newest first. Every change gets an entry in the same commit.
 - The header logo is now the wordmark and a solid cursor in the theme's accent ("MonoSpace▌"),
   chosen from three mock-ups. It replaces the purple orb image (from the old dark design) and the
   loose underscore that sat apart from the word. Drawn in CSS and sized in em, so it lines up at
-  any text size and takes each theme's accent. The app icon, installer icon and loading screen
-  still use the orb.
+  any text size and takes each theme's accent.
+- **App icon** (window, taskbar, Start menu, installer, exe): the same idea as a monogram — a cream
+  "M" and the accent cursor on a warm near-black tile, drawn as shapes in `packaging/make_icon.py`
+  so every size from 16 to 256 px is crisp. The orb artwork stays for the README cover and the
+  loading screen.
 
 ### Fixed / added — clean-up before going public (2026-10-01)
 - **Removed the Claude.ai leftovers**: the hidden "Anthropic API key" card, its storage and its
