@@ -4,6 +4,15 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — the small touches: a stamp, a page turn, screens that come in (redesign 2.0, 2026-10-06)
+- A right answer is **stamped** like a marked paper: "Correct", or "Mastered" when that answer locked the
+  concept in. Decoration only — nothing about marking or the ladder changed.
+- Starting a session **lays the study screen down like the next page of a notebook**: it swings in from its
+  right edge and settles flat. Nothing covers the screen, so it never blanks.
+- Every other screen **comes in** (a short rise and fade) instead of snapping.
+- All three are off under "reduce motion".
+
+
 ### Added — bookmark ribbons and the study calendar (redesign 2.0, 2026-10-06)
 - **Bookmark ribbon**: a silk ribbon sewn into each notebook’s spine, hanging further down the cover the
   more of that deck you know for the long term. None until you master your first concept, full cover at

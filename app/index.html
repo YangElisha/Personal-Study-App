@@ -1663,6 +1663,27 @@ textarea:focus,input:focus,select:focus{outline:0;border-color:var(--ink);box-sh
 .hm i{transition:transform .15s}
 .hm i:hover{transform:scale(1.25)}
 
+/* ---- the small touches: a stamp, a page turn, screens that come in ----- */
+.stamp{position:absolute;right:14px;top:34px;z-index:4;pointer-events:none;
+  font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;
+  color:var(--hit);border:2px solid var(--hit);border-radius:5px;padding:5px 9px 4px;
+  opacity:.9;transform:rotate(-10deg);animation:ms-stamp .5s cubic-bezier(.2,.8,.2,1)}
+.focus .stamp{right:30px;top:34px;font-size:13px}
+@keyframes ms-stamp{0%{opacity:0;transform:rotate(-10deg) scale(2.8)}
+  55%{opacity:1;transform:rotate(-10deg) scale(.93)}
+  70%{transform:rotate(-10deg) scale(1.03)}
+  100%{opacity:.9;transform:rotate(-10deg) scale(1)}}
+/* the study screen is laid down like the next page of the notebook (not every screen is a .page) */
+.vturn{animation:ms-turn .52s cubic-bezier(.3,.75,.25,1);transform-origin:right center;
+  backface-visibility:hidden}
+@keyframes ms-turn{from{transform:perspective(1700px) rotateY(52deg);opacity:.15}
+  60%{opacity:1}
+  to{transform:perspective(1700px) rotateY(0deg);opacity:1}}
+/* every other screen comes in rather than snapping */
+.vin{animation:ms-screen .26s cubic-bezier(.2,.8,.2,1)}
+@keyframes ms-screen{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.stamp{animation:none}.vturn,.vin{animation:none}}
+
 /* ---- drawers, menus, modals, toast ------------------------------------ */
 .menu,.popmenu{border-radius:var(--r);box-shadow:0 12px 24px -10px rgba(0,0,0,.5);
   background-image:none;background:var(--surface);border:1px solid var(--rule)}
@@ -4022,6 +4043,8 @@ const VIEWS = ["v-home","v-library","v-review","v-backups","v-settings","v-deck"
 function go(v, crumb){
   navRecord(v);
   VIEWS.forEach(x => $(x).classList.toggle("hide", x !== v));
+  const now = $(v);                             // the screen you land on comes in, rather than snapping
+  if(now && motionOK()){ now.classList.remove("vin", "vturn"); void now.offsetWidth; now.classList.add("vin"); }
   /* the stage carries its own "Confused?" button, so the floating one would double it */
   askVisible(!!DECK && ["v-deck","v-teach","v-course","v-unit","v-report","v-exam-result"].includes(v));
   if(v !== "v-study" && v !== "v-lesson" && v !== "v-unit") CHAT.focus = null;
@@ -7096,6 +7119,15 @@ function paintTicks(hostId, total, doneCount, currentIndex){
   }
 }
 
+/* THE PAGE TURN (redesign 2.0, 2026-10-06): starting a session lays the study screen down like
+   the next page of a notebook — it swings in from its right edge and settles flat. Nothing is
+   drawn over the top, so the screen never blanks. Reduced motion: nothing happens. */
+function pageTurn(){
+  const v = $("v-study");
+  if(!v || !motionOK()) return;
+  v.classList.remove("vin", "vturn"); void v.offsetWidth; v.classList.add("vturn");
+  v.addEventListener("animationend", () => v.classList.remove("vturn"), {once:true});
+}
 function startSession(pool, test){
   if(!pool || !pool.length){ toast("Nothing to drill in that selection"); return; }
   S = {pool, m:{}, queue:[], cards:[], n:0, asked:0, right:0, streak:0, best:0, sinceMatch:0,
@@ -7117,6 +7149,7 @@ function startSession(pool, test){
     (S.test ? "test paper" : SCOPE_LABEL[scope] || "this session");
   startTimer();
   go("v-study", DECK.name + (S.test ? " · test" : ""));
+  pageTurn();                                   // the notebook opens: this page swings in and settles
   fill(); paint();
 }
 function target(){ return (S.test || viewMode === "focus") ? 1 : density; }
@@ -7558,6 +7591,15 @@ function renderCard(card){
   }
   return el;
 }
+/* THE STAMP (redesign 2.0, 2026-10-06): a right answer gets stamped like a marked paper —
+   "Correct", or "Mastered" when that was the one that locked it in. Decoration only. */
+function stamp(el, word){
+  if(!el || !motionOK()) return;
+  const old = el.querySelector(".stamp"); if(old) old.remove();
+  const s = document.createElement("div");
+  s.className = "stamp"; s.textContent = word; s.setAttribute("aria-hidden", "true");
+  el.appendChild(s);
+}
 function resolve(card, ok, btn){
   if(!card.open) return;
   // the hint was tapped twice and showed the answer: a right choice after that counts as not known yet
@@ -7595,6 +7637,7 @@ function resolve(card, ok, btn){
     return;
   }
   card.el.dataset.r = ok ? "hit" : "miss";
+  if(ok) stamp(card.el, st.done ? "Mastered" : "Correct");
   if(q.t === "order"){ card.el.querySelectorAll(".ostep").forEach(b => b.disabled = true); }
   else if(q.t === "txt" || q.t === "cloze"){ card.input.disabled = true; card.btn.disabled = true; }
   else [...card.box.children].forEach((b,i) => {
