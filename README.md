@@ -67,6 +67,26 @@ You need **Python 3.12** ([python.org](https://www.python.org/downloads/); tick
 3. **Start it.** Double-click `start.bat`. The first start needs internet once, to install the
    Python packages. After that it opens MonoSpace in your browser at `http://localhost:8765`.
 
+#### Every part, and how to install it
+
+Only the first three are needed to run MonoSpace. Each row's **Check** should print a version;
+run checks in a *new* PowerShell window, so it picks up anything just added to PATH.
+
+| Part | What it's for | Install | Check |
+|---|---|---|---|
+| **Python 3.12** | Runs the local server | `winget install Python.Python.3.12` | `python --version` |
+| **The packages** | FastAPI, uvicorn, the desktop window | in the MonoSpace folder: `python -m venv .venv` then `.venv\Scripts\python -m pip install -r requirements.txt` | `.venv\Scripts\python -c "import fastapi, webview"` |
+| **`.env`** | Says where your data lives | copy `.env.example` to `.env`, set `DATA_DIR` to a folder outside this one, and create that folder | `start.bat` opens the app |
+| **Git** *(optional)* | Getting the code and updates | `winget install Git.Git` | `git --version` |
+| **Ollama + Qwen** *(to build decks offline)* | The local AI that reads your modules | `winget install Ollama.Ollama`, then `ollama pull qwen3.5:9b` (6.6 GB) | `ollama list` |
+| **Claude Code** *(optional)* | The online AI, through your own sign-in | `irm https://claude.ai/install.ps1 \| iex`, then run `claude` once and sign in | `claude --version` |
+| **Node.js LTS** *(developers)* | `npm test` and `npm run smoke` | `winget install OpenJS.NodeJS.LTS` | `node --version` |
+| **Dev packages** *(developers)* | pytest, and the Windows build | `.venv\Scripts\python -m pip install -r requirements-dev.txt` | `.venv\Scripts\python -m pytest -q` |
+
+**Not needed, ever:** an API key of any kind, an account, or a speech engine. Talking is done by
+Windows' own voice typing (**Win+H**) and **Voice Access**, which type into whatever box has the
+focus — including MonoSpace's — and work offline with nothing installed.
+
 **Build the downloads yourself:** `powershell -ExecutionPolicy Bypass -File packaging\build.ps1`
 builds `MonoSpace.exe` (PyInstaller), then `MonoSpace-Setup.exe` (Inno Setup, installed per-user
 with winget if it's missing), then the portable zip, into `dist\`. To try a build without touching

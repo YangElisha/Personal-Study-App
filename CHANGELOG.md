@@ -4,6 +4,13 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Changed — README: every part, and how to install it (redesign 2.0, 2026-10-06)
+- One table under "From source": Python, the packages, `.env`, Git, Ollama + Qwen, Claude Code, Node.js
+  and the dev packages — what each is for, the command to install it, and the command to check it.
+  Node and pytest were missing before. Says plainly what is never needed: API keys, accounts, or a
+  speech engine (Windows’ Win+H and Voice Access do the talking).
+
+
 ### Changed — talking is Windows’ job, not ours (redesign 2.0, 2026-10-06)
 - The microphone button in "Teach it back" is gone. It used the browser’s speech recognition, which
   streams audio to a service on the internet — and WebView2 wires up no such service, so it never worked.
