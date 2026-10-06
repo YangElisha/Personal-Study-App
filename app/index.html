@@ -1431,6 +1431,13 @@ textarea:focus,input:focus,select:focus{outline:0;border-color:var(--ink);box-sh
 .dcard .track,.dcard .mbar{height:4px;background:rgba(0,0,0,.3);border-radius:4px;margin-top:auto}
 .dcard .track i,.dcard .mbar i{background:rgba(244,241,232,.9)}
 .dcfoot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+/* the bookmark ribbon: sewn into the spine, longer the more you know */
+.dcard .ribbon{position:absolute;left:4px;top:-2px;width:6px;z-index:2;border-radius:0 0 1px 1px;
+  background:linear-gradient(90deg,#9E6B0C,#E8B23C 45%,#C2860F);
+  box-shadow:0 2px 5px rgba(0,0,0,.45);transition:height .6s cubic-bezier(.2,.8,.2,1);
+  clip-path:polygon(0 0,100% 0,100% 100%,50% calc(100% - 5px),0 100%)}
+.dcard .ribbon.none{display:none}
+.dcard .ribbon.full{background:linear-gradient(90deg,#9E6B0C,#F3CB68 45%,#C2860F)}
 /* the whole cover opens the deck, as in the mockup; Study lives in the menu */
 .dcfoot .btn{display:none}
 .dcfoot{justify-content:space-between}
@@ -1648,6 +1655,13 @@ textarea:focus,input:focus,select:focus{outline:0;border-color:var(--ink);box-sh
 .hm i.l2{background:color-mix(in srgb,var(--live) 45%,var(--bg));border-color:transparent}
 .hm i.l3{background:color-mix(in srgb,var(--live) 72%,var(--bg));border-color:transparent}
 .hm i.l4{background:var(--live);border-color:var(--live)}
+.hm i.ahead{opacity:.3;border-style:dashed}
+.hmmonths{display:grid;grid-auto-flow:column;grid-auto-columns:14px;gap:4px;width:max-content;
+  margin:0 0 6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3)}
+.hmmonths span{white-space:nowrap;overflow:visible}
+.hm i{transition:transform .15s}
+.hm i:hover{transform:scale(1.25)}
 
 /* ---- drawers, menus, modals, toast ------------------------------------ */
 .menu,.popmenu{border-radius:var(--r);box-shadow:0 12px 24px -10px rgba(0,0,0,.5);
@@ -1848,6 +1862,10 @@ main{grid-column:auto;min-width:0}
       <div class="cgrid" id="recent"></div>
       <div class="sechead"><h2>At a glance</h2></div>
       <div class="glance" id="glance"></div>
+      <div class="sechead" style="margin-top:var(--s7)"><h2>Your study calendar</h2>
+        <span class="eyebrow" style="margin:0" id="cal-note"></span></div>
+      <div class="hmwrap"><div class="hmmonths" id="cal-months"></div><div class="hm" id="cal"></div></div>
+      <p class="sub" id="cal-sub" style="margin-top:10px"></p>
       <div id="wallsec">
         <div class="sechead" style="margin-top:var(--s7)"><h2>Your wall</h2>
           <span class="eyebrow" style="margin:0" id="wall-count"></span></div>
@@ -4078,6 +4096,7 @@ async function boot(){
     if(prefs.focusFolder) focusFolder = prefs.focusFolder;
     if(Array.isArray(prefs.shut)) prefs.shut.forEach(id => shutFolders[id] = true);
   }
+  DAYS = (await store.get("studydays")) || {};
   LIB = await store.get("library");
   if((!LIB && store.readFailed) || prefsFailed){      // LOCAL PORT: server down → say so; never write an empty library
     window.MonoSplash && MonoSplash.done();
@@ -4369,6 +4388,20 @@ function progressBar(r){
   i.style.width = (r.d.nCon ? Math.min(100, r.done / r.d.nCon * 100) : 0) + "%";
   t.appendChild(i); return t;
 }
+/* BOOKMARK RIBBON (redesign 2.0, 2026-10-06): a silk ribbon sewn into the notebook's spine.
+   It hangs further down the cover the more of the deck you know for the long term, so a glance
+   at the shelf shows which notebooks you have covered. Nothing is stored — it is drawn from the
+   mastered count that already feeds the progress bar. No ribbon at all until you master one. */
+function bookmarkRibbon(r){
+  const total = r.d.nCon || 0;
+  const pct = total ? Math.min(100, Math.round(r.done / total * 100)) : 0;
+  const rib = el("div", "ribbon" + (pct >= 100 ? " full" : ""));
+  rib.setAttribute("aria-hidden", "true");
+  if(!pct){ rib.classList.add("none"); return rib; }
+  rib.style.height = (16 + pct * 0.74) + "%";       // a short tag at 1%, the full cover at 100%
+  rib.title = pct + "% known for the long term";
+  return rib;
+}
 function deckCard(r, showFolder){
   const {d, due} = r;
   const f = LIB.folders.find(x => x.id === d.folderId);
@@ -4390,6 +4423,7 @@ function deckCard(r, showFolder){
     ["Move to…", () => moveMenu(more, d)],
     ["Delete", () => deleteDeckById(d.id, d.name), true]]); };
   top.append(name, more);
+  c.appendChild(bookmarkRibbon(r));
   if(showFolder && f) c.appendChild(el("p", "dcfold", f.name));
   c.appendChild(top);
   c.appendChild(progressBar(r));
@@ -4482,7 +4516,44 @@ async function renderHome(){
   [[totalDue, "To review"], [totalM + "/" + totalC, "Concepts long-term"],
    [LIB.decks.length, "Decks in " + plural(LIB.folders.length, "subject")], [studiedToday, "Decks studied today"]]
     .forEach(([v, k]) => { const s = el("div", "stat"); s.append(el("b", "", k), el("s", "", String(v))); g.appendChild(s); });
+  renderCalendar(rows);
   renderWall();
+}
+
+/* 26 weeks of squares, this week last. Sunday is the top row, as on a wall calendar. */
+function renderCalendar(rows){
+  const days = Object.assign({}, DAYS);
+  rows.forEach(r => { if(r.last){ const k = dayKey(r.last); if(!days[k]) days[k] = 1; } });
+  const box = $("cal"); box.replaceChildren();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const end = new Date(today); end.setDate(end.getDate() + (6 - end.getDay()));   // to the end of this week
+  const start = new Date(end); start.setDate(start.getDate() - (26 * 7 - 1));
+  const level = n => n >= 25 ? "l4" : n >= 10 ? "l3" : n >= 3 ? "l2" : "l1";
+  const months = $("cal-months"); months.replaceChildren();          // the month each week falls in
+  let lastM = -1;
+  for(let w = new Date(start); w <= end; w.setDate(w.getDate() + 7)){
+    const lab = el("span");
+    if(w.getMonth() !== lastM){ lastM = w.getMonth(); lab.textContent = w.toLocaleDateString(undefined, {month:"short"}); }
+    months.appendChild(lab);
+  }
+  const fmt = d => d.toLocaleDateString(undefined, {weekday:"short", day:"numeric", month:"short"});
+  let studied = 0, month = 0;
+  for(let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)){
+    const i = el("i"), n = days[dayKey(d)] || 0, ahead = d > today;
+    if(n){ i.classList.add(level(n)); studied++;
+           if(d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) month++; }
+    if(ahead) i.classList.add("ahead");
+    i.title = ahead ? fmt(d) : fmt(d) + (n ? " — studied" : " — nothing");
+    box.appendChild(i);
+  }
+  let streak = 0;                                  // days in a row; today not studied yet still counts yesterday's
+  const cur = new Date(today);
+  if(!days[dayKey(cur)]) cur.setDate(cur.getDate() - 1);
+  while(days[dayKey(cur)] && streak < 400){ streak++; cur.setDate(cur.getDate() - 1); }
+  $("cal-note").textContent = streak ? streak + (streak === 1 ? " day in a row" : " days in a row") : "";
+  $("cal-sub").textContent = studied ? "You studied on " + plural(studied, "day") + " in the last six months" +
+      (month ? " · " + plural(month, "day") + " this month" : "") + "."
+    : "Nothing yet — study a deck and today's square fills in.";
 }
 
 /* ============================================================
@@ -5067,8 +5138,21 @@ function syncOptionChips(){
     : "Only " + on[0] + " questions will appear.";
 }
 let progT = null;
+/* THE STUDY CALENDAR (redesign 2.0, 2026-10-06): one square per day, filling in on the days you
+   study, like marking off a paper calendar. Kept in its own key ("studydays": {"YYYY-MM-DD": how
+   many times progress was saved that day}), so nothing else changes shape. Days from before this
+   existed are filled in from when each deck was last studied, for display only — never written. */
+let DAYS = {}, daysT = 0;
+const dayKey = t => { const d = new Date(t); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+function markStudiedToday(){
+  const k = dayKey(Date.now());
+  DAYS[k] = (DAYS[k] || 0) + 1;
+  clearTimeout(daysT);
+  daysT = setTimeout(() => store.set("studydays", DAYS), 2000);
+}
 async function saveProg(now){
   if(!DECK) return;
+  markStudiedToday();
   PROG.last = Date.now();
   clearTimeout(progT);
   progCache[DECK.id] = PROG;

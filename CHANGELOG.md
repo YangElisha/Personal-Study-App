@@ -4,6 +4,15 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — bookmark ribbons and the study calendar (redesign 2.0, 2026-10-06)
+- **Bookmark ribbon**: a silk ribbon sewn into each notebook’s spine, hanging further down the cover the
+  more of that deck you know for the long term. None until you master your first concept, full cover at
+  100%. Drawn from the mastered count that already feeds the progress bar — nothing new is stored.
+- **Your study calendar** on Home: six months of squares, one per day, filling in on the days you study,
+  with the month above and "N days in a row" beside the heading. Days you studied before this existed
+  are filled in from when each deck was last opened (display only). New key `studydays`.
+
+
 ### Added — the pinboard: notes everywhere, quiz and exam dates, notes that float (redesign 2.0, 2026-10-06)
 - A tab on the right edge (with a count, or "N soon" for dates this week) slides out the pinboard on every
   screen. New note: text, Note / Quiz / Exam, a date, attach to the open deck or a subject, colour.
