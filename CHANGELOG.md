@@ -4,6 +4,25 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — "Teach it back": you explain, an AI student asks (redesign 2.0, 2026-10-06)
+- A new mode on every deck, beside "Teach me". Pick who you are teaching — **curious first-year**,
+  **confused classmate** or **tough examiner** — and how many concepts (3/5/8). The concepts you have
+  never explained, or explained worst, come first.
+- The student asks an opening question, you explain in your own words, and it asks one or two probing
+  follow-ups ("but why?", "can you give an example?"). It never explains anything to you and never gives
+  the answer away — if you are wrong it asks the question that makes you notice. Three goes per concept,
+  or "Next concept" when you are done.
+- **Talk instead** of typing where the browser can hear you (its own speech recognition; the button is
+  absent when it is not available). Your stickies for that deck sit alongside, and you can pin one
+  mid-session.
+- **The marking**: every concept gets *Explained it fully / Surface level / Could not explain it / Got it
+  wrong*, with the gap in plain words and one thing to say next time — judged **only against the deck’s
+  own definitions**, never an invented standard. Then pin every gap to your wall, drill the shaky ones,
+  or go again.
+- Kept with the deck’s progress (`PROG.explain`, the last 30 sessions), so it travels in a backup.
+  If the marking call fails, the conversation stays on screen and can be marked again — nothing said is lost.
+
+
 ### Added — put your notebooks in your own order (redesign 2.0, 2026-10-06)
 - Drag a notebook **onto another notebook** to drop it in front of or behind it: the left half of the one
   you hover over puts it first, the right half puts it after, and a line down that edge shows where it

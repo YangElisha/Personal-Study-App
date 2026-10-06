@@ -1672,6 +1672,43 @@ button.sw[aria-pressed="true"]::after,button.sw.on::after{left:23px}
 .hm i{transition:transform .15s}
 .hm i:hover{transform:scale(1.25)}
 
+/* ---- teach it back: the student on one side, you on the other ---------- */
+.tbstage .chips{display:flex;flex-wrap:wrap;gap:10px}
+.tbwrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:32px;align-items:start}
+.tbmain{min-width:0;display:flex;flex-direction:column;gap:18px}
+.tbtalk{min-height:340px;max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:18px;
+  padding:6px 4px 6px 0}
+.tbmsg{max-width:76%;display:flex;flex-direction:column;gap:5px}
+.tbmsg b{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:400}
+.tbmsg p{margin:0}
+.tbmsg.them p{font-family:var(--read);font-size:1.06em;line-height:1.5;color:var(--ink)}
+.tbmsg.you{align-self:flex-end;align-items:flex-end;text-align:right}
+.tbmsg.you p{background:var(--surface-2);border:1px solid var(--rule);border-radius:12px 12px 2px 12px;
+  padding:11px 14px;text-align:left}
+.tbmsg.thinking p,.tbmsg.turn p{color:var(--ink-3)}
+.tbmsg.bad p{color:var(--miss)}
+.tbbox{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--rule);padding-top:16px}
+.tbbox textarea{width:100%;resize:vertical}
+.tbrow{align-items:center;gap:12px}
+.tbrow .sub{margin:0;font-size:.84em}
+#tb-mic.live{border-color:var(--miss);color:var(--miss)}
+.tbnotes{display:flex;flex-direction:column;gap:12px;border-left:1px solid var(--rule);padding-left:22px}
+.tbnotes .sticky{position:relative;inset:auto;width:100%}
+.tbmark{border-top:1px solid var(--rule);padding:18px 0 18px 16px;border-left:4px solid var(--rule)}
+.tbmark p{margin:6px 0 0;color:var(--ink-2)}
+.tbmark .tbnext{color:var(--ink-3);font-size:.92em}
+.tbmh{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.tbgrade{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.tbmark.full{border-left-color:var(--hit)}
+.tbmark.full .tbgrade{color:var(--hit)}
+.tbmark.surface{border-left-color:var(--live)}
+.tbmark.missed{border-left-color:var(--ink-3)}
+.tbmark.wrong{border-left-color:var(--miss)}
+.tbmark.wrong .tbgrade{color:var(--miss)}
+@media (max-width:900px){.tbwrap{grid-template-columns:minmax(0,1fr)}
+  .tbnotes{border-left:0;border-top:1px solid var(--rule);padding:18px 0 0}}
+
 /* ---- the small touches: a stamp, a page turn, screens that come in ----- */
 .stamp{position:absolute;right:14px;top:34px;z-index:4;pointer-events:none;
   font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;
@@ -2085,6 +2122,7 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
         <div class="dactions">
           <button class="btn big" id="btn-study" title="Learn: adapts as you go">Study</button>
           <button class="btn2" id="btn-teach" title="Walks you through the deck a few concepts at a time and checks you before moving on">Teach me</button>
+          <button class="btn2" id="btn-explain" title="The roles swap: a student asks, and you do the explaining">Teach it back</button>
           <div class="menuwrap">
             <button class="btn2" id="btn-testmenu" aria-haspopup="true" aria-expanded="false" aria-controls="menu-test">Test &amp; games <span class="caret" aria-hidden="true">▾</span></button>
             <div class="menu" id="menu-test">
@@ -2600,6 +2638,71 @@ Availability: Information is there when it is needed"></textarea>
       <p class="sub hide" id="teach-thin" style="color:var(--miss);margin-top:-18px"></p>
       <div class="ticks" id="teach-ticks" aria-hidden="true" style="margin-bottom:34px"></div>
       <div id="lessonlist"></div>
+    </section>
+
+    <!-- ===== TEACH IT BACK: the roles swap — you explain, an AI student asks ===== -->
+    <section id="v-explain" class="page hide">
+      <div class="modes" id="tb-modes" role="tablist" aria-label="Study mode"
+           style="justify-content:flex-start;margin-bottom:28px"></div>
+      <div class="stage tbstage">
+        <div class="stagehead">
+          <span class="crumb" id="tb-where">—</span>
+          <span class="stagetools">
+            <button class="chip hide" id="tb-move">Next concept</button>
+            <button class="chip" id="tb-quit">End</button>
+          </span>
+        </div>
+        <div class="ticks" id="tb-ticks" aria-hidden="true"></div>
+
+        <div id="tb-setup">
+          <span class="eyebrow">The roles swap</span>
+          <h1>Teach it back</h1>
+          <p class="sub">A student asks you about this deck and you explain. Explaining out loud is the
+            fastest way to find the bits you only half know. At the end you get told, concept by concept,
+            how deep your explanation actually went.</p>
+          <p class="eyebrow" style="margin-top:28px">Who are you teaching?</p>
+          <div class="chips" id="tb-who" role="group" aria-label="Who you are teaching"></div>
+          <p class="eyebrow" style="margin-top:22px">How many concepts?</p>
+          <div class="chips" id="tb-many" role="group" aria-label="How many concepts"></div>
+          <p class="sub" id="tb-pickednote" style="margin-top:22px">—</p>
+          <div class="row" style="margin-top:18px">
+            <button class="btn" id="tb-start">Bring the student in</button>
+            <button class="btn2" id="tb-back">Back to the deck</button>
+          </div>
+        </div>
+
+        <div class="tbwrap hide" id="tb-live">
+          <div class="tbmain">
+            <div class="tbtalk" id="tb-talk"></div>
+            <div class="tbbox">
+              <textarea id="tb-input" rows="3" placeholder="Explain it in your own words…"></textarea>
+              <div class="row tbrow">
+                <button class="btn" id="tb-send">Say it</button>
+                <button class="btn2 hide" id="tb-mic">Talk instead</button>
+                <span class="sub" id="tb-hint"></span>
+              </div>
+            </div>
+          </div>
+          <aside class="tbnotes">
+            <p class="eyebrow">Your notes on this deck</p>
+            <div id="tb-notes"></div>
+            <button class="link" id="tb-pin">Pin what you could not explain</button>
+          </aside>
+        </div>
+
+        <div class="hide" id="tb-result">
+          <span class="eyebrow">How deep it went</span>
+          <h1 id="tb-rtitle">—</h1>
+          <p class="sub" id="tb-rsub">—</p>
+          <div id="tb-rlist"></div>
+          <div class="row" style="margin-top:24px">
+            <button class="btn" id="tb-again">Teach it back again</button>
+            <button class="btn2" id="tb-drill">Drill the shaky ones</button>
+            <button class="btn2" id="tb-pinall">Pin the gaps to my wall</button>
+            <button class="btn2" id="tb-done">Back to the deck</button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ===== TEACH: A LESSON ===== -->
@@ -4048,7 +4151,7 @@ function parseJSON(t){
 /* ============================================================
    NAVIGATION
    ============================================================ */
-const VIEWS = ["v-home","v-library","v-review","v-backups","v-settings","v-deck","v-new","v-study","v-match","v-cards","v-sprint","v-shoot","v-teach","v-lesson","v-course","v-unit","v-exam-setup","v-exam","v-exam-result","v-report"];
+const VIEWS = ["v-home","v-library","v-review","v-backups","v-settings","v-deck","v-new","v-study","v-match","v-cards","v-sprint","v-shoot","v-teach","v-explain","v-lesson","v-course","v-unit","v-exam-setup","v-exam","v-exam-result","v-report"];
 function go(v, crumb){
   navRecord(v);
   VIEWS.forEach(x => $(x).classList.toggle("hide", x !== v));
@@ -7150,6 +7253,7 @@ function usedUp(id){ return S.m[id].done; }
    ============================================================ */
 const STUDY_MODES = [
   {k:"teach",  label:"Teach",      go:() => openTeach()},
+  {k:"explain",label:"Teach it back",go:() => openTeachBack()},
   {k:"learn",  label:"Learn",      go:() => startSession(buildPool(), false)},
   {k:"cards",  label:"Flashcards", go:() => startCards()},
   {k:"test",   label:"Test",       go:() => openExamSetup()},
@@ -8896,6 +9000,265 @@ Reply to their last message. No preamble, no headings.`, 900, CHAT.model === "qw
     chatShow();
   }
 }
+/* ============================================================
+   TEACH IT BACK (redesign 2.0, 2026-10-06)
+   The roles swap: an AI plays a student who asks about this deck, and Elisha explains. Explaining
+   is the test — what you cannot say plainly, you do not know yet. Afterwards every concept that
+   came up is graded against the deck's OWN definitions (never against invented standards), and
+   the gaps are written in the words of what was missing.
+
+   Nothing new is stored on the deck: the log lives with progress (PROG.explain), the way
+   lessons do, so it travels in a backup and is per deck.
+   ============================================================ */
+const TB_WHO = [
+  {k:"curious", label:"Curious first-year", line:"an eager first-year who has done the reading once, asks 'but why?' a lot, and gets excited when something clicks"},
+  {k:"lost",    label:"Confused classmate", line:"a classmate who is lost, mixes this up with neighbouring ideas, and needs it from a different angle before it lands"},
+  {k:"examiner",label:"Tough examiner",     line:"a sharp examiner who is polite but unimpressed by recited definitions, and pushes for the reason underneath and a concrete example"}
+];
+const TB_SIZES = [3, 5, 8];
+let TB = null;
+function tbState(){ if(!Array.isArray(PROG.explain)) PROG.explain = []; return PROG.explain; }
+/* The ones worth explaining first: never explained, then explained shallowly, then the weakest. */
+function tbPick(n){
+  const seen = {};
+  tbState().forEach(r => (r.items || []).forEach(it => {
+    const rank = {full:3, surface:2, missed:1, wrong:0}[it.grade];
+    if(rank !== undefined && (seen[it.id] === undefined || rank < seen[it.id])) seen[it.id] = rank;
+  }));
+  return DECK.concepts
+    .map(c => ({c, rank: seen[c.id] === undefined ? -1 : seen[c.id], box: (PROG.m[c.id] || {}).box || 0}))
+    .sort((a, b) => a.rank - b.rank || a.box - b.box)
+    .slice(0, n).map(x => x.c.id);
+}
+function openTeachBack(){
+  if(!DECK || DECK.kind === "skill") return toast("Open a deck first");
+  if(!DECK.concepts || !DECK.concepts.length) return toast("This deck has no concepts to explain yet");
+  TB = TB || {};
+  TB.who = TB.who || "curious";
+  TB.size = TB.size || TB_SIZES[1];
+  modeTabs("tb-modes", "explain");
+  go("v-explain", DECK.name);
+  $("tb-where").textContent = DECK.name + " · you are the teacher";
+  $("tb-setup").classList.remove("hide");
+  $("tb-live").classList.add("hide");
+  $("tb-result").classList.add("hide");
+  $("tb-move").classList.add("hide");
+  $("tb-quit").classList.remove("hide");
+  paintTicks("tb-ticks", 0, 0, -1);
+  const chips = (host, list, cur, pick) => {
+    const h = $(host); h.replaceChildren();
+    list.forEach(o => { const b = el("button", "chip", o.label);
+      b.setAttribute("aria-pressed", o.k === cur);
+      b.onclick = () => { pick(o.k); openTeachBack(); }; h.appendChild(b); });
+  };
+  if(!TB.mic){ TB.mic = true; tbMicSetup(); }
+  chips("tb-who", TB_WHO, TB.who, k => TB.who = k);
+  chips("tb-many", TB_SIZES.map(n => ({k:n, label:n + " concepts"})), TB.size, k => TB.size = k);
+  const picked = tbPick(TB.size).map(id => con(id).name);
+  const past = tbState().length;
+  $("tb-pickednote").textContent = "You will be asked about: " + picked.join(", ") + "." +
+    (past ? " (" + plural(past, "session") + " so far — the ones you explained least well come first.)" : "");
+}
+async function tbBegin(){
+  TB.queue = tbPick(TB.size);
+  TB.i = 0; TB.turns = 0; TB.log = []; TB.busy = false;
+  $("tb-setup").classList.add("hide");
+  $("tb-result").classList.add("hide");
+  $("tb-live").classList.remove("hide");
+  $("tb-move").classList.remove("hide");
+  $("tb-talk").replaceChildren();
+  tbNotes();
+  await tbAsk(true);
+}
+function tbSay(who, text, cls){
+  const line = el("div", "tbmsg " + who + (cls ? " " + cls : ""));
+  const tag = el("b", "", who === "them" ? tbWho().label : "You");
+  const body = el("p", "", text);
+  line.append(tag, body);
+  $("tb-talk").appendChild(line);
+  $("tb-talk").scrollTop = $("tb-talk").scrollHeight;
+  return line;
+}
+function tbWho(){ return TB_WHO.find(w => w.k === TB.who) || TB_WHO[0]; }
+function tbConcept(){ return con(TB.queue[TB.i]); }
+/* What the student knows about: this concept in the deck's own words, and the deck around it. */
+function tbBrief(c){
+  const near = DECK.concepts.filter(x => x !== c).slice(0, 40).map(x => x.name).join(", ");
+  return "THE MODULE: " + DECK.name +
+    "\nTHE CONCEPT YOU ARE ASKING ABOUT: " + c.name +
+    "\nWHAT THE MODULE SAYS IT IS: " + (c.fact || "(the module gives no definition)") +
+    (c.steps ? "\nTHE STEPS THE MODULE GIVES: " + c.steps.join(" → ") : "") +
+    (c.items ? "\nWHAT THE MODULE SAYS IT INCLUDES: " + c.items.join(", ") : "") +
+    (c.confuse ? "\nSTUDENTS OFTEN CONFUSE IT WITH: " + c.confuse : "") +
+    (near ? "\nOTHER THINGS IN THIS MODULE: " + near : "");
+}
+async function tbAsk(opening){
+  if(TB.busy) return;
+  TB.busy = true;
+  const c = tbConcept();
+  paintTicks("tb-ticks", TB.queue.length, TB.i, TB.i);
+  $("tb-hint").textContent = "";
+  const wait = tbSay("them", "…", "thinking");
+  const said = (TB.log[TB.i] || {t:[]}).t.map(x => (x.by === "them" ? "YOU ASKED: " : "THEY EXPLAINED: ") + x.text).join("\n\n");
+  try{
+    const r = await claudeWho(
+`You are ${tbWho().line}. You are NOT the teacher. The person you are talking to is teaching you, and you are the one who does not understand yet.
+
+${tbBrief(c)}
+
+${said ? "THE CONVERSATION SO FAR:\n" + said + "\n\n" : ""}${opening
+  ? "Ask them one opening question that makes them explain this concept in their own words. Be a person, not a quiz: a sentence of context or curiosity, then the question."
+  : "Ask ONE short follow-up that probes what they just said — 'but why?', 'can you give an example?', 'how is that different from X?' — or, if they have explained it properly, say so in one warm sentence and ask nothing."}
+
+Rules: never explain it to them, never give the answer away, never correct them outright — if they are wrong, ask the question that makes them notice. 1-3 sentences. No headings, no lists, no preamble.`, 260);
+    wait.remove();
+    const text = String(r.text).trim();
+    tbSay("them", text);
+    TB.log[TB.i] = TB.log[TB.i] || {id:c.id, name:c.name, t:[]};
+    TB.log[TB.i].t.push({by:"them", text});
+    $("tb-hint").textContent = TB.turns >= 2 ? "Say what you can, then move on to the next concept." : "";
+  }catch(e){
+    wait.remove();
+    tbSay("them", "I could not reach the server just then — " + trimNice(e.message, 100), "bad");
+  }
+  TB.busy = false;
+  setTimeout(() => $("tb-input").focus(), 60);
+}
+async function tbSend(){
+  if(!TB || TB.busy) return;
+  const text = $("tb-input").value.trim();
+  if(!text) return;
+  $("tb-input").value = "";
+  tbSay("you", text);
+  TB.log[TB.i] = TB.log[TB.i] || {id:tbConcept().id, name:tbConcept().name, t:[]};
+  TB.log[TB.i].t.push({by:"you", text});
+  TB.turns++;
+  if(TB.turns >= 3) return tbNext();          // three goes at one concept is plenty
+  await tbAsk(false);
+}
+async function tbNext(){
+  TB.turns = 0;
+  if(TB.i + 1 >= TB.queue.length) return tbFinish();
+  TB.i++;
+  tbSay("them", "Okay — next thing I do not get.", "turn");
+  await tbAsk(true);
+}
+/* The marking: every concept that came up, judged only against this deck's own definitions. */
+async function tbFinish(){
+  if(TB.busy) return;
+  TB.busy = true;
+  const spoke = TB.log.filter(x => x && x.t.some(m => m.by === "you"));
+  if(!spoke.length){
+    TB.busy = false;
+    $("tb-live").classList.add("hide"); $("tb-setup").classList.remove("hide"); $("tb-move").classList.add("hide");
+    return toast("Nothing explained yet — the student is still waiting");
+  }
+  $("tb-live").classList.add("hide");
+  $("tb-result").classList.remove("hide");
+  $("tb-move").classList.add("hide");
+  $("tb-quit").classList.add("hide");            // the session is over; the buttons below take it from here
+  $("tb-rtitle").textContent = "Marking what you said…";
+  $("tb-rsub").textContent = "Reading your explanations against this deck's own definitions.";
+  $("tb-rlist").replaceChildren();
+  const body = spoke.map((x, i) => {
+    const c = con(x.id);
+    return "CONCEPT " + (i + 1) + " — " + x.name +
+      "\nTHE MODULE'S OWN DEFINITION: " + ((c && c.fact) || "(none given)") +
+      "\nTHE CONVERSATION:\n" + x.t.map(m => (m.by === "them" ? "STUDENT: " : "TEACHER: ") + m.text).join("\n");
+  }).join("\n\n");
+  let marks = null;
+  try{
+    const r = await claudeWho(
+`A student has been explaining their module out loud to a pretend classmate. Mark how deep each explanation actually went.
+
+Judge ONLY against the module's own definition given below. If they said something the module does not cover, do not count it against them — say it is not in their module. If the module's own definition is thin, say so rather than inventing a standard they failed to meet.
+
+${body}
+
+Reply with ONLY a JSON array, one object per concept, in the same order:
+[{"n":1,"grade":"full|surface|missed|wrong","gap":"what was missing or wrong, in one plain sentence addressed to them as 'you'","next":"one concrete thing to say next time, one sentence"}]
+
+"full" = they gave the idea and the reason underneath. "surface" = correct but recited, no why.
+"missed" = they could not explain it. "wrong" = what they said contradicts the module.
+Plain words. No markdown, no extra keys, no text outside the array.`, 900, undefined);
+    marks = parseJSON(r.text);
+  }catch(e){
+    // the conversation is still here: go back to it so nothing said is thrown away
+    $("tb-result").classList.add("hide");
+    $("tb-live").classList.remove("hide");
+    $("tb-move").classList.remove("hide");
+    $("tb-quit").classList.remove("hide");
+    tbSay("them", "The marking could not be done just now — " + trimNice(e.message, 110) +
+                  " Everything you said is still here. Press End to try marking again.", "bad");
+    TB.busy = false;
+    return;
+  }
+  const order = {full:0, surface:1, missed:2, wrong:3};
+  const items = spoke.map((x, i) => {
+    const m = (Array.isArray(marks) ? marks : []).find(y => +y.n === i + 1) || {};
+    const grade = order[m.grade] !== undefined ? m.grade : "surface";
+    return {id:x.id, name:x.name, grade, gap:String(m.gap || "").trim(), next:String(m.next || "").trim()};
+  });
+  const rec = {t:Date.now(), who:TB.who, items};
+  tbState().unshift(rec);
+  PROG.explain = tbState().slice(0, 30);                 // the last 30 sessions, nothing deleted sooner
+  await saveProg(true);
+  TB.last = rec;
+  tbShowResult(rec);
+  TB.busy = false;
+}
+const TB_LABEL = {full:"Explained it fully", surface:"Surface level", missed:"Could not explain it", wrong:"Got it wrong"};
+function tbShowResult(rec){
+  const n = k => rec.items.filter(i => i.grade === k).length;
+  $("tb-rtitle").textContent = n("full") === rec.items.length ? "You can teach this deck"
+    : n("full") ? "You can teach " + n("full") + " of " + rec.items.length : "Worth another go";
+  const parts = ["full", "surface", "missed", "wrong"].filter(k => n(k)).map(k => n(k) + " " + TB_LABEL[k].toLowerCase());
+  $("tb-rsub").textContent = parts.join(" · ") + ". Graded against this deck's own definitions only.";
+  const box = $("tb-rlist"); box.replaceChildren();
+  rec.items.forEach(it => {
+    const row = el("div", "tbmark " + it.grade);
+    const h = el("div", "tbmh");
+    h.append(el("b", "", it.name), el("span", "tbgrade", TB_LABEL[it.grade]));
+    row.appendChild(h);
+    if(it.gap) row.appendChild(el("p", "", it.gap));
+    if(it.next) row.appendChild(el("p", "tbnext", "Next time: " + it.next));
+    box.appendChild(row);
+  });
+}
+function tbNotes(){
+  const host = $("tb-notes"); if(!host) return;
+  host.replaceChildren();
+  const mine = stickies().filter(s => s.deckId === DECK.id).slice(0, 6);
+  if(!mine.length){ host.appendChild(el("p", "sub", "Nothing pinned on this deck yet.")); return; }
+  mine.forEach(s => host.appendChild(stickyEl(s, tbNotes)));
+}
+/* Talking, where the browser can hear it. Nothing is sent anywhere by us — this is the
+   browser's own speech recognition, and it is simply absent when it is not available. */
+function tbMicSetup(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = $("tb-mic");
+  if(!SR || !btn) return;
+  btn.classList.remove("hide");
+  let rec = null, on = false;
+  btn.onclick = () => {
+    if(on && rec){ rec.stop(); return; }
+    rec = new SR(); rec.lang = navigator.language || "en-US"; rec.interimResults = true; rec.continuous = true;
+    let fixed = $("tb-input").value;
+    rec.onresult = e => {
+      let live = "";
+      for(let i = e.resultIndex; i < e.results.length; i++){
+        if(e.results[i].isFinal) fixed += (fixed ? " " : "") + e.results[i][0].transcript.trim();
+        else live += e.results[i][0].transcript;
+      }
+      $("tb-input").value = (fixed + " " + live).trim();
+    };
+    rec.onerror = ev => { $("tb-hint").textContent = "The microphone could not be used (" + ev.error + ") — type it instead."; };
+    rec.onend = () => { on = false; btn.textContent = "Talk instead"; btn.classList.remove("live"); };
+    try{ rec.start(); on = true; btn.textContent = "Stop talking"; btn.classList.add("live"); }
+    catch(e){ $("tb-hint").textContent = "The microphone could not be started — type it instead."; }
+  };
+}
+
 /* ============================================================
    STICKY NOTES
    They live on the library object, so they load on every page, travel in a
@@ -10755,6 +11118,36 @@ $("btn-folder").onclick = async () => {
   if(libBook && libBook !== "loose" && !$("v-library").classList.contains("hide")) nf.bookId = libBook;   // into the open book
   LIB.folders.push(nf); await store.set("library", LIB); renderNav();
   refreshView();
+};
+/* Teach it back */
+$("btn-explain").onclick = () => { leaveMode(); openTeachBack(); };
+$("tb-start").onclick = () => tbBegin();
+$("tb-back").onclick = () => openDeck(DECK.id);
+$("tb-send").onclick = () => tbSend();
+$("tb-input").onkeydown = e => { if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); tbSend(); } };
+$("tb-move").onclick = () => { if(TB && !TB.busy) tbNext(); };
+$("tb-quit").onclick = () => { if(!TB) return openDeck(DECK.id);
+  if(TB.log && TB.log.some(x => x && x.t.some(m => m.by === "you"))) tbFinish(); else openDeck(DECK.id); };
+$("tb-again").onclick = () => openTeachBack();
+$("tb-done").onclick = () => openDeck(DECK.id);
+$("tb-pin").onclick = async () => {
+  const c = TB && tbConcept();
+  const v = await ask("Pin a note", "What could you not explain?", c ? "I could not explain " + c.name : "");
+  if(v && v.trim()){ await pinSticky(v.trim(), c ? c.name : undefined); tbNotes(); }
+};
+$("tb-pinall").onclick = async () => {
+  const rec = TB && TB.last; if(!rec) return;
+  const weak = rec.items.filter(i => i.grade !== "full" && i.gap);
+  if(!weak.length) return toast("No gaps to pin — you explained all of it");
+  for(const it of weak) await pinSticky(it.gap, it.name);
+  tbNotes();
+  toast(plural(weak.length, "gap") + " pinned to your wall");
+};
+$("tb-drill").onclick = () => {
+  const rec = TB && TB.last; if(!rec) return;
+  const weak = rec.items.filter(i => i.grade !== "full").map(i => i.id).filter(id => con(id));
+  if(!weak.length) return toast("Nothing shaky to drill");
+  startSession(shuffle(weak), false);
 };
 $("bk-close").onclick = closeBackup;
 $("ai-open").onclick = async () => {
