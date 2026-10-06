@@ -48,6 +48,20 @@ $InfoFile = Join-Path $PSScriptRoot "build-info.json"
 if ($LASTEXITCODE -ne 0) { throw "make_icon.py failed" }
 
 # 2. MonoSpace.exe (onedir)
+# Stamp the Windows version resource from $Version first. It used to be kept in step by hand, and
+# 2.0.0 shipped with 1.0.0 in its file properties because of it.
+$ViPath = Join-Path $PSScriptRoot "version-info.txt"
+$Parts = ($Version -split '[-+]')[0] -split '\.'
+while ($Parts.Count -lt 4) { $Parts += "0" }
+$Quad = ($Parts[0..3]) -join ", "
+$Vi = Get-Content $ViPath -Raw
+$Vi = [regex]::Replace($Vi, 'filevers=\(\d+(?:, *\d+){3}\)', "filevers=($Quad)")
+$Vi = [regex]::Replace($Vi, 'prodvers=\(\d+(?:, *\d+){3}\)', "prodvers=($Quad)")
+$Vi = [regex]::Replace($Vi, "StringStruct\('FileVersion', '[^']*'\)", "StringStruct('FileVersion', '$Version')")
+$Vi = [regex]::Replace($Vi, "StringStruct\('ProductVersion', '[^']*'\)", "StringStruct('ProductVersion', '$Version')")
+Set-Content -Path $ViPath -Value $Vi -Encoding utf8 -NoNewline
+Write-Host "version resource stamped $Version"
+
 if (Test-Path $Stage) { Remove-Item -Recurse -Force $Stage }
 New-Item -ItemType Directory -Force $Out | Out-Null
 & $Py -m PyInstaller (Join-Path $PSScriptRoot "monospace.spec") --noconfirm --log-level WARN `
