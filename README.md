@@ -20,6 +20,27 @@ decks and progress stay in a local database on your computer.
 - **Updates from inside the app.** When a new release is out you're told once, can read what's new,
   and update with one click. Your decks and progress are never touched.
 
+### New in 2.0
+
+- **Teach it back.** The roles swap: an AI plays a student who asks about your deck, and *you*
+  explain. It probes ("but why?", "give me an example"), never hands you the answer, and at the end
+  marks each concept — *explained fully / surface level / could not explain it / got it wrong* —
+  against your deck's own definitions, with the gap in plain words. Then pin the gaps or drill them.
+  Talk instead of typing with Windows' own **Win+H** or **Voice Access**; no setup, works offline.
+- **Books on a shelf.** Group subjects into books ("Freshman Year · Sem 1"). A spine opens its book;
+  finishing one takes its terms out of *to review* without deleting anything.
+- **The pinboard.** Sticky notes on every screen, with quiz and exam dates that count down
+  ("Quiz · in 2 days"). Review puts a subject with a quiz coming first. Notes can float over the app.
+- **Your own order.** Drag a notebook onto another to put it first, second or last; drag it onto a
+  subject to move it there. Everything glides, and the page stays where you were.
+- **Bookmark ribbons.** A ribbon down each notebook's spine, hanging further the more of that deck
+  you know for the long term.
+- **A study calendar** on Home: six months of squares filling in on the days you study, with your
+  current streak.
+- **Written for students.** Settings and Backups in plain words, no "due", a Back button
+  (Alt+← and your mouse's back button), and small touches: correct answers get stamped, starting a
+  session lays the page down like a notebook opening.
+
 Free and open source (MIT licence).
 
 ## Install (Windows 10/11)
@@ -38,6 +59,13 @@ MonoSpace isn't: a signing certificate costs a few hundred dollars a year, and t
 project. Click **More info → Run anyway**. To check your download is the real one, compare its
 SHA-256 (in PowerShell: `Get-FileHash MonoSpace-Setup.exe`) with the `sha256` in
 `MonoSpace-Setup.json` on the same release page.
+
+**Updating.** MonoSpace checks this repo for a newer release when you're online, at most every six
+hours, and shows **Update ready**. Tap it to read what's new, then **Update now**: it downloads the
+installer, checks it against the release's checksum, takes a snapshot of your database and reopens
+itself. Your decks and progress are never touched. You can turn the check off in **Settings → About**.
+Copies installed before 2.0 don't know where to look, so install 2.0 by hand once — after that it
+updates itself.
 
 **First start.** MonoSpace asks where to keep your data, suggesting `%USERPROFILE%\MonoSpaceData`.
 Click **Change…** to pick another folder, then **Start**. Your database, backups and module PDFs go

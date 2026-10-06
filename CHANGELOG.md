@@ -4,6 +4,8 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+## 2.0.0 — 2026-10-06
+
 ### Changed — README: every part, and how to install it (redesign 2.0, 2026-10-06)
 - One table under "From source": Python, the packages, `.env`, Git, Ollama + Qwen, Claude Code, Node.js
   and the dev packages — what each is for, the command to install it, and the command to check it.
