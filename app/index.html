@@ -1568,6 +1568,9 @@ textarea:focus,input:focus,select:focus{outline:0;border-color:var(--ink);box-sh
 .appbar .crumb{display:none}
 .brandlogo{align-self:center}
 .brandlogo{width:26px;height:26px;border-radius:7px;box-shadow:none}
+.navback{flex:0 0 auto;width:40px;height:40px;margin-right:12px;border-radius:99px;border:1px solid var(--rule);
+  background:var(--surface);color:var(--ink-2);display:inline-grid;place-items:center;cursor:pointer;padding:0}
+.navback:hover{color:var(--ink);border-color:var(--ink)}
 .nl{min-height:44px;padding:0 11px;flex:0 0 auto;white-space:nowrap;border:0;background:transparent;color:var(--ink-2);font-weight:500;
   border-radius:8px;position:relative;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
 .nl:hover{color:var(--ink)}
@@ -1661,6 +1664,9 @@ main{grid-column:auto;min-width:0}
 
 <header class="appbar">
   <div class="navin">
+    <button class="navback hide" id="nav-back" title="Back (Alt+←)" aria-label="Back"><svg width="18" height="18"
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+        stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
     <button class="brand" id="brand" title="Home" aria-label="MonoSpace, home"><span class="bw">MonoSpace</span><span class="caret" aria-hidden="true"></span></button>
     <button class="nl" id="nav-home"><span>Home</span></button>
     <button class="nl" id="nav-library"><span>Library</span></button>
@@ -1919,7 +1925,7 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
             <div class="menu wide" id="menu-session">
               <p class="mlabel">Scope</p>
             <div class="row">
-              <button class="chip" data-scope="due" aria-pressed="true">Due today + new</button>
+              <button class="chip" data-scope="due" aria-pressed="true">To review + new</button>
               <button class="chip" data-scope="new">New material only</button>
               <button class="chip" data-scope="star">Starred only</button>
               <button class="chip" data-scope="weak">Weak spots only</button>
@@ -1953,7 +1959,7 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
       </div>
       <div id="t-overview">
         <div class="stats">
-          <div class="stat"><b>Due now</b><s id="k-due">0</s></div>
+          <div class="stat"><b>To review</b><s id="k-due">0</s></div>
           <div class="stat"><b>New</b><s id="k-new">0</s></div>
           <div class="stat"><b>Learning</b><s id="k-learn">0</s></div>
           <div class="stat"><b>Long-term</b><s id="k-mast">0</s></div>
@@ -2026,13 +2032,13 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
           <input type="text" id="g-search" placeholder="Search terms, definitions, examples">
           <div class="row" id="g-filters">
             <button class="chip" data-gf="all" aria-pressed="true">All</button>
-            <button class="chip" data-gf="due">Due now</button>
+            <button class="chip" data-gf="due">To review</button>
             <button class="chip" data-gf="new">Not studied</button>
             <button class="chip" data-gf="star">Starred</button>
           </div>
           <div class="gtopics" id="g-topics"></div>
           <div class="glegend">
-            <span><i style="background:var(--miss)"></i>Due now</span>
+            <span><i style="background:var(--miss)"></i>To review</span>
             <span><i style="background:var(--live)"></i>Learning</span>
             <span><i style="background:var(--hit)"></i>Long-term</span>
             <span><i style="background:var(--ink-3)"></i>Not studied</span>
@@ -3062,7 +3068,7 @@ function showHover(el, info){
   hoverT = setTimeout(() => {
     const hc = $("hovercard");
     hc.style.setProperty("--fc", info.colour || "var(--live)");
-    hc.textContent = info.title + (info.due ? "  ·  " + info.due + " due" : "");
+    hc.textContent = info.title + (info.due ? "  ·  " + info.due + " to review" : "");
     const r = el.getBoundingClientRect();
     hc.classList.add("on");
     const w = hc.offsetWidth || 160, h = hc.offsetHeight || 30;
@@ -3138,7 +3144,7 @@ function toast(m){ m = nm(m); const t = $("toast"); t.textContent = m; t.classLi
 
 let LIB = null, DECK = null, PROG = null, S = null;
 /* the scope, said in words, for the line above a session */
-const SCOPE_LABEL = {due:"due today and new", new:"new material", star:"starred",
+const SCOPE_LABEL = {due:"ready to review and new", new:"new material", star:"starred",
                      weak:"weak spots", all:"everything"};
 let scope = "due", viewMode = "focus", density = 6;
 let focusFolder = null, shutFolders = {};
@@ -3835,6 +3841,7 @@ function parseJSON(t){
    ============================================================ */
 const VIEWS = ["v-home","v-library","v-review","v-backups","v-settings","v-deck","v-new","v-study","v-match","v-cards","v-sprint","v-shoot","v-teach","v-lesson","v-course","v-unit","v-exam-setup","v-exam","v-exam-result","v-report"];
 function go(v, crumb){
+  navRecord(v);
   VIEWS.forEach(x => $(x).classList.toggle("hide", x !== v));
   /* the stage carries its own "Confused?" button, so the floating one would double it */
   askVisible(!!DECK && ["v-deck","v-teach","v-course","v-unit","v-report","v-exam-result"].includes(v));
@@ -3848,6 +3855,54 @@ function go(v, crumb){
   window.scrollTo({top:0});
 }
 function closeNav(){ $("nav").classList.remove("on"); $("scrim").classList.remove("on"); }
+
+/* BACK (redesign 2.0, 2026-10-06). Every screen you open is remembered — with its deck and tab —
+   and Back (the arrow left of the logo, Alt+Left, or the mouse's back button) returns to the one
+   you were on before, not to some fixed page. Screens you are in the middle of (a study session,
+   a game, a test paper, a lesson) aren't returned to: Back from one goes to where you started it.
+   Progress is saved as you answer; a test paper's draft is saved before leaving. */
+const NAV = {stack:[], cur:null, restoring:false};
+const RESTORE = {
+  "v-home":     () => renderHome(),
+  "v-library":  () => renderLibrary(),
+  "v-review":   () => renderReview(),
+  "v-backups":  () => renderBackups(),
+  "v-settings": () => renderSettings(),
+  "v-new":      () => { go("v-new", "New deck"); renderQueue(); },    // what you typed is kept
+  "v-deck":     async r => { await openDeck(r.deck); if(r.tab && r.tab !== "overview") tab(r.tab); },
+  "v-teach":    async r => { await openDeck(r.deck); openTeach(); },
+  "v-course":   async r => { await openDeck(r.deck); },
+};
+const sameRoute = (a, b) => !!a && !!b && a.v === b.v && (a.deck || null) === (b.deck || null);
+function navRecord(v){
+  const route = {v, deck: typeof DECK !== "undefined" && DECK ? DECK.id : null, tab: null};
+  if(v === "v-deck"){ const t = document.querySelector('.tab[aria-selected="true"]'); route.tab = t ? t.dataset.tab : null; }
+  if(!NAV.restoring && NAV.cur && RESTORE[NAV.cur.v] && !sameRoute(NAV.cur, route)){
+    NAV.stack.push(NAV.cur);
+    if(NAV.stack.length > 60) NAV.stack.shift();
+  }
+  NAV.cur = route;
+  backShow();
+}
+function backTarget(){
+  for(let i = NAV.stack.length - 1; i >= 0; i--){
+    const r = NAV.stack[i];
+    if(!sameRoute(r, NAV.cur) && (!r.deck || LIB.decks.some(d => d.id === r.deck))) return i;
+  }
+  return -1;
+}
+function backShow(){ const b = $("nav-back"); if(b) b.classList.toggle("hide", backTarget() < 0); }
+async function goBack(){
+  if($("modal").classList.contains("on")) return;                // finish the open dialog first
+  if(typeof PAPER !== "undefined" && PAPER && !PAPER.submitted && !$("v-exam").classList.contains("hide")
+     && typeof saveDraft === "function") saveDraft();
+  const i = backTarget();
+  if(i < 0) return renderHome();
+  const r = NAV.stack[i];
+  NAV.stack.length = i;                                           // drop it and anything after it
+  NAV.restoring = true;
+  try{ await RESTORE[r.v](r); } finally { NAV.restoring = false; backShow(); }
+}
 
 async function boot(){
   const prefs = await store.get("prefs");
@@ -4015,7 +4070,7 @@ async function renderNav(){
     caret.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 2l4 3-4 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const nm = el("span", "fn", f.name);
     const dueEl = el("em", "fdue", due ? String(due) : "");
-    if(due) dueEl.title = due + " due now";
+    if(due) dueEl.title = due + " to review";
     h.append(caret, el("span", "fdotm"), nm, dueEl);
     h.onclick = () => {
       openFolders.has(f.id) ? openFolders.delete(f.id) : openFolders.add(f.id);
@@ -4028,7 +4083,7 @@ async function renderNav(){
       const r = byId[d.id];
       const b = el("button", "deckbtn");
       b.setAttribute("aria-current", !!(DECK && DECK.id === d.id));
-      b.title = d.name + (r.due ? " · " + r.due + " due" : "");
+      b.title = d.name + (r.due ? " · " + r.due + " to review" : "");
       b.append(el("span", "dn", d.name));
       if(r.due) b.append(el("em", "dcount", String(r.due)));
       b.onclick = () => openDeck(d.id);
@@ -4112,7 +4167,7 @@ function deckCard(r, showFolder){
   c.appendChild(top);
   c.appendChild(progressBar(r));
   const foot = el("div", "dcfoot");
-  foot.appendChild(el("span", "duepill" + (due ? "" : " zero"), due ? due + " due" : ""));
+  foot.appendChild(el("span", "duepill" + (due ? "" : " zero"), due ? due + " to review" : ""));
   const st = el("span", "dcstat", deckStatus(r));
   const go1 = el("button", "btn sm", d.kind === "skill" ? "Open" : "Study");
   go1.onclick = e => { e.stopPropagation(); studyDeck(d.id); };
@@ -4166,14 +4221,14 @@ async function renderHome(){
       el("p", "sub", "Drop in a PDF, PowerPoint or screenshot and the AI builds the deck — or type your own list of terms."));
     const b = el("button", "btn big", "Build your first deck"); b.onclick = showNew; act.appendChild(b);
   } else if(totalDue){
-    const big = el("p", "tbig"); big.append(el("b", "", String(totalDue)), document.createTextNode(" concepts due for review"));
+    const big = el("p", "tbig"); big.append(el("b", "", String(totalDue)), document.createTextNode(totalDue === 1 ? " term to review" : " terms to review"));
     txt.append(big, el("p", "sub", "Across " + plural(dueDecks.length, "deck") + ". Reviewing them now is what makes them stick."));
-    const b = el("button", "btn big", "Review " + pick.d.name + " · " + pick.due + " due");
+    const b = el("button", "btn big", "Review " + pick.d.name + " · " + plural(pick.due, "term"));
     b.onclick = () => reviewDeck(pick.d.id); act.appendChild(b);
-    const b2 = el("button", "btn2", "See everything due"); b2.onclick = renderReview; act.appendChild(b2);
+    const b2 = el("button", "btn2", "See all decks to review"); b2.onclick = renderReview; act.appendChild(b2);
   } else {
-    const big = el("p", "tbig"); big.append(el("b", "", "0"), document.createTextNode(" due right now"));
-    txt.append(big, el("p", "sub", recent ? "Everything you have studied is scheduled. Carry on with new material, or come back when reviews come due."
+    const big = el("p", "tbig"); big.append(el("b", "", "0"), document.createTextNode(" terms to review"));
+    txt.append(big, el("p", "sub", recent ? "You are all caught up. Carry on with new material, or come back later to keep what you learned fresh."
                                           : "Pick a deck and get going."));
     const target = recent || rows[0];
     const b = el("button", "btn big", (recent ? "Continue " : "Open ") + target.d.name);
@@ -4197,7 +4252,7 @@ async function renderHome(){
   // at a glance
   const g = $("glance"); g.replaceChildren();
   const studiedToday = rows.filter(r => r.last && new Date(r.last).toDateString() === new Date().toDateString()).length;
-  [[totalDue, "Due now"], [totalM + "/" + totalC, "Concepts long-term"],
+  [[totalDue, "To review"], [totalM + "/" + totalC, "Concepts long-term"],
    [LIB.decks.length, "Decks in " + plural(LIB.folders.length, "subject")], [studiedToday, "Decks studied today"]]
     .forEach(([v, k]) => { const s = el("div", "stat"); s.append(el("b", "", k), el("s", "", String(v))); g.appendChild(s); });
   renderWall();
@@ -4236,7 +4291,7 @@ async function renderLibrary(){
     dot.onclick = e => { e.stopPropagation(); openSwatches(e.currentTarget, f); };
     const due = decks.reduce((a,d) => a + byId[d.id].due, 0);
     const tt = el("div", "lht"); tt.append(el("h2", "", f.name),
-      el("span", "lhm", plural(decks.length, "deck") + (due ? " · " + due + " due" : "")));
+      el("span", "lhm", plural(decks.length, "deck") + (due ? " · " + due + " to review" : "")));
     const tools = el("div", "lhtools");
     const ren = el("button", "icon sm"); ren.title = "Rename folder"; ren.setAttribute("aria-label", "Rename " + f.name);
     ren.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M13.5 3.5l3 3L7 16H4v-3z" stroke-linejoin="round"/></svg>';
@@ -4273,16 +4328,16 @@ async function renderReview(){
   if(mine !== homeToken) return;
   const due = rows.filter(r => r.due > 0).sort((a,b) => b.due - a.due);
   const total = due.reduce((a,r) => a + r.due, 0);
-  $("rv-title").textContent = total ? plural(total, "concept") + " due" : "Nothing due";
+  $("rv-title").textContent = total ? plural(total, "term") + " to review" : "All caught up";
   const body = $("rv-body"); body.replaceChildren();
   if(!total){
     let next = Infinity;
     rows.forEach(r => { if(r.p && r.p.m) Object.values(r.p.m).forEach(x => { if((x.box||0) > 0 && x.due > Date.now()) next = Math.min(next, x.due); }); });
-    $("rv-sub").textContent = next < Infinity ? "You are up to date. The next review comes due " + whenText(next - Date.now()) + "."
+    $("rv-sub").textContent = next < Infinity ? "Nothing to review right now. More terms will be ready " + whenText(next - Date.now()) + "."
                                               : "Nothing is scheduled yet — study a deck to start the clock.";
     return;
   }
-  $("rv-sub").textContent = "Across " + plural(due.length, "deck") + ", most due first. Review goes through only what is due in that deck.";
+  $("rv-sub").textContent = "Across " + plural(due.length, "deck") + ", the most first. Pick a deck to go over the terms ready to review — you choose when.";
   const list = el("div", "rvlist");
   due.forEach(r => {
     const f = LIB.folders.find(x => x.id === r.d.folderId);
@@ -4290,7 +4345,7 @@ async function renderReview(){
     const mid = el("div", "rvmid");
     const nm = el("button", "rvname", r.d.name); nm.onclick = () => openDeck(r.d.id);
     mid.append(nm, el("span", "rvfold", (f ? f.name : "—") + " · " + deckStatus(r)));
-    const n = el("span", "duepill", r.due + " due");
+    const n = el("span", "duepill", r.due + " to review");
     const b = el("button", "btn sm", "Review"); b.onclick = () => reviewDeck(r.d.id);
     row.append(el("span", "rvdot"), mid, n, b);
     list.appendChild(row);
@@ -4435,9 +4490,9 @@ async function openDeck(id){
   const upcoming = DECK.concepts.map(x => PROG.m[x.id]).filter(p => p.box > 0 && !isDue(p))
                      .map(p => p.due).sort((a,b) => a-b);
   $("k-next").textContent = (c.due + c.fresh)
-    ? (c.due ? c.due + " concept" + (c.due===1?"":"s") + " ready for review" : "No reviews due") +
+    ? (c.due ? c.due + " concept" + (c.due===1?"":"s") + " ready for review" : "Nothing to review") +
       (c.fresh ? " · " + c.fresh + " never studied" : "")
-    : (upcoming.length ? "Nothing due. Next review " + whenText(upcoming[0] - Date.now()) + "."
+    : (upcoming.length ? "All caught up. Next review " + whenText(upcoming[0] - Date.now()) + "."
                        : "Nothing scheduled yet — study this deck to start the clock.");
   const fc = $("forecast"); fc.innerHTML = "";
   const buckets = new Array(8).fill(0);
@@ -4448,7 +4503,7 @@ async function openDeck(id){
     buckets[Math.max(0, Math.min(7, days))]++;
   });
   const peak = Math.max(1, ...buckets);
-  const labels = ["Due","Tmrw","+2","+3","+4","+5","+6","7+"];
+  const labels = ["Now","Tmrw","+2","+3","+4","+5","+6","7+"];
   buckets.forEach((n,i) => {
     const b = document.createElement("div"); b.className = "fbar";
     const u = document.createElement("u"); u.textContent = n || "";
@@ -4466,7 +4521,7 @@ async function openDeck(id){
     d.className = "lamp"; d.title = c.name;
     d.title = c.name + " · " + (isNew(p) ? "not studied yet"
       : isLong(p) ? "long-term, next review " + whenText(p.due - Date.now())
-      : isDue(p) ? "due now" : "next review " + whenText(p.due - Date.now()));
+      : isDue(p) ? "ready to review" : "next review " + whenText(p.due - Date.now()));
     d.dataset.s = isLong(p) ? "done" : isDue(p) ? "miss" : (p.box > 0 ? "seen" : "off");
     lamps.appendChild(d);
   });
@@ -4533,7 +4588,7 @@ function renderTerms(){
     tools.append(star, del);
     const st = document.createElement("div"); st.className = "tstatus";
     st.textContent = nm((c.steps ? c.steps.length + "-step process · " : "") +
-                     (isNew(p) ? "not studied yet" : isDue(p) ? "due for review now"
+                     (isNew(p) ? "not studied yet" : isDue(p) ? "ready to review"
                    : (isLong(p) ? "long-term · next review " : "learning · next review ") + whenText(p.due - Date.now()))
                    + " · " + c.qs.length + " question" + (c.qs.length === 1 ? "" : "s")
                    + (c.doubt ? " · ⚠ Claude: " + c.review
@@ -4581,6 +4636,7 @@ function renderCoverage(){
   });
 }
 function tab(name){
+  if(NAV.cur && NAV.cur.v === "v-deck") NAV.cur.tab = name;       // Back returns to this tab
   document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === name));
   ["overview","concepts","guide","cards","manage"].forEach(n => $("t-"+n).classList.toggle("hide", n !== name));
   if(name === "cards") renderCardEditor();
@@ -7564,7 +7620,7 @@ function topicColor(t){
 }
 function statusOf(p){
   if(!p || isNew(p)) return {label:"not studied", color:"var(--ink-3)"};
-  if(isDue(p))       return {label:"due now",     color:"var(--miss)"};
+  if(isDue(p))       return {label:"to review",   color:"var(--miss)"};
   if(isLong(p))      return {label:"long-term · " + whenText(p.due - Date.now()), color:"var(--hit)"};
   return {label:"learning · " + whenText(p.due - Date.now()), color:"var(--live)"};
 }
@@ -9846,6 +9902,10 @@ async function delFolder(fid){
 }
 
 $("brand").onclick = () => renderHome();
+$("nav-back").onclick = () => goBack();
+// Alt+Left and the mouse's back button (WebView2 has no history of its own here)
+document.addEventListener("keydown", e => { if(e.altKey && e.key === "ArrowLeft"){ e.preventDefault(); goBack(); } });
+document.addEventListener("mouseup", e => { if(e.button === 3){ e.preventDefault(); goBack(); } });
 $("nav-home").onclick = () => renderHome();
 $("nav-new").onclick = showNew;
 $("nav-library").onclick = () => renderLibrary();

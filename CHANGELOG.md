@@ -4,6 +4,17 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Changed — no "due"; a Back button (redesign 2.0, 2026-10-06)
+- Nothing is "due": the student decides when to review. Every place that said "due" now says how
+  many terms are ready ("135 terms to review", "32 to review", "To review", "All caught up"), with
+  "terms" instead of "concepts". Review page: "Pick a deck to go over the terms ready to review — you
+  choose when."
+- **Back**: an arrow left of the logo (and Alt+Left, and the mouse's back button) returns to the
+  screen you were actually on before — the same deck and tab — not to a fixed page. From a study
+  session, game, lesson or test paper it returns to where you started it (a test's draft is saved
+  first). Going back to New deck keeps what you typed.
+
+
 ### Changed — the loading screen builds the logo (redesign 2.0, 2026-10-06)
 - "M" and the accent cursor appear together (the app icon), the cursor blinks once, then
   "onoSpace" comes out of the cursor — nearest letters first — pushing the M left until it reads

@@ -51,7 +51,7 @@ try {
   const load = async () => {
     await send("Page.navigate", { url: base });
     for (let i = 0; i < 150; i++) { if (await ev('typeof LIB !== "undefined" && !!LIB').catch(() => false)) break; await sleep(200); }
-    await ev('window.MonoSplash && MonoSplash.done(); document.getElementById("ms-splash")?.remove(); window.__toasts = []; const _t = toast; toast = m => { __toasts.push(String(m)); _t(m); }; true');
+    await ev('document.dispatchEvent(new KeyboardEvent("keydown", {key:"x"})); window.__toasts = []; const _t = toast; toast = m => { __toasts.push(String(m)); _t(m); }; true');
     await sleep(600);
   };
   const shown = () => ev('[...document.querySelectorAll("main section[id^=v-]")].filter(s => !s.classList.contains("hide")).map(s => s.id).join(",")');
