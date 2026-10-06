@@ -1162,6 +1162,11 @@ body.filing .spine:not(.ghost){animation:ms-wiggle .9s ease-in-out infinite}
 /* backups + settings */
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--s4);margin:0 0 var(--s4)}
 .grid2 .card{margin:0}
+.grid2 > .card{margin:0 !important;display:flex;flex-direction:column;align-items:flex-start}
+.grid2 > .card > .btn,.grid2 > .card > .btn2{margin-top:auto;min-width:190px}
+.grid2 > .card > .sub{margin-bottom:18px}
+details.advanced{margin-top:16px;border-top:1px solid var(--rule-2);padding-top:12px}
+details.advanced > summary{cursor:pointer;color:var(--ink-2);font-size:.92em}
 .snaplist{margin-top:14px}
 .snaptable{border:1px solid var(--rule-2);border-radius:var(--rs);overflow:hidden;margin-bottom:10px}
 .snaprow{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(120px,1fr) 80px minmax(0,1.6fr);gap:12px;
@@ -1827,46 +1832,50 @@ main{grid-column:auto;min-width:0}
 
     <!-- ===== BACKUPS ===== -->
     <section id="v-backups" class="page hide">
-      <header class="phead"><div><h1>Backups</h1><p class="sub">Keep a copy of everything you have made, and bring it back.</p></div></header>
+      <header class="phead"><div><h1>Backups</h1><p class="sub">Your work is saved on this computer as you go. Here you can keep an extra copy somewhere else, and bring one back if you ever need it.</p></div></header>
       <div class="grid2">
         <div class="card">
-          <h2>Download a backup</h2>
-          <p class="sub">Every deck, flashcard, study guide and your progress, in one file. Keep it somewhere safe, such as OneDrive or a USB stick.</p>
-          <button class="btn" id="btn-export">Download a backup</button>
+          <h2>Save a copy</h2>
+          <p class="sub">One file with all your decks, flashcards and progress. Keep it somewhere safe — a USB stick, Google Drive, or email it to yourself.</p>
+          <button class="btn" id="btn-export">Save a copy</button>
         </div>
         <div class="card">
-          <h2>Restore from a backup</h2>
-          <p class="sub">Merge a backup file back in. Decks and concepts are only added, never removed. Older Drill backups work too.</p>
-          <button class="btn2" id="btn-import">Restore from a backup</button>
+          <h2>Bring a copy back</h2>
+          <p class="sub">Adds the decks and progress from a copy you saved. Nothing you have now is deleted. Copies from older versions (Drill) work too.</p>
+          <button class="btn2" id="btn-import">Choose a copy…</button>
         </div>
       </div>
       <div class="card">
-        <div class="spread"><div><h2 style="margin:0 0 4px">Automatic snapshots</h2>
+        <div class="spread"><div><h2 style="margin:0 0 4px">Automatic safety copies</h2>
           <p class="sub" style="margin:0" id="snap-last">—</p></div>
-          <button class="btn2" id="snap-now">Take a snapshot now</button></div>
-        <p class="sub" style="margin:14px 0 0" id="snap-note">MonoSpace copies its whole database into the backups folder each time it starts and once a day.</p>
-        <div class="snaplist" id="snap-list"></div>
-        <p class="sub" style="margin:14px 0 0">To go back to a snapshot, close MonoSpace and run <code>python -m server.restore &lt;name&gt;</code> in the MonoSpace folder; it shows what will change and asks you to type yes.</p>
+          <button class="btn2" id="snap-now">Make one now</button></div>
+        <p class="sub" style="margin:14px 0 0">MonoSpace quietly makes a safety copy every time it opens and once a day, and keeps the most recent ones. You don't need to do anything.</p>
+        <details class="advanced">
+          <summary>For advanced users</summary>
+          <p class="sub" style="margin:10px 0 0" id="snap-note">MonoSpace copies its whole database into the backups folder each time it starts and once a day.</p>
+          <div class="snaplist" id="snap-list"></div>
+          <p class="sub" style="margin:14px 0 0">To go back to one of these, close MonoSpace and run <code>python -m server.restore &lt;name&gt;</code> in the MonoSpace folder; it shows what will change and asks you to type yes.</p>
+        </details>
       </div>
       <div class="card">
-        <h2>Where your data lives</h2>
+        <h2>Where your work is kept</h2>
         <p class="sub" style="margin:0" id="storefull">—</p>
       </div>
     </section>
 
     <!-- ===== SETTINGS ===== -->
     <section id="v-settings" class="page hide">
-      <header class="phead"><div><h1>Settings</h1><p class="sub">These apply to every deck.</p></div></header>
+      <header class="phead"><div><h1>Settings</h1><p class="sub">Make MonoSpace study the way you like. Changes apply to every deck.</p></div></header>
       <div class="card">
-        <h2>AI</h2>
-        <div class="kv"><span>Answering right now</span><b id="ai-now">Checking…</b></div>
-        <div class="kv"><span>Online AI</span><b id="ai-online">—</b></div>
-        <div class="kv"><span>On this PC</span><b id="ai-local">—</b></div>
+        <h2>Your AI helper</h2>
+        <div class="kv"><span>Helping you right now</span><b id="ai-now">Checking…</b></div>
+        <div class="kv"><span>When you're online</span><b id="ai-online">—</b></div>
+        <div class="kv"><span>On this computer</span><b id="ai-local">—</b></div>
         <div class="kv"><span>Internet</span><b id="netstate">—</b></div>
         <p class="sub hide" id="ai-fix" style="margin:12px 0 0;color:var(--ink)"></p>
-        <p class="sub" style="margin:12px 0 0" data-ainm>Claude answers when you are online; otherwise Qwen answers on this PC. This is automatic. In <b>Ask the teacher</b> you can pick Claude or Qwen yourself.</p>
+        <p class="sub" style="margin:12px 0 0" data-ainm>The AI builds your decks and answers your questions. It switches by itself — Claude when you're online, Qwen on this computer when you're not — so there's nothing to set. In <b>Ask the teacher</b> you can choose which one answers.</p>
         <details class="aiconnect">
-          <summary>Connect a different AI</summary>
+          <summary>Use a different AI (advanced)</summary>
           <p class="sub">MonoSpace can use, <b>online</b>: Claude Code, OpenAI Codex, Google Gemini CLI, or any other command-line AI — each with your own sign-in, no API keys. <b>On this PC</b>: any Ollama model (Qwen, Llama, Gemma, Mistral…), or LM Studio, llama.cpp, Jan or vLLM. Add two or three lines to your settings file, save it, then press <b>Reload AI settings</b>. Examples:</p>
           <pre class="aiexample">ONLINE_AI=codex              # or claude, gemini, custom, off
 LOCAL_AI=ollama              # or openai (LM Studio, llama.cpp, Jan, vLLM), off
@@ -1877,10 +1886,10 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
         </details>
       </div>
       <div id="set-study">
-        <p class="eyebrow setsec">Study options</p>
+        <p class="eyebrow setsec">How you study</p>
         <div class="card">
-          <h2>Question types</h2>
-          <p class="sub" style="margin-bottom:14px">Turn off anything you don't want to see. At least one has to stay on.</p>
+          <h2>Kinds of questions</h2>
+          <p class="sub" style="margin-bottom:14px">Tap to turn a kind on or off. Keep at least one.</p>
           <div class="row">
             <button class="chip" data-type="mcq" aria-pressed="true">Multiple choice</button>
             <button class="chip" data-type="tf" aria-pressed="true">True or false</button>
@@ -1897,37 +1906,37 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
           <p class="sub" id="typemix" style="margin:14px 0 0">—</p>
         </div>
         <div class="card">
-          <h2>How it behaves</h2>
+          <h2>While you study</h2>
           <div class="toggles">
             <label class="check"><input type="checkbox" id="o-adaptive" checked>
-              <span><b>Add questions when I miss one</b><small>A miss queues two more on that concept plus one from the same topic.</small></span></label>
+              <span><b>Give me more on what I miss</b><small>Get one wrong and you'll see two more on it soon, plus a related one, so it sticks.</small></span></label>
             <label class="check"><input type="checkbox" id="o-ai" checked>
-              <span><b>Write new questions with AI on repeat misses</b><small>After the second miss on a concept, the AI writes fresh questions so you can't memorise the wording.</small></span></label>
+              <span><b>Fresh questions when I keep missing one</b><small>Miss the same thing twice and the AI writes new questions on it, so you learn the idea, not the wording.</small></span></label>
             <label class="check"><input type="checkbox" id="o-shuffle" checked>
-              <span><b>Shuffle the answer options</b><small>Off means options stay in their original order every time.</small></span></label>
+              <span><b>Mix up the answer order</b><small>Answers appear in a different order each time, so you can't go by where the right one sits.</small></span></label>
             <label class="check"><input type="checkbox" id="o-timer">
-              <span><b>Show a session timer</b><small>Counts up in the study bar. Useful for exam pacing.</small></span></label>
+              <span><b>Show a timer</b><small>See how long you've been studying — handy for timing yourself before an exam.</small></span></label>
             <label class="check"><input type="checkbox" id="o-explain" checked>
-              <span><b>Pop up the explanation when I miss one</b><small>On the board, a miss opens a panel with the right answer and why. Dismiss it with any key or the X.</small></span></label>
+              <span><b>Explain my mistakes</b><small>When you get one wrong, a box shows the right answer and why. Close it with any key.</small></span></label>
             <label class="check"><input type="checkbox" id="o-explainok">
-              <span><b>Pop it up for correct answers too</b><small>Off by default — most people only want to stop and read when they were wrong.</small></span></label>
+              <span><b>Explain the ones I get right too</b><small>Off at first — most people only want to stop and read when they were wrong.</small></span></label>
             <label class="check"><input type="checkbox" id="o-strict">
-              <span><b>Be strict about spelling</b><small>Off by default, so plurals, endings and small typos still count. Turn it on when you want exam-grade marking.</small></span></label>
+              <span><b>Mark spelling strictly</b><small>Off at first, so small typos and plurals still count as right. Turn it on to be marked like a real exam.</small></span></label>
             <label class="check"><input type="checkbox" id="o-instant" checked>
-              <span><b>Show the answer straight away</b><small>Off holds all feedback until the end, like a real exam.</small></span></label>
+              <span><b>Tell me right away if I'm right</b><small>See right or wrong after each question. Turn it off to find out at the end, like a real exam.</small></span></label>
           </div>
         </div>
         <div class="card">
-          <h2>Layout and length</h2>
+          <h2>How questions appear</h2>
           <div class="field">
-            <label class="f">How questions appear in Learn</label>
+            <label class="f">When you study</label>
             <div class="row">
               <button class="chip" data-view="focus" aria-pressed="true">One at a time</button>
-              <button class="chip" data-view="board">Board of several</button>
+              <button class="chip" data-view="board">Several at once</button>
             </div>
           </div>
           <div class="field" id="densefield">
-            <label class="f">Cards on the board</label>
+            <label class="f">How many at once</label>
             <div class="row">
               <button class="chip" data-den="3">3</button>
               <button class="chip" data-den="6" aria-pressed="true">6</button>
@@ -1935,7 +1944,7 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
             </div>
           </div>
           <div class="field" style="margin:0">
-            <label class="f">Test length</label>
+            <label class="f">Questions in a practice test</label>
             <div class="row">
               <button class="chip" data-len="10">10 questions</button>
               <button class="chip" data-len="20" aria-pressed="true">20</button>
@@ -1946,8 +1955,8 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
       </div>
       <div class="card">
         <h2>Appearance</h2>
-        <p class="sub">Light or dark, colour presets, text size.</p>
-        <button class="btn2" id="set-appearance">Open appearance</button>
+        <p class="sub">Colours, dark mode and text size.</p>
+        <button class="btn2" id="set-appearance">Change how it looks</button>
       </div>
       <div class="card">
         <h2>About</h2>
@@ -1959,7 +1968,7 @@ OLLAMA_MODEL=llama3.1:8b     # any model you pulled with: ollama pull …</pre>
           <button class="btn2" id="upd-check">Check now</button>
         </div>
         <label class="check" style="margin-top:14px"><input type="checkbox" id="o-updonline" checked>
-          <span><b>Check for new versions online</b><small>When you're online, MonoSpace looks for a newer release on GitHub (at most every few hours) and tells you. It never updates without asking. Off: it never goes online by itself.</small></span></label>
+          <span><b>Tell me when there's a new version</b><small>When you're online, MonoSpace checks now and then and lets you know. It never updates without asking. Off: it never goes online by itself.</small></span></label>
       </div>
 
     </section>
@@ -2970,7 +2979,7 @@ const STORE_LABEL = {
   server:"Saved on this PC"
 }[STORE_MODE];
 const STORE_DETAIL = {
-  server:"Your decks and progress are stored in the MonoSpace database on this PC (your DATA_DIR folder), kept by the MonoSpace server running here. They survive closing the browser and restarting your PC, and need no internet. Every change keeps the previous version, and the server snapshots the database each time it starts and once a day. Download a backup regularly."
+  server:"Everything you make stays on this computer, in your MonoSpace data folder — nothing is uploaded anywhere. It's kept when you close MonoSpace or restart, and it works without the internet. MonoSpace also makes safety copies by itself; saving a copy now and then (above) gives you one somewhere else too."
 }[STORE_MODE];
 const storeUrl = k => "/api/store/" + encodeURIComponent(k);
 const store = {
@@ -4675,13 +4684,13 @@ async function renderBackups(){
   try{ const r = await fetch("/api/backups", {cache:"no-store"}); if(r.ok) data = await r.json(); }catch(e){}
   if(mine !== homeToken) return;
   const list = $("snap-list"); list.replaceChildren();
-  if(!data){ $("snap-last").textContent = "Could not reach the MonoSpace server to list snapshots."; return; }
-  $("snap-last").textContent = "Last automatic snapshot: " + (data.last_automatic ? fmtWhen(data.last_automatic) : "none yet");
+  if(!data){ $("snap-last").textContent = "Couldn't check the safety copies just now."; return; }
+  $("snap-last").textContent = "Last one: " + (data.last_automatic ? fmtWhen(data.last_automatic) : "none yet") + " · " + (data.snapshots || []).length + " kept";
   $("snap-note").textContent = "MonoSpace copies its whole database into the backups folder each time it starts and once a day, " +
     "keeping the newest " + data.keep + ". Snapshots you take here, and the safety copies made before an import or restore, are kept too.";
   const kinds = {automatic:"Automatic", manual:"Taken by you", "pre-import":"Before an import", "pre-restore":"Before a restore"};
   const items = snapAll ? data.snapshots : data.snapshots.slice(0, 6);
-  if(!items.length){ list.appendChild(el("p", "sub", "No snapshots yet.")); return; }
+  if(!items.length){ list.appendChild(el("p", "sub", "No safety copies yet.")); return; }
   const tb = el("div", "snaptable");
   items.forEach(s => {
     const row = el("div", "snaprow");
@@ -4701,9 +4710,9 @@ async function snapshotNow(){
   try{
     const r = await fetch("/api/backups/snapshot", {method:"POST"});
     const j = await r.json().catch(() => ({}));
-    toast(r.ok ? "Snapshot saved: " + j.snapshot.name : "Snapshot not taken — " + (j.message || r.status));
-  }catch(e){ toast("Snapshot not taken — the MonoSpace server isn't answering"); }
-  b.disabled = false; b.textContent = "Take a snapshot now";
+    toast(r.ok ? "Safety copy made" : "Couldn't make a safety copy — " + (j.message || r.status));
+  }catch(e){ toast("Couldn't make a safety copy — MonoSpace isn't answering. Try closing and reopening it."); }
+  b.disabled = false; b.textContent = "Make one now";
   if(!$("v-backups").classList.contains("hide")) renderBackups();
 }
 

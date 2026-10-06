@@ -4,6 +4,14 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Changed — Settings and Backups in plain words (redesign 2.0, 2026-10-06)
+- Written for students, not developers: "Your AI helper", "While you study", "Give me more on what I
+  miss", "Mark spelling strictly", "Tell me when there's a new version"… Every option is kept.
+- Backups: "Save a copy" / "Bring a copy back" side by side, level and equal height (a spacing rule had
+  pushed the second box down); "Automatic safety copies"; file names and the restore command moved under
+  "For advanced users"; "Where your work is kept" without DATA_DIR or server talk.
+
+
 ### Added — books on a shelf; bolder card titles (redesign 2.0, 2026-10-06)
 - **Books** hold subjects ("Freshman Year · Sem 1"). The Library opens with a shelf of spines (taller for
   longer names, the count of terms to review at the foot); a spine opens its book — the cover swings open
