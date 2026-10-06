@@ -1231,6 +1231,14 @@ details.advanced > summary{cursor:pointer;color:var(--ink-2);font-size:.92em}
 /* MonoSpace: drag a deck onto another subject */
 .deckbtn[draggable=true],.dcard[draggable=true]{cursor:grab}
 .dragging{opacity:.4;transform:scale(.96) rotate(-1deg);filter:saturate(.5);transition:transform .2s,opacity .2s,filter .2s}
+/* where the notebook will land: a line down the side of the one you are hovering over */
+.cgrid [data-deckid]{position:relative}
+/* the cover clips anything outside it, so the line is drawn down its own edge */
+.cgrid [data-deckid].slotbefore::after,.cgrid [data-deckid].slotafter::after{
+  content:"";position:absolute;top:0;bottom:0;width:6px;z-index:7;
+  background:var(--live);box-shadow:0 0 16px 0 var(--live)}
+.cgrid [data-deckid].slotbefore::after{left:0}
+.cgrid [data-deckid].slotafter::after{right:0}
 /* the notebook being flown to its new subject rides above the others */
 .flying{position:relative;z-index:6;box-shadow:0 22px 46px -12px rgba(0,0,0,.35)!important}
 /* the subject that just received a notebook */
@@ -4236,6 +4244,41 @@ async function moveDeck(id, fid){
   }
   toast("Moved “" + d.name + "” to " + f.name);
 }
+/* PUTTING NOTEBOOKS IN YOUR OWN ORDER (redesign 2.0, 2026-10-06): drag a notebook onto another
+   one to drop it in front of or behind it. The order is simply the order of LIB.decks, which is
+   what the Library, the Shelf and the sidebar have always drawn in — no new field is stored, and
+   a notebook dropped on a notebook in another subject moves there and lands in that spot. */
+async function reorderDeck(id, targetId, after){
+  if(id === targetId) return;
+  const from = LIB.decks.findIndex(x => x.id === id);
+  const d = LIB.decks[from], t = LIB.decks.find(x => x.id === targetId);
+  if(from < 0 || !t) return;
+  const crossed = d.folderId !== t.folderId;
+  const f = LIB.folders.find(x => x.id === t.folderId);
+  const onLib = !$("v-library").classList.contains("hide");
+  const before = onLib ? flipSnapshot() : null, y = window.scrollY;
+  LIB.decks.splice(from, 1);                                  // lift it out, then put it back in place
+  const to = LIB.decks.findIndex(x => x.id === targetId);
+  LIB.decks.splice(after ? to + 1 : to, 0, d);
+  if(crossed) d.folderId = t.folderId;
+  await store.set("library", LIB);
+  if(crossed) openFolders.add(d.folderId);
+  navSoon();
+  if(onLib){
+    await renderLibrary();
+    window.scrollTo({top:y});
+    flipPlay(before, id, crossed ? d.folderId : null, {arc:crossed});
+  }
+  toast(crossed && f ? "Moved “" + d.name + "” to " + f.name : "“" + d.name + "” moved " + (after ? "after" : "before") + " “" + t.name + "”");
+}
+/* The same move from the keyboard: one place earlier or later inside its own subject. */
+async function nudgeDeck(id, dir){
+  const d = LIB.decks.find(x => x.id === id); if(!d) return;
+  const mates = LIB.decks.filter(x => x.folderId === d.folderId);
+  const i = mates.indexOf(d), j = i + dir;
+  if(j < 0 || j >= mates.length){ toast(dir < 0 ? "Already first" : "Already last"); return; }
+  await reorderDeck(id, mates[j].id, dir > 0);
+}
 /* MOVING NOTEBOOKS (redesign 2.0, 2026-10-06): the library is re-drawn after a move, so each
    notebook's old position is measured first and it then glides from there to its new place
    (FLIP). The moved one flies over with a little tilt and lands; the others slide to open or
@@ -4246,15 +4289,23 @@ function flipSnapshot(){
   document.querySelectorAll("#v-library [data-deckid]").forEach(e => m.set(e.dataset.deckid, e.getBoundingClientRect()));
   return m;
 }
-function flipPlay(before, movedId, fid){
+function flipPlay(before, movedId, fid, opt){
   if(!before || !motionOK()) return;
+  const arc = !opt || opt.arc !== false;        // crossing subjects flies; reordering just glides
   const EASE = "cubic-bezier(.2,.8,.2,1)";
   document.querySelectorAll("#v-library [data-deckid]").forEach(e => {
     if(!e.animate) return;
     const a = before.get(e.dataset.deckid), b = e.getBoundingClientRect();
     if(!a){ e.animate([{opacity:0, transform:"scale(.94)"}, {opacity:1, transform:"none"}], {duration:380, easing:EASE}); return; }
     const dx = a.left - b.left, dy = a.top - b.top;
-    if(e.dataset.deckid === movedId){
+    if(e.dataset.deckid === movedId && !arc){
+      e.classList.add("flying");
+      const slide = e.animate([
+        {transform:`translate(${dx}px,${dy}px) scale(1.04) rotate(-1deg)`},
+        {transform:"translate(0,0) scale(1.01) rotate(.3deg)", offset:.75},
+        {transform:"none"}], {duration:520, easing:EASE});
+      slide.onfinish = slide.oncancel = () => e.classList.remove("flying");
+    } else if(e.dataset.deckid === movedId){
       e.classList.add("flying");
       const fly = e.animate([
         {transform:`translate(${dx}px,${dy}px) scale(1.03) rotate(-1.5deg)`},
@@ -4266,7 +4317,7 @@ function flipPlay(before, movedId, fid){
       e.animate([{transform:`translate(${dx}px,${dy}px)`}, {transform:"none"}], {duration:560, easing:EASE});
     }
   });
-  const sec = document.querySelector(`#v-library [data-fid="${fid}"]`);
+  const sec = fid && document.querySelector(`#v-library [data-fid="${fid}"]`);
   if(sec){ sec.classList.remove("received"); void sec.offsetWidth; sec.classList.add("received");
            setTimeout(() => sec.classList.remove("received"), 1200); }
 }
@@ -4277,6 +4328,7 @@ function moveMenu(anchor, d){
 function dragSource(node, id){
   node.draggable = true;
   node.dataset.deckid = id;                     // the notebook's identity for the move animation
+  dropSlot(node, id);                           // and a place another notebook can be dropped
   node.addEventListener("dragstart", e => {
     dragDeckId = id; node.classList.add("dragging");
     e.dataTransfer.effectAllowed = "move";
@@ -4285,6 +4337,28 @@ function dragSource(node, id){
   node.addEventListener("dragend", () => {
     dragDeckId = null; node.classList.remove("dragging");
     document.querySelectorAll(".dropon").forEach(x => x.classList.remove("dropon"));
+  });
+}
+/* Dropping one notebook onto another: the left half puts it in front, the right half behind.
+   A line is drawn on that side while you hover, so you can see where it will land. */
+function dropSlot(node, id){
+  const side = e => (e.clientX - node.getBoundingClientRect().left) > node.getBoundingClientRect().width / 2;
+  const clear = () => node.classList.remove("slotbefore", "slotafter");
+  node.addEventListener("dragover", e => {
+    if(!dragDeckId || dragDeckId === id) return;
+    e.preventDefault(); e.stopPropagation();                  // the subject behind must not claim it
+    e.dataTransfer.dropEffect = "move";
+    const after = side(e);
+    node.classList.toggle("slotafter", after);
+    node.classList.toggle("slotbefore", !after);
+  });
+  node.addEventListener("dragleave", clear);
+  node.addEventListener("drop", e => {
+    if(!dragDeckId || dragDeckId === id) return;
+    e.preventDefault(); e.stopPropagation();
+    const dragged = dragDeckId; dragDeckId = null;
+    clear();
+    reorderDeck(dragged, id, side(e));
   });
 }
 function dropTarget(node, fid, onEnter){
@@ -4445,6 +4519,8 @@ function deckCard(r, showFolder){
     ["Study", () => studyDeck(d.id)],
     ["Rename", async () => { await openDeck(d.id); if(DECK && DECK.id === d.id && DECK.kind !== "skill") $("btn-rename").click(); }],
     ["Move to…", () => moveMenu(more, d)],
+    ["Move earlier", () => nudgeDeck(d.id, -1)],
+    ["Move later", () => nudgeDeck(d.id, 1)],
     ["Delete", () => deleteDeckById(d.id, d.name), true]]); };
   top.append(name, more);
   c.appendChild(bookmarkRibbon(r));

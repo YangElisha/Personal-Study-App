@@ -4,6 +4,15 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Added — put your notebooks in your own order (redesign 2.0, 2026-10-06)
+- Drag a notebook **onto another notebook** to drop it in front of or behind it: the left half of the one
+  you hover over puts it first, the right half puts it after, and a line down that edge shows where it
+  will land. Dropped on a notebook in another subject, it moves there **and** lands in that spot.
+- **Move earlier / Move later** in a notebook’s "..." menu does the same without a mouse.
+- Reordering **glides**; only a move to another subject keeps the flying arc. The order is the order of
+  `LIB.decks`, which the Library, the Shelf and the sidebar already drew in — no new field is stored.
+
+
 ### Fixed — the colour rows in Appearance (redesign 2.0, 2026-10-06)
 - "Every colour, yours" had its rows collapsed on top of each other, with the hex boxes overlapping the
   names. The redesign added a pill on/off switch called `.sw` — the same class name the colour rows have
