@@ -4,6 +4,14 @@ Newest first. Every change gets an entry in the same commit.
 
 ## [Unreleased]
 
+### Changed — talking is Windows’ job, not ours (redesign 2.0, 2026-10-06)
+- The microphone button in "Teach it back" is gone. It used the browser’s speech recognition, which
+  streams audio to a service on the internet — and WebView2 wires up no such service, so it never worked.
+- Windows already does this better and on-device: **voice typing (Win+H)** and **Voice Access** type into
+  whatever box has the focus, this one included, with the Wi-Fi off. The answer box says so, and is a
+  plain labelled textarea, which is all dictation needs. No API, no model, no download.
+
+
 ### Added — "Teach it back": you explain, an AI student asks (redesign 2.0, 2026-10-06)
 - A new mode on every deck, beside "Teach me". Pick who you are teaching — **curious first-year**,
   **confused classmate** or **tough examiner** — and how many concepts (3/5/8). The concepts you have

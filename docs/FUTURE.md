@@ -9,7 +9,7 @@ move it to CHANGELOG.md and delete it here.
 
 The mode is in. Two pieces of the original design are not:
 
-- **Talking offline.** The mic uses the browser’s own speech recognition, which may need the internet
-  inside WebView2. A local Whisper model would make talking work with the Wi-Fi off.
+- ~~Talking offline.~~ Settled 2026-10-06: Windows’ own voice typing (Win+H) and Voice Access already do
+  this on-device, into any focused box. Nothing for MonoSpace to build.
 - **History over time.** Each session is kept (`PROG.explain`, the last 30), but nothing yet draws how
   your explanations got deeper across sessions.

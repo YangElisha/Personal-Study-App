@@ -1692,7 +1692,8 @@ button.sw[aria-pressed="true"]::after,button.sw.on::after{left:23px}
 .tbbox textarea{width:100%;resize:vertical}
 .tbrow{align-items:center;gap:12px}
 .tbrow .sub{margin:0;font-size:.84em}
-#tb-mic.live{border-color:var(--miss);color:var(--miss)}
+.tbtalkhint{margin-left:auto;text-align:right;color:var(--ink-3)}
+#tb-hint:empty+.tbtalkhint{margin-left:12px}
 .tbnotes{display:flex;flex-direction:column;gap:12px;border-left:1px solid var(--rule);padding-left:22px}
 .tbnotes .sticky{position:relative;inset:auto;width:100%}
 .tbmark{border-top:1px solid var(--rule);padding:18px 0 18px 16px;border-left:4px solid var(--rule)}
@@ -2675,11 +2676,13 @@ Availability: Information is there when it is needed"></textarea>
           <div class="tbmain">
             <div class="tbtalk" id="tb-talk"></div>
             <div class="tbbox">
-              <textarea id="tb-input" rows="3" placeholder="Explain it in your own words…"></textarea>
+              <textarea id="tb-input" rows="3" aria-label="Your explanation"
+                        placeholder="Explain it in your own words — or dictate it with Win+H or Voice Access"></textarea>
               <div class="row tbrow">
                 <button class="btn" id="tb-send">Say it</button>
-                <button class="btn2 hide" id="tb-mic">Talk instead</button>
                 <span class="sub" id="tb-hint"></span>
+                <span class="sub tbtalkhint">Talking is quicker: click in the box, then Win+H or
+                  “voice access wake up”. Ctrl+Enter sends.</span>
               </div>
             </div>
           </div>
@@ -9051,7 +9054,6 @@ function openTeachBack(){
       b.setAttribute("aria-pressed", o.k === cur);
       b.onclick = () => { pick(o.k); openTeachBack(); }; h.appendChild(b); });
   };
-  if(!TB.mic){ TB.mic = true; tbMicSetup(); }
   chips("tb-who", TB_WHO, TB.who, k => TB.who = k);
   chips("tb-many", TB_SIZES.map(n => ({k:n, label:n + " concepts"})), TB.size, k => TB.size = k);
   const picked = tbPick(TB.size).map(id => con(id).name);
@@ -9232,32 +9234,10 @@ function tbNotes(){
   if(!mine.length){ host.appendChild(el("p", "sub", "Nothing pinned on this deck yet.")); return; }
   mine.forEach(s => host.appendChild(stickyEl(s, tbNotes)));
 }
-/* Talking, where the browser can hear it. Nothing is sent anywhere by us — this is the
-   browser's own speech recognition, and it is simply absent when it is not available. */
-function tbMicSetup(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const btn = $("tb-mic");
-  if(!SR || !btn) return;
-  btn.classList.remove("hide");
-  let rec = null, on = false;
-  btn.onclick = () => {
-    if(on && rec){ rec.stop(); return; }
-    rec = new SR(); rec.lang = navigator.language || "en-US"; rec.interimResults = true; rec.continuous = true;
-    let fixed = $("tb-input").value;
-    rec.onresult = e => {
-      let live = "";
-      for(let i = e.resultIndex; i < e.results.length; i++){
-        if(e.results[i].isFinal) fixed += (fixed ? " " : "") + e.results[i][0].transcript.trim();
-        else live += e.results[i][0].transcript;
-      }
-      $("tb-input").value = (fixed + " " + live).trim();
-    };
-    rec.onerror = ev => { $("tb-hint").textContent = "The microphone could not be used (" + ev.error + ") — type it instead."; };
-    rec.onend = () => { on = false; btn.textContent = "Talk instead"; btn.classList.remove("live"); };
-    try{ rec.start(); on = true; btn.textContent = "Stop talking"; btn.classList.add("live"); }
-    catch(e){ $("tb-hint").textContent = "The microphone could not be started — type it instead."; }
-  };
-}
+/* TALKING: Windows does it, not us. Voice Access and voice typing (Win+H) are Windows' own
+   on-device dictation — they type into whatever box has the focus, this one included, and they
+   work with the Wi-Fi off. There is no API for an app to drive them and none is needed: the box
+   below is a plain labelled textarea that takes the focus, which is all dictation asks for. */
 
 /* ============================================================
    STICKY NOTES
